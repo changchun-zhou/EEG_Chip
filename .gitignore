@@ -1,0 +1,56 @@
+#                       _oo0oo_
+#                      o8888888o
+#                      88" . "88
+#                      (| -_- |)
+#                      0\  =  /0
+#                    ___/`---'\___
+#                  .' \\|     |// '.
+#                 / \\|||  :  |||// \
+#                / _||||| -:- |||||- \
+#               |   | \\\  -  /// |   |
+#               | \_|  ''\---/''  |_/ |
+#               \  .-\__  '-'  ___/-. /
+#             ___'. .'  /--.--\  `. .'___
+#          ."" '<  `.___\_<|>_/___.' >' "".
+#         | | :  `- \`.;`\ _ /`;.`/ - ` : | |
+#         \  \ `_.   \_ __\ /__ _/   .-` /  /
+#     =====`-.____`.___ \_____/___.-`___.-'=====
+#                       `=---='
+#######################################################
+
+*.pt
+*.checkpoint
+*.log
+/hardware/work/*
+!/hardware/work/fpga/UnifiedTestPlatform/UnifiedTestPlatform.srcs/
+hardware/project/
+hardware/vft/
+fv/
+*.gz
+hardware/impl/synth/config_temp.tcl
+hardware/impl/synth/define.vh
+*.sdf.X
+
+.svn/
+INCA_libs/
+log/
+*.shm/
+*wave*/
+*.simvision/
+*dump*/
+output*/
+
+*.sw*
+*.svwf
+*.diag
+*~
+*.key
+*.dump
+*.vcd
+*.fsdb
+*.dsn 
+*.trn 
+*eco*
+genus.cmd 
+
+
