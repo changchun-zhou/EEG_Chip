@@ -30,12 +30,12 @@ module ArbCore #(
 RR_arbiter#(
     .REQ_WIDTH ( NUM_CORE )
 )u_RR_arbiter(
-    .clk (clk),
-    .rst_n (rst_n),
-    .arb_round(TopOutVld & TOPInRdy),
-    .req ( CoreOutVld ),
-    .gnt (  ),
-    .arb_port  ( ArbCoreIdx  )
+    .clk        (clk    ),
+    .rst_n      (rst_n  ),
+    .arb_round  (TopOutVld & TOPInRdy),
+    .req        ( CoreOutVld ),
+    .gnt        (       ),
+    .arb_port   ( ArbCoreIdx)
 );
 
 assign TopOutAddr  = CoreOutAddr[ADDR_WIDTH*ArbCoreIdx +: ADDR_WIDTH];

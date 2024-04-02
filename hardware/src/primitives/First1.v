@@ -1,10 +1,10 @@
 module First1 #(
-    parameter LEN,
-    parameter ADDR_WIDTH = $clog2(LEN)
+    parameter LEN       = 32,
+    parameter ADDR_WIDTH= $clog2(LEN)
 )(
-    input [LEN          -1 : 0] Array,
-    output[ADDR_WIDTH   -1 : 0] Addr
-)
+    input       [LEN          -1 : 0] Array,
+    output reg  [ADDR_WIDTH   -1 : 0] Addr
+);
 
 integer i;
 reg     flag;

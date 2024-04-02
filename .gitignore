@@ -21,8 +21,7 @@
 *.pt
 *.checkpoint
 *.log
-/hardware/work/*
-!/hardware/work/fpga/UnifiedTestPlatform/UnifiedTestPlatform.srcs/
+/hardware/work/
 hardware/project/
 hardware/vft/
 fv/
