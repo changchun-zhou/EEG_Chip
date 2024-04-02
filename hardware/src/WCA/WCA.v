@@ -294,6 +294,12 @@ generate
         assign WCAPER_Dat   [gv_port] = state == WORK & ( (byp | hit_rdata_s2)? WBFWCA_Dat    : hit_last_s2? last_data_s2 : vld_s2? hit_out_s2 : 0  );
         assign WCAPER_DatVld[gv_port] = state == WORK & ( (byp | hit_rdata_s2)& WBFWCA_DatVld | hit_last_s2               | vld_s2                  );
 
+        wire handshake_last_data_s2;
+        wire ena_last_data_s2;
+        wire rdy_last_data_s2;
+        assign handshake_last_data_s2   = hit_last_s2 & rdy_last_data_s2;
+        assign ena_last_data_s2         = handshake_last_data_s2 | !hit_last_s2;
+        assign rdy_last_data_s2         = PERWCA_DatRdy;
         always @(posedge clk or negedge rst_n) begin
             if(!rst_n) begin
                 hit_last_s2 <= 1'b0;
@@ -301,7 +307,7 @@ generate
             end else if(state == IDLE) begin
                 hit_last_s2 <= 1'b0;
                 last_data_s2<= 0;
-            end else if( hit_last ) begin
+            end else if( ena_last_data_s2 ) begin
                 hit_last_s2 <= hit_last;
                 last_data_s2<= last_data;
             end

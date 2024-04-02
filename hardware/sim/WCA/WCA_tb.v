@@ -107,6 +107,8 @@ initial begin
             FBFWCA_Idx    = {$random(seed)} % 128; 
         end
     end
+    FBFWCA_IdxVld = 0;
+    FBFWCA_Idx    = 0;
 end
 
 // PER
