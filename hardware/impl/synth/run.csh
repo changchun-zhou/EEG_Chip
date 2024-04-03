@@ -7,7 +7,7 @@
 #    RTSEL: 00 tapeout, 10: Only synth for Simulation
 # 3. PERIOD_CLK
 
-set DESIGN_NAME="TOP"
+set DESIGN_NAME="WCA"
 ################################################################################
 set VT="3vt"
 set PERIOD_CLK="5"
@@ -16,7 +16,7 @@ set PLL="0"
 set UNGROUP="group"
 set MAXPOWER="0" # 100MHz -> 100mW
 set OPTWGT="0.5" # Larger optimization weight, lower leakage(1/20~1/10 of Total Synth Power)
-set NOTE="GLB"
+set NOTE="TestLib"
 set SDC_FILE=./TOP.sdc
 
 ################################################################################
