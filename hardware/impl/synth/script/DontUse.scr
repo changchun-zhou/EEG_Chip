@@ -1,0 +1,1 @@
+set_attribute avoid true [find / -libcell SDF*]

@@ -52,8 +52,7 @@ foreach VERILOG_FILE ${VERILOG_FILES} {
 ##########################################################################
 #                          Don't touch cells                             #
 ##########################################################################
-set_attribute avoid true [find / -libcell SDF*]
-# set_attribute avoid true [find / -libcell DFE*] # Report Error
+source ./scripts/DontUse.scr
 
 ##########################################################################
 #                     Setup for power analysis                           #
