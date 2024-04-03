@@ -1,51 +1,50 @@
-set_attribute avoid true [find / -libcell AOI*]
-set_attribute avoid true [find / -libcell IAO*]
-set_attribute avoid true [find / -libcell IIND4D*]
-set_attribute avoid true [find / -libcell IINR4D*]
-set_attribute avoid true [find / -libcell IND3D*]
-set_attribute avoid true [find / -libcell IND4D*]
-set_attribute avoid true [find / -libcell INR4D*]
-set_attribute avoid true [find / -libcell MAOI*]
-set_attribute avoid true [find / -libcell MUX3ND*]
-set_attribute avoid true [find / -libcell MUX4D*]
-set_attribute avoid true [find / -libcell ND3D*]
-set_attribute avoid true [find / -libcell ND4D*]
-set_attribute avoid true [find / -libcell OAI*]
-set_attribute avoid true [find / -libcell GAOI22D*]
-set_attribute avoid true [find / -libcell GNR2D*]
-set_attribute avoid true [find / -libcell GNR3D*]
-set_attribute avoid true [find / -libcell GOAI21D*]
-set_attribute avoid true [find / -libcell {CKLHQD4BWP7T
-CKLHQD6BWP7T /
-CKLHQD8BWP7T /
-CKXOR2D2BWP7T / 
-CKXOR2D4BWP7T /
-DEL2BWP7T /
-DEL3BWP7T /
-DEL4BWP7T /
-FA1D1BWP7T /
-FA1D2BWP7T /
-INR2D0BWP7T /
-INR2D1BWP7T / 
-INR2D2BWP7T /
-INR2D4BWP7T /
-INR3D1BWP7T /
-INR3D2BWP7T /
-MUX2ND0BWP7T /
-MUX2ND1BWP7T /
-NR2D1BWP7T /
-NR2D1P5BWP7T /
-NR2D2BWP7T /
-NR2D2P5BWP7T /
-NR2D3BWP7T /
-NR2D4BWP7T /
-NR2D5BWP7T /
-NR2D6BWP7T /
-NR2D8BWP7T /
-NR4D1BWP7T /
-NR4D2BWP7T /
-NR4D3BWP7T /
-NR4D4BWP7T /
-GAOI21D2BWP7T /
-GND3D2BWP7T 
-}]
+set_attribute avoid true [find / -libcell AOI*          ]
+set_attribute avoid true [find / -libcell IAO*          ]
+set_attribute avoid true [find / -libcell IIND4D*       ]
+set_attribute avoid true [find / -libcell IINR4D*       ]
+set_attribute avoid true [find / -libcell IND3D*        ]
+set_attribute avoid true [find / -libcell IND4D*        ]
+set_attribute avoid true [find / -libcell INR4D*        ]
+set_attribute avoid true [find / -libcell MAOI*         ]
+set_attribute avoid true [find / -libcell MUX3ND*       ]
+set_attribute avoid true [find / -libcell MUX4D*        ]
+set_attribute avoid true [find / -libcell ND3D*         ]
+set_attribute avoid true [find / -libcell ND4D*         ]
+set_attribute avoid true [find / -libcell OAI*          ]
+set_attribute avoid true [find / -libcell GAOI22D*      ]
+set_attribute avoid true [find / -libcell GNR2D*        ]
+set_attribute avoid true [find / -libcell GNR3D*        ]
+set_attribute avoid true [find / -libcell GOAI21D*      ]
+set_attribute avoid true [find / -libcell CKLHQD4BWP7T  ]
+set_attribute avoid true [find / -libcell CKLHQD6BWP7T  ]
+set_attribute avoid true [find / -libcell CKLHQD8BWP7T  ]
+set_attribute avoid true [find / -libcell CKXOR2D2BWP7T ]  
+set_attribute avoid true [find / -libcell CKXOR2D4BWP7T ] 
+set_attribute avoid true [find / -libcell DEL2BWP7T     ]
+set_attribute avoid true [find / -libcell DEL3BWP7T     ]
+set_attribute avoid true [find / -libcell DEL4BWP7T     ]
+set_attribute avoid true [find / -libcell FA1D1BWP7T    ]
+set_attribute avoid true [find / -libcell FA1D2BWP7T    ]
+set_attribute avoid true [find / -libcell INR2D0BWP7T   ]
+set_attribute avoid true [find / -libcell INR2D1BWP7T   ]
+set_attribute avoid true [find / -libcell INR2D2BWP7T   ]
+set_attribute avoid true [find / -libcell INR2D4BWP7T   ]
+set_attribute avoid true [find / -libcell INR3D1BWP7T   ]
+set_attribute avoid true [find / -libcell INR3D2BWP7T   ]
+set_attribute avoid true [find / -libcell MUX2ND0BWP7T  ]
+set_attribute avoid true [find / -libcell MUX2ND1BWP7T  ]
+set_attribute avoid true [find / -libcell NR2D1BWP7T    ]
+set_attribute avoid true [find / -libcell NR2D1P5BWP7T  ]
+set_attribute avoid true [find / -libcell NR2D2BWP7T    ]
+set_attribute avoid true [find / -libcell NR2D2P5BWP7T  ]
+set_attribute avoid true [find / -libcell NR2D3BWP7T    ]
+set_attribute avoid true [find / -libcell NR2D4BWP7T    ]
+set_attribute avoid true [find / -libcell NR2D5BWP7T    ]
+set_attribute avoid true [find / -libcell NR2D6BWP7T    ]
+set_attribute avoid true [find / -libcell NR2D8BWP7T    ]
+set_attribute avoid true [find / -libcell NR4D1BWP7T    ]
+set_attribute avoid true [find / -libcell NR4D2BWP7T    ]
+set_attribute avoid true [find / -libcell NR4D3BWP7T    ]
+set_attribute avoid true [find / -libcell NR4D4BWP7T    ]
+set_attribute avoid true [find / -libcell GAOI21D2BWP7T ]
+set_attribute avoid true [find / -libcell GND3D2BWP7T   ]
