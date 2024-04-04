@@ -1,3 +1,4 @@
+set_attribute avoid true [find / -libcell S*            ]
 set_attribute avoid true [find / -libcell AOI*          ]
 set_attribute avoid true [find / -libcell IAO*          ]
 set_attribute avoid true [find / -libcell IIND4D*       ]
@@ -48,3 +49,4 @@ set_attribute avoid true [find / -libcell NR4D3BWP7T    ]
 set_attribute avoid true [find / -libcell NR4D4BWP7T    ]
 set_attribute avoid true [find / -libcell GAOI21D2BWP7T ]
 set_attribute avoid true [find / -libcell GND3D2BWP7T   ]
+
