@@ -119,6 +119,7 @@ always @(posedge clk or negedge rst_n) begin
 end
 assign {byp_hit, byp} = cfg_isa;
 
+wire [NUM_PORT  -1 : 0] match;
 //=====================================================================================================================
 // High Hit Array
 //=====================================================================================================================
@@ -149,17 +150,17 @@ always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
             hit_data_array[i]<= 0;
-            data_vector     <= 0;
+            data_vector      <= 0;
         end
     end else if(state == IDLE) begin
         for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
             hit_data_array[i]<= 0;
-            data_vector     <= 0;
+            data_vector      <= 0;
         end
 
     end else if ( (byp_hit | hit_rd_s2 & !data_vector[addr_hit_s2]) & WBFWCA_DatVld & WCAWBF_DatRdy) begin
         hit_data_array[addr_hit_s2] <= WBFWCA_Dat;
-        data_vector[addr_hit_s2]    <= 1'b1;
+        data_vector   [addr_hit_s2] <= 1'b1;
     end
 end
 always @(posedge clk or negedge rst_n) begin
@@ -170,7 +171,7 @@ always @(posedge clk or negedge rst_n) begin
         hit_rd_s2   <= 1'b0;
         addr_hit_s2 <= 0;
     end else if(WCAWBF_AdrVld & WBFWCA_AdrRdy) begin
-        hit_rd_s2   <= hit_array[ArbIdx];
+        hit_rd_s2   <= match     [ArbIdx];
         addr_hit_s2 <= addr_hit_array[ArbIdx];
     end else if(WBFWCA_DatVld & WCAWBF_DatRdy) begin
         hit_rd_s2   <= 1'b0;
@@ -212,7 +213,7 @@ ArbCore#(
     .TopOutAddr  ( WCAWBF_Adr           ),
     .TopOutDat   (                      ),
     .TopOutRdy   ( WCAWBF_DatRdy        ),
-    .TOPInRdy    ( WBFWCA_AdrRdy & {NUM_PORT{state == WORK}}),
+    .TOPInRdy    ( WBFWCA_AdrRdy & state == WORK),
     .ArbCoreIdx  ( ArbIdx               ),
     .ArbCoreIdx_d( ArbIdx_d             )
 );
@@ -230,8 +231,10 @@ end
 genvar gv_port;
 genvar gv_ele;
 
+wire [NUM_PORT  -1 : 0] debug_hit;
+wire [NUM_PORT  -1 : 0] debug_update_hit_data;
 generate
-    for(gv_port=0; gv_port<NUM_PORT; gv_port=gv_port+1) begin
+    for(gv_port=0; gv_port<NUM_PORT; gv_port=gv_port+1) begin: GV_PORT
         //=====================================================================================================================
         // Variable Definition :
         //=====================================================================================================================
@@ -249,7 +252,9 @@ generate
         for(gv_ele=0; gv_ele<HIT_ARRAY_LEN; gv_ele=gv_ele + 1) begin
             assign compare_vector[gv_ele] = PERWCA_Adr[gv_port] == hit_idx_array[gv_ele];
         end
-        assign hit          = state == WORK & |compare_vector;
+        assign match[gv_port] = state == WORK & |compare_vector;
+        assign debug_update_hit_data[gv_port] = state == WORK & |compare_vector & PERWCA_AdrVld[gv_port] & !data_vector[addr_hit];
+        assign hit          = state == WORK & |compare_vector & data_vector[addr_hit];
         assign hit_last     = state == WORK & PERWCA_Adr[gv_port] == last_idx & last_flag;
 
         First1#(
@@ -258,8 +263,8 @@ generate
             .Array ( compare_vector ),
             .Addr  ( addr_hit       )
         );
-        assign PortRdAddrVld[gv_port] = state == WORK & (byp? PERWCA_AdrVld : !hit & !hit_last & !hit_rdata_s2);
-        assign WCAPER_AdrRdy[gv_port] = state == WORK & ( (byp & WBFWCA_AdrRdy & ArbIdx == gv_port) | hit | hit_last | hit_rdata_s2 );        
+        assign PortRdAddrVld[gv_port] = state == WORK & (byp | PERWCA_AdrVld[gv_port] & !hit & !hit_last & !hit_rdata_s2);
+        assign WCAPER_AdrRdy[gv_port] = state == WORK & ( (WBFWCA_AdrRdy & ArbIdx == gv_port) | hit | hit_last | hit_rdata_s2 ); // 4 to 1       
         //=====================================================================================================================
         // Logic Design: S2
         //=====================================================================================================================
@@ -271,7 +276,7 @@ generate
 
         assign handshake_s2 = vld_s2 & rdy_s2;
         assign ena_s2       = handshake_s2 | !vld_s2;
-        assign rdy_s2       = PERWCA_DatRdy;
+        assign rdy_s2       = PERWCA_DatRdy[gv_port];
         always @(posedge clk or negedge rst_n) begin
             if(!rst_n) begin
                 hit_out_s2 <= 0;
@@ -287,19 +292,16 @@ generate
             end else if(state == IDLE) begin
                 vld_s2 <= 0;
             end else if( ena_s2 ) begin
-                vld_s2 <= hit & data_vector[addr_hit];
+                vld_s2 <= hit & PERWCA_AdrVld[gv_port];
             end
         end
-        assign hit_rdata_s2           = state == WORK & ( (WCAWBF_Adr_s2 == PERWCA_Adr[gv_port]) & WBFWCA_DatVld) ;
-        assign WCAPER_Dat   [gv_port] = state == WORK & ( (byp | hit_rdata_s2)? WBFWCA_Dat    : hit_last_s2? last_data_s2 : vld_s2? hit_out_s2 : 0  );
-        assign WCAPER_DatVld[gv_port] = state == WORK & ( (byp | hit_rdata_s2)& WBFWCA_DatVld | hit_last_s2               | vld_s2                  );
 
         wire handshake_last_data_s2;
         wire ena_last_data_s2;
         wire rdy_last_data_s2;
         assign handshake_last_data_s2   = hit_last_s2 & rdy_last_data_s2;
         assign ena_last_data_s2         = handshake_last_data_s2 | !hit_last_s2;
-        assign rdy_last_data_s2         = PERWCA_DatRdy;
+        assign rdy_last_data_s2         = PERWCA_DatRdy[gv_port];
         always @(posedge clk or negedge rst_n) begin
             if(!rst_n) begin
                 hit_last_s2 <= 1'b0;
@@ -312,8 +314,14 @@ generate
                 last_data_s2<= last_data;
             end
         end
+
         assign hit_array     [gv_port] = hit;
         assign addr_hit_array[gv_port] = addr_hit;
+
+        assign hit_rdata_s2           = state == WORK & ( (WCAWBF_Adr_s2 == PERWCA_Adr[gv_port]) & WBFWCA_DatVld) ;
+        assign WCAPER_Dat   [gv_port] =  state == WORK ? ( ( (byp | hit_rdata_s2 | ArbIdx_d == gv_port)? WBFWCA_Dat    : hit_last_s2? last_data_s2 : vld_s2? hit_out_s2 : 0  ) ) : 0;
+        assign WCAPER_DatVld[gv_port] = state == WORK & ( (byp | hit_rdata_s2 | ArbIdx_d == gv_port)& WBFWCA_DatVld | hit_last_s2               | vld_s2                  );
+
     end
 endgenerate
 

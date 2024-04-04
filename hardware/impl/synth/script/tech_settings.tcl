@@ -7,7 +7,7 @@ set_attribute lib_search_path { \
 
 #target library
 set_attribute library { \
-    tcbn65lpbwp7t_0.45c125_wc_ecsm.lib \
+    tcbn65lpbwp7t_addfunc_0.45c125_wc_ecsm.lib\
 	};	
 
 #-----------------------------------------------------------------------

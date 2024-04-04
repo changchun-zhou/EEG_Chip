@@ -38,7 +38,7 @@ wire [NUM_PORT    -1 : 0][DATA_WIDTH      -1 : 0] WCAPER_Dat      ;
 reg  [NUM_PORT    -1 : 0]                         PERWCA_DatRdy   ;
 wire                                              WCAWBF_AdrVld   ; // read addr to Weight Buffer
 wire [WEI_ADDR_WIDTH                      -1 : 0] WCAWBF_Adr      ;
-reg                                               WBFWCA_AdrRdy   ;
+wire                                              WBFWCA_AdrRdy   ;
 reg                                               WBFWCA_DatVld   ; // read data from Weight Buffer
 reg  [DATA_WIDTH                          -1 : 0] WBFWCA_Dat      ;
 wire                                              WCAWBF_DatRdy   ;
@@ -86,12 +86,12 @@ initial begin
     TOPWCA_CfgVld = 0;
     TOPWCA_CfgISA = 0;
     @(posedge rst_n);
-    @(negedge clk);
+    @(posedge clk);
     // @(WCATOP_CfgRdy == 1);
     TOPWCA_CfgVld = 1'b1;
-    TOPWCA_CfgISA = 2'b00; 
-    @(negedge clk);
-    @(negedge clk);
+       TOPWCA_CfgISA = 2'b00; 
+    @(posedge clk);
+    @(posedge clk);
     TOPWCA_CfgVld = 1'b0;
 end
 
@@ -101,8 +101,8 @@ initial begin
     FBFWCA_Idx    = 0;
     @(posedge rst_n);
     repeat(64) begin
-        @(negedge clk);
-        if(WCAFBF_IdxRdy == 1) begin
+        @(posedge clk);
+        if(!FBFWCA_IdxVld | WCAFBF_IdxRdy) begin
             FBFWCA_IdxVld = {$random(seed)} % 2;
             FBFWCA_Idx    = {$random(seed)} % 128; 
         end
@@ -120,8 +120,8 @@ generate
             PERWCA_Adr   [gv_i] = 0;
             @(posedge rst_n);
             forever begin
-                @(negedge clk);
-                if(WCAPER_AdrRdy[gv_i] == 1) begin
+                @(posedge clk);
+                if(!PERWCA_AdrVld  [gv_i] | WCAPER_AdrRdy[gv_i]) begin
                     PERWCA_AdrVld  [gv_i] = {$random(seed)} % 2;
                     PERWCA_Adr     [gv_i] = {$random(seed)} % 128; 
                 end
@@ -131,7 +131,7 @@ generate
             PERWCA_DatRdy[gv_i] = 0;
             @(posedge rst_n);
             forever begin
-                @(negedge clk);
+                @(posedge clk);
                 PERWCA_DatRdy[gv_i] = {$random(seed)} % 2;
             end
         end 
@@ -139,14 +139,19 @@ generate
 endgenerate
 
 // WBF
-initial begin
-    WBFWCA_AdrRdy = 0;
-    @(posedge rst_n);
-    forever begin
-        @(negedge clk);
-        WBFWCA_AdrRdy = {$random(seed)} % 2;
-    end
-end    
+// initial begin
+//     WBFWCA_AdrRdy = 0;
+//     @(posedge rst_n);
+//     forever begin
+//         @(posedge clk);
+//         if(!WBFWCA_DatVld | WCAWBF_DatRdy)
+//             WBFWCA_AdrRdy <= #1 1'b1;
+//         else
+//             WBFWCA_AdrRdy <= #1 1'b0;
+//     end
+// end    
+assign WBFWCA_AdrRdy = !WBFWCA_DatVld | WCAWBF_DatRdy;
+
 initial begin
     WBFWCA_DatVld   = 0;
     WBFWCA_Dat      = 0;
@@ -154,11 +159,11 @@ initial begin
     forever begin
         @(posedge clk);
         if(WCAWBF_AdrVld & WBFWCA_AdrRdy) begin
-            WBFWCA_DatVld = 1'b1;
-            WBFWCA_Dat    = {$random(seed)} % 256;
+            WBFWCA_DatVld <= 1'b1;
+            WBFWCA_Dat    <= {$random(seed)} % 256;
         end else if(WBFWCA_DatVld & WCAWBF_DatRdy) begin
-            WBFWCA_DatVld = 1'b0;
-            WBFWCA_Dat    = 0;
+            WBFWCA_DatVld <= 1'b0;
+            WBFWCA_Dat    <= 0;
         end
     end     
 end 
