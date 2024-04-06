@@ -83,28 +83,31 @@ end
 
 // TOP
 initial begin
-    TOPWCA_CfgVld = 0;
-    TOPWCA_CfgISA = 0;
+    TOPWCA_CfgVld <= 0;
+    TOPWCA_CfgISA <= 0;
     @(posedge rst_n);
     @(posedge clk);
     // @(WCATOP_CfgRdy == 1);
-    TOPWCA_CfgVld = 1'b1;
-       TOPWCA_CfgISA = 2'b00; 
+    TOPWCA_CfgVld = #0.3 1'b1;
+    TOPWCA_CfgISA =      2'b10; 
     @(posedge clk);
     @(posedge clk);
-    TOPWCA_CfgVld = 1'b0;
+    TOPWCA_CfgVld =      1'b0;
 end
 
 // FBF
+reg [10: 0] cnt_idx;
 initial begin
     FBFWCA_IdxVld = 0;
     FBFWCA_Idx    = 0;
+    cnt_idx       = 0;
     @(posedge rst_n);
-    repeat(64) begin
+    repeat(90) begin
         @(posedge clk);
         if(!FBFWCA_IdxVld | WCAFBF_IdxRdy) begin
-            FBFWCA_IdxVld = {$random(seed)} % 2;
+            FBFWCA_IdxVld = #0.3 {$random(seed)} % 2;
             FBFWCA_Idx    = {$random(seed)} % 128; 
+            cnt_idx       = cnt_idx + 1;
         end
     end
     FBFWCA_IdxVld = 0;
@@ -116,23 +119,23 @@ genvar gv_i;
 generate
     for(gv_i=0; gv_i<NUM_PORT; gv_i=gv_i+1) begin
         initial begin
-            PERWCA_AdrVld[gv_i] = 0;
-            PERWCA_Adr   [gv_i] = 0;
+            PERWCA_AdrVld[gv_i] <= 0;
+            PERWCA_Adr   [gv_i] <= 0;
             @(posedge rst_n);
             forever begin
                 @(posedge clk);
                 if(!PERWCA_AdrVld  [gv_i] | WCAPER_AdrRdy[gv_i]) begin
-                    PERWCA_AdrVld  [gv_i] = {$random(seed)} % 2;
-                    PERWCA_Adr     [gv_i] = {$random(seed)} % 128; 
+                    PERWCA_AdrVld  [gv_i] = #0.3 {$random(seed)} % 2;
+                    PERWCA_Adr     [gv_i] =      {$random(seed)} % 128; 
                 end
             end
         end
         initial begin
-            PERWCA_DatRdy[gv_i] = 0;
+            PERWCA_DatRdy[gv_i] <= 0;
             @(posedge rst_n);
             forever begin
                 @(posedge clk);
-                PERWCA_DatRdy[gv_i] = {$random(seed)} % 2;
+                PERWCA_DatRdy[gv_i] = #0.3 {$random(seed)} % 2;
             end
         end 
     end       
@@ -159,11 +162,11 @@ initial begin
     forever begin
         @(posedge clk);
         if(WCAWBF_AdrVld & WBFWCA_AdrRdy) begin
-            WBFWCA_DatVld <= 1'b1;
-            WBFWCA_Dat    <= {$random(seed)} % 256;
+            WBFWCA_DatVld = #0.3 1'b1;
+            WBFWCA_Dat    =     {$random(seed)} % 256;
         end else if(WBFWCA_DatVld & WCAWBF_DatRdy) begin
-            WBFWCA_DatVld <= 1'b0;
-            WBFWCA_Dat    <= 0;
+            WBFWCA_DatVld = #0.3 1'b0;
+            WBFWCA_Dat    =       0;
         end
     end     
 end 
