@@ -1,0 +1,179 @@
+#############################################################
+# CPF for MIPS
+#############################################################
+
+set_cpf_version 2.0
+set_hierarchy_separator /
+set_design LT_RISC_32p5
+
+#############################################################################################
+##                                     Library settings                                    ## 
+#############################################################################################
+
+set libdir /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/timing
+
+#############################################################################################
+##                                  Define worst-case library sets                         ## 
+#############################################################################################
+
+set slow_HV_lib " \
+		$libdir/slow_vdd1v2_basicCells.lib \
+		$libdir/slow_vdd1v2_extvdd1v0.lib \
+		$libdir/slow_vdd1v2_extvdd1v2.lib \
+		$libdir/slow_vdd1v2_multibitsDFF.lib"
+
+set slow_LV_lib " \
+		$libdir/slow_vdd1v0_basicCells.lib \
+		$libdir/slow_vdd1v0_extvdd1v0.lib \
+		$libdir/slow_vdd1v0_extvdd1v2.lib \
+		$libdir/slow_vdd1v0_multibitsDFF.lib"
+
+define_library_set -name cadence45_wc_HV_lib -libraries $slow_HV_lib
+define_library_set -name cadence45_wc_LV_lib -libraries $slow_LV_lib
+
+#############################################################################################
+##                                  Define typical-case library sets                       ## 
+#############################################################################################
+
+#############################################################################################
+##                                  Define best-case library sets                          ## 
+#############################################################################################
+
+set fast_HV_lib " \
+		$libdir/fast_vdd1v2_basicCells.lib \
+		$libdir/fast_vdd1v2_extvdd1v0.lib \
+		$libdir/fast_vdd1v2_extvdd1v2.lib \
+		$libdir/fast_vdd1v2_multibitsDFF.lib"
+
+set fast_LV_lib " \
+		$libdir/fast_vdd1v0_basicCells.lib \
+		$libdir/fast_vdd1v0_extvdd1v0.lib \
+		$libdir/fast_vdd1v0_extvdd1v2.lib \
+		$libdir/fast_vdd1v0_multibitsDFF.lib"
+
+define_library_set -name cadence45_bc_HV_lib -libraries $fast_HV_lib
+define_library_set -name cadence45_bc_LV_lib -libraries $fast_LV_lib
+
+############################
+## Defining Power Domains ##
+############################
+
+## default one:
+create_power_domain -name PDcore -default
+
+## low voltage one:
+create_power_domain -name PDau -instances ARC_RegisterFile
+
+################################
+## Defining Power/Ground Nets ##
+################################
+
+create_power_nets -nets VDD1 -voltage {1.2}
+create_power_nets -nets VDD2 -voltage {1.0}
+create_ground_nets -nets VSS
+
+update_power_domain -name PDcore -primary_power_net VDD1 -primary_ground_net VSS
+update_power_domain -name PDau   -primary_power_net VDD2 -primary_ground_net VSS
+
+create_global_connection -net VDD1 -pins VDD -domain PDcore
+create_global_connection -net VSS -pins VSS -domain PDcore
+create_global_connection -net VDD2 -pins VDD -domain PDau
+#create_global_connection -net VDD1 -pins ExtVDD -domain PDau
+create_global_connection -net VSS -pins VSS -domain PDau
+
+##############################
+## Define Nominal Condition ##
+##############################
+
+create_nominal_condition -name high -voltage 1.2
+create_nominal_condition -name low  -voltage 1.0
+
+update_nominal_condition -name high -library_set cadence45_wc_HV_lib
+update_nominal_condition -name low  -library_set cadence45_wc_LV_lib
+
+#######################
+## Define Power Mode ##
+#######################
+
+create_power_mode -name PM1 -domain_conditions {PDcore@high PDau@low} -default 
+update_power_mode -name PM1 -sdc_files {./sdc/final._default_constraint_mode_.sdc}
+
+#############################
+## Define Operation Corner ##
+#############################
+
+create_operating_corner -name slow_LV_rcworst -library_set cadence45_wc_LV_lib -process 1 -voltage 0.9  -temperature 125
+create_operating_corner -name fast_LV_rcbest  -library_set cadence45_bc_LV_lib -process 1 -voltage 1.1  -temperature 0
+create_operating_corner -name slow_HV_rcworst -library_set cadence45_wc_HV_lib -process 1 -voltage 1.08 -temperature 125
+create_operating_corner -name fast_HV_rcbest  -library_set cadence45_bc_HV_lib -process 1 -voltage 1.32 -temperature 0
+
+##########################
+## Define Analysis View ##
+##########################
+
+create_analysis_view -name AV_slowHV_slowHV_rcworst_setup -mode PM1 -domain_corners {PDcore@slow_HV_rcworst PDau@slow_LV_rcworst}
+create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corners {PDcore@fast_HV_rcbest PDau@fast_LV_rcbest}
+
+###############################
+## Define Power Switch cells ##
+###############################
+
+
+
+##########################
+## Define Level Shifter ##
+##########################
+
+define_level_shifter_cell \
+	-cells {LSLHX1_FROM} \
+	-input_voltage_range 0.9:1.1 \
+	-output_voltage_range 1.08:1.32 \
+	-input_power_pin VDD \
+	-output_power_pin ExtVDD \
+	-ground VSS \
+	-direction up \
+	-valid_location from
+
+create_level_shifter_rule \
+	-name lsr1 \
+	-to {PDcore} \
+	-from {PDau}
+	
+update_level_shifter_rules -names lsr1 -cells "LSLHX1_FROM" -location from
+
+#define_level_shifter_cell \
+#	-cells {LSHLX1_FROM} \
+#	-input_voltage_range 1.08:1.32 \
+#	-output_voltage_range 0.9:1.1 \
+#	-input_power_pin VDD \
+#	-output_power_pin ExtVDD \
+#	-ground VSS \
+#	-direction down \
+#	-valid_location from
+
+#create_level_shifter_rule \
+#	-name lsr2 \
+#	-to {PDau} \
+#	-from {PDcore}
+	
+#update_level_shifter_rules -names lsr2 -cells "LSHLX1_FROM" -location from
+
+############################
+## Define Isolation cells ##
+############################
+
+
+
+#########################
+## Define Retention FF ##
+#########################
+
+
+
+#############################
+## Define AON Buffer cells ##
+#############################
+
+
+
+end_design
