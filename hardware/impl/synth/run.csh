@@ -10,7 +10,7 @@
 set DESIGN_NAME="WCA"
 ################################################################################
 set VT="3vt"
-set PERIOD_CLK="5"
+set PERIOD_CLK="10"
 set PERIOD_SCK="10" # <= 100MHz
 set PLL="0"
 set UNGROUP="group"
