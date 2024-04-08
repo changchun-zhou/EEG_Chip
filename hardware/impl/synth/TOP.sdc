@@ -3,6 +3,8 @@ set DESIGN     $DESIGN_NAME
 
 create_clock -period $period_clk -add -name clock_clk -waveform [list 0 [expr $period_clk*0.5]] [get_ports clk]
 
+set clock_list clock_clk
+
 set_clock_uncertainty -setup 0.2    [get_ports clk]
 set_clock_uncertainty -hold  0.1    [get_ports clk]
 
