@@ -39,8 +39,8 @@ RR_arbiter#(
 );
 
 assign TopOutAddr  = CoreOutAddr[ADDR_WIDTH*ArbCoreIdx +: ADDR_WIDTH];
-assign TopOutDat   = CoreOutDat[DATA_WIDTH*ArbCoreIdx +: DATA_WIDTH];
-assign TopOutVld   = CoreOutVld[ArbCoreIdx];
+assign TopOutDat   = CoreOutDat [DATA_WIDTH*ArbCoreIdx +: DATA_WIDTH];
+assign TopOutVld   = CoreOutVld [           ArbCoreIdx];
 
 // s1
 always @ ( posedge clk or negedge rst_n ) begin

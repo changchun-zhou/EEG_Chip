@@ -12,36 +12,42 @@ module WCA_tb();
 //=====================================================================================================================
 // Constant Definition :
 //=====================================================================================================================
-parameter ISA_WIDTH     = 2;
-parameter DATA_WIDTH    = 8;
-parameter WEI_ADDR_WIDTH= 8;
-parameter HIT_ADDR_WIDTH= 5;
-parameter NUM_PORT      = 4;
-
+parameter WBUF_NUM_DW   = 4 ;
+parameter WRAM_ADD_AW   = 13;
+parameter WRAM_DAT_DW   = 8 ;
+parameter STAT_DAT_DW   = 8 ;
+parameter HIT_ADDR_WIDTH= 5 ;
 //=====================================================================================================================
 // Variable Definition :
 //=====================================================================================================================
 reg                                 clk;
 reg                                 rst_n;
 
-reg                                               TOPWCA_CfgVld   ;
-reg  [ISA_WIDTH   -1 : 0]                         TOPWCA_CfgISA   ;
-wire                                              WCATOP_CfgRdy   ;
-reg                                               FBFWCA_IdxVld   ; // Idx from Flag Buffer
-reg  [WEI_ADDR_WIDTH                      -1 : 0] FBFWCA_Idx      ;
-wire                                              WCAFBF_IdxRdy   ;
-reg  [NUM_PORT    -1 : 0]                         PERWCA_AdrVld   ; // addr from PE row
-reg  [NUM_PORT    -1 : 0][WEI_ADDR_WIDTH  -1 : 0] PERWCA_Adr      ;
-wire [NUM_PORT    -1 : 0]                         WCAPER_AdrRdy   ;
-wire [NUM_PORT    -1 : 0]                         WCAPER_DatVld   ; // data to PE row
-wire [NUM_PORT    -1 : 0][DATA_WIDTH      -1 : 0] WCAPER_Dat      ;
-reg  [NUM_PORT    -1 : 0]                         PERWCA_DatRdy   ;
-wire                                              WCAWBF_AdrVld   ; // read addr to Weight Buffer
-wire [WEI_ADDR_WIDTH                      -1 : 0] WCAWBF_Adr      ;
-wire                                              WBFWCA_AdrRdy   ;
-reg                                               WBFWCA_DatVld   ; // read data from Weight Buffer
-reg  [DATA_WIDTH                          -1 : 0] WBFWCA_Dat      ;
-wire                                              WCAWBF_DatRdy   ;
+reg                                             CFG_INFO_VLD   ;
+reg                                             CFG_WBUF_ENA   ;
+reg                                             CFG_STAT_VLD   ;
+wire                                            CFG_INFO_RDY   ;
+reg                                             MTOW_DAT_VLD   ; // Idx from Flag Buffer
+reg  [WRAM_ADD_AW                       -1 : 0] MTOW_DAT_DAT   ;
+reg                                             MTOW_DAT_LST   ;
+wire                                            MTOW_DAT_RDY   ;
+reg  [WBUF_NUM_DW    -1 : 0]                    PTOW_ADD_VLD   ; // addr from PE row
+reg  [WBUF_NUM_DW    -1 : 0][WRAM_ADD_AW-1 : 0] PTOW_ADD_ADD   ;
+reg  [WBUF_NUM_DW    -1 : 0][STAT_DAT_DW-1 : 0] PTOW_ADD_BUF   ;
+wire [WBUF_NUM_DW    -1 : 0]                    PTOW_ADD_RDY   ;
+reg  [WBUF_NUM_DW    -1 : 0]                    PTOW_ADD_LST   ;
+wire [WBUF_NUM_DW    -1 : 0]                    PTOW_DAT_VLD   ; // data to PE row
+wire [WBUF_NUM_DW    -1 : 0]                    PTOW_DAT_LST   ;
+wire [WBUF_NUM_DW    -1 : 0][WRAM_DAT_DW-1 : 0] PTOW_DAT_DAT   ;
+reg  [WBUF_NUM_DW    -1 : 0]                    PTOW_DAT_RDY   ;
+wire                                            WRAM_ADD_VLD   ; // read addr to Weight Buffer
+wire                                            WRAM_ADD_LST   ; 
+wire [WRAM_ADD_AW                       -1 : 0] WRAM_ADD_ADD   ;
+wire                                            WRAM_ADD_RDY   ;
+reg                                             WRAM_DAT_VLD   ; // read data from Weight Buffer
+reg                                             WRAM_DAT_LST   ; 
+reg  [WRAM_DAT_DW                       -1 : 0] WRAM_DAT_DAT   ;
+wire                                            WRAM_DAT_RDY   ;
 
 //=====================================================================================================================
 // Logic Design: Debounce
@@ -83,115 +89,115 @@ end
 
 // TOP
 initial begin
-    TOPWCA_CfgVld <= 0;
-    TOPWCA_CfgISA <= 0;
+    CFG_INFO_VLD <= 0;
+    {CFG_STAT_VLD, CFG_WBUF_ENA} <= 0;
     @(posedge rst_n);
     @(posedge clk);
-    // @(WCATOP_CfgRdy == 1);
-    TOPWCA_CfgVld = #0.3 1'b1;
-    TOPWCA_CfgISA =      2'b10; 
+    // @(CFG_INFO_RDY == 1);
+    CFG_INFO_VLD = #0.3 1'b1;
+    {CFG_STAT_VLD, CFG_WBUF_ENA} = 2'b11; 
     @(posedge clk);
     @(posedge clk);
-    TOPWCA_CfgVld =      1'b0;
+    CFG_INFO_VLD =      1'b0;
 end
 
 // FBF
 reg [10: 0] cnt_idx;
 initial begin
-    FBFWCA_IdxVld = 0;
-    FBFWCA_Idx    = 0;
+    MTOW_DAT_VLD = 0;
+    MTOW_DAT_DAT    = 0;
     cnt_idx       = 0;
     @(posedge rst_n);
     repeat(90) begin
         @(posedge clk);
-        if(!FBFWCA_IdxVld | WCAFBF_IdxRdy) begin
-            FBFWCA_IdxVld = #0.3 {$random(seed)} % 2;
-            FBFWCA_Idx    = {$random(seed)} % 128; 
+        if(!MTOW_DAT_VLD | MTOW_DAT_RDY) begin
+            MTOW_DAT_VLD = #0.3 {$random(seed)} % 2;
+            MTOW_DAT_DAT    = {$random(seed)} % 128; 
             cnt_idx       = cnt_idx + 1;
         end
     end
-    FBFWCA_IdxVld = 0;
-    FBFWCA_Idx    = 0;
+    MTOW_DAT_VLD = 0;
+    MTOW_DAT_DAT    = 0;
 end
 
 // PER
 genvar gv_i;
 generate
-    for(gv_i=0; gv_i<NUM_PORT; gv_i=gv_i+1) begin
+    for(gv_i=0; gv_i<WBUF_NUM_DW; gv_i=gv_i+1) begin
         initial begin
-            PERWCA_AdrVld[gv_i] <= 0;
-            PERWCA_Adr   [gv_i] <= 0;
+            PTOW_ADD_VLD[gv_i] <= 0;
+            {PTOW_ADD_ADD[gv_i], PTOW_ADD_BUF[gv_i], PTOW_ADD_LST[gv_i]} <= 0;
             @(posedge rst_n);
             forever begin
                 @(posedge clk);
-                if(!PERWCA_AdrVld  [gv_i] | WCAPER_AdrRdy[gv_i]) begin
-                    PERWCA_AdrVld  [gv_i] = #0.3 {$random(seed)} % 2;
-                    PERWCA_Adr     [gv_i] =      {$random(seed)} % 128; 
+                if(!PTOW_ADD_VLD  [gv_i] | PTOW_ADD_RDY[gv_i]) begin
+                    PTOW_ADD_VLD  [gv_i] = #0.3 {$random(seed)} % 2;
+                    PTOW_ADD_ADD     [gv_i] =   {$random(seed)} % 128; 
+                    PTOW_ADD_BUF     [gv_i] =   {$random(seed)} % 128; 
+                    PTOW_ADD_LST     [gv_i] =   {$random(seed)} % 2;
                 end
             end
         end
         initial begin
-            PERWCA_DatRdy[gv_i] <= 0;
+            PTOW_DAT_RDY[gv_i] <= 0;
             @(posedge rst_n);
             forever begin
                 @(posedge clk);
-                PERWCA_DatRdy[gv_i] = #0.3 {$random(seed)} % 2;
+                PTOW_DAT_RDY[gv_i] = #0.3 {$random(seed)} % 2;
             end
         end 
     end       
 endgenerate
 
 // WBF
-// initial begin
-//     WBFWCA_AdrRdy = 0;
-//     @(posedge rst_n);
-//     forever begin
-//         @(posedge clk);
-//         if(!WBFWCA_DatVld | WCAWBF_DatRdy)
-//             WBFWCA_AdrRdy <= #1 1'b1;
-//         else
-//             WBFWCA_AdrRdy <= #1 1'b0;
-//     end
-// end    
-assign WBFWCA_AdrRdy = !WBFWCA_DatVld | WCAWBF_DatRdy;
-
+assign WRAM_ADD_RDY = !WRAM_DAT_VLD | WRAM_DAT_RDY;
 initial begin
-    WBFWCA_DatVld   = 0;
-    WBFWCA_Dat      = 0;
+    WRAM_DAT_VLD   = 0;
+    WRAM_DAT_DAT      = 0;
+    WRAM_DAT_LST    = 0;
     @(posedge rst_n);
     forever begin
         @(posedge clk);
-        if(WCAWBF_AdrVld & WBFWCA_AdrRdy) begin
-            WBFWCA_DatVld = #0.3 1'b1;
-            WBFWCA_Dat    =     {$random(seed)} % 256;
-        end else if(WBFWCA_DatVld & WCAWBF_DatRdy) begin
-            WBFWCA_DatVld = #0.3 1'b0;
-            WBFWCA_Dat    =       0;
+        if(WRAM_ADD_VLD & WRAM_ADD_RDY) begin
+            WRAM_DAT_VLD = #0.3 1'b1;
+            WRAM_DAT_DAT    = {$random(seed)} % 256;
+            WRAM_DAT_LST    = WRAM_ADD_LST;
+        end else if(WRAM_DAT_VLD & WRAM_DAT_RDY) begin
+            WRAM_DAT_VLD = #0.3 1'b0;
+            WRAM_DAT_DAT    =       0;
+            WRAM_DAT_LST = 0;
         end
     end     
 end 
 
 WCA u_WCA(
-    .clk             ( clk             ),
-    .rst_n           ( rst_n           ),
-    .TOPWCA_CfgVld   ( TOPWCA_CfgVld   ),
-    .TOPWCA_CfgISA   ( TOPWCA_CfgISA   ),
-    .WCATOP_CfgRdy   ( WCATOP_CfgRdy   ),
-    .FBFWCA_IdxVld   ( FBFWCA_IdxVld   ),
-    .FBFWCA_Idx      ( FBFWCA_Idx      ),
-    .WCAFBF_IdxRdy   ( WCAFBF_IdxRdy   ),
-    .PERWCA_AdrVld   ( PERWCA_AdrVld   ),
-    .PERWCA_Adr      ( PERWCA_Adr      ),
-    .WCAPER_AdrRdy   ( WCAPER_AdrRdy   ),
-    .WCAPER_DatVld   ( WCAPER_DatVld   ),
-    .WCAPER_Dat      ( WCAPER_Dat      ),
-    .PERWCA_DatRdy   ( PERWCA_DatRdy   ),
-    .WCAWBF_AdrVld   ( WCAWBF_AdrVld   ),
-    .WCAWBF_Adr      ( WCAWBF_Adr      ),
-    .WBFWCA_AdrRdy   ( WBFWCA_AdrRdy   ),
-    .WBFWCA_DatVld   ( WBFWCA_DatVld   ),
-    .WBFWCA_Dat      ( WBFWCA_Dat      ),
-    .WCAWBF_DatRdy   ( WCAWBF_DatRdy   )
+    .clk           ( clk           ),
+    .rst_n         ( rst_n         ),
+    .CFG_INFO_VLD  ( CFG_INFO_VLD  ),
+    .CFG_INFO_RDY  ( CFG_INFO_RDY  ),
+    .CFG_WBUF_ENA  ( CFG_WBUF_ENA  ),
+    .CFG_STAT_VLD  ( CFG_STAT_VLD  ),
+    .MTOW_DAT_VLD  ( MTOW_DAT_VLD  ),
+    .MTOW_DAT_LST  ( MTOW_DAT_LST  ),
+    .MTOW_DAT_RDY  ( MTOW_DAT_RDY  ),
+    .MTOW_DAT_DAT  ( MTOW_DAT_DAT  ),
+    .PTOW_ADD_VLD  ( PTOW_ADD_VLD  ),
+    .PTOW_ADD_LST  ( PTOW_ADD_LST  ),
+    .PTOW_ADD_RDY  ( PTOW_ADD_RDY  ),
+    .PTOW_ADD_ADD  ( PTOW_ADD_ADD  ),
+    .PTOW_ADD_BUF  ( PTOW_ADD_BUF  ),
+    .PTOW_DAT_VLD  ( PTOW_DAT_VLD  ),
+    .PTOW_DAT_LST  ( PTOW_DAT_LST  ),
+    .PTOW_DAT_RDY  ( PTOW_DAT_RDY  ),
+    .PTOW_DAT_DAT  ( PTOW_DAT_DAT  ),
+    .WRAM_ADD_VLD  ( WRAM_ADD_VLD  ),
+    .WRAM_ADD_RDY  ( WRAM_ADD_RDY  ),
+    .WRAM_ADD_LST  ( WRAM_ADD_LST  ),
+    .WRAM_ADD_ADD  ( WRAM_ADD_ADD  ),
+    .WRAM_DAT_VLD  ( WRAM_DAT_VLD  ),
+    .WRAM_DAT_LST  ( WRAM_DAT_LST  ),
+    .WRAM_DAT_DAT  ( WRAM_DAT_DAT  ),
+    .WRAM_DAT_RDY  ( WRAM_DAT_RDY  )
 );
 
 endmodule
