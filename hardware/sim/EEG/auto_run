@@ -1,0 +1,12 @@
+#!/bin/csh
+
+set case_num = $argv[1]
+set case_cnt = 0
+
+while( $case_cnt < $case_num )
+  @ case_cnt = $case_cnt + 1
+  echo "******************auto run index : $case_cnt******************"
+  source run_sim -dump -assert
+end
+
+

@@ -1,0 +1,189 @@
+//*******************************************************************************
+//*        Software       : TSMC MEMORY COMPILER 2006.09.01.d.140a
+//*        Technology     : 65 nm CMOS LOGIC Low Power LowK Cu 1P9M 1.2
+//*                         Mix-vt logic, High-vt SRAM
+//*        Memory Type    : TSMC 65nm low power SP SRAM Without Redundancy
+//*        Library Name   : ts1n65lpa8192x8m16 ( user specify: TS1N65LPA8192X8M16)
+//*        Library Version: 140a
+//*        Generated Time : 2024/04/08, 13:51:24
+//*******************************************************************************
+//*******************************************************************************
+//*
+//*STATEMENT OF USE
+//*
+//*This information contains confidential and proprietary information of TSMC.
+//*No part of this information may be reproduced, transmitted, transcribed,
+//*stored in a retrieval system, or translated into any human or computer
+//*language, in any form or by any means, electronic, mechanical, magnetic,
+//*optical, chemical, manual, or otherwise, without the prior written permission
+//*of TSMC. This information was prepared for informational purpose and is for
+//*use by TSMC's customers only. TSMC reserves the right to make changes in the
+//*information at any time and without notice.
+//*
+//*******************************************************************************
+//
+
+model TS1N65LPA8192X8M16 (
+			CEB, WEB, A, D, BWEB,
+			CLK, Q, TSEL
+			)																					
+
+
+(
+		
+	input (A) (array = 12 : 0;)
+        input (D) (array = 7 : 0;)
+        input (WEB) ()
+        input (CEB) ()      
+        input (BWEB) (array = 7 : 0;) 
+
+
+        input (CLK) (clock=rise_edge;)
+        input (TSEL) (array = 1 : 0;)      
+	
+              
+
+
+        intern (CE)   (primitive=_inv(CEB,CE);)
+        intern (CE_i) (primitive=_and(WEB,CE,CE_i);)
+
+        intern (WE_0) (primitive=_nor(CEB,WEB,BWEB<0>,WE_0);)
+        intern (WE_1) (primitive=_nor(CEB,WEB,BWEB<1>,WE_1);)
+        intern (WE_2) (primitive=_nor(CEB,WEB,BWEB<2>,WE_2);)
+        intern (WE_3) (primitive=_nor(CEB,WEB,BWEB<3>,WE_3);)
+        intern (WE_4) (primitive=_nor(CEB,WEB,BWEB<4>,WE_4);)
+        intern (WE_5) (primitive=_nor(CEB,WEB,BWEB<5>,WE_5);)
+        intern (WE_6) (primitive=_nor(CEB,WEB,BWEB<6>,WE_6);)
+        intern (WE_7) (primitive=_nor(CEB,WEB,BWEB<7>,WE_7);)
+
+	intern (D_0)  (primitive = _buf(D<0>,D_0);)
+	intern (D_1)  (primitive = _buf(D<1>,D_1);)
+	intern (D_2)  (primitive = _buf(D<2>,D_2);)
+	intern (D_3)  (primitive = _buf(D<3>,D_3);)
+	intern (D_4)  (primitive = _buf(D<4>,D_4);)
+	intern (D_5)  (primitive = _buf(D<5>,D_5);)
+	intern (D_6)  (primitive = _buf(D<6>,D_6);)
+	intern (D_7)  (primitive = _buf(D<7>,D_7);)
+
+	intern (A_i) (
+	   array = 12:0;
+	primitive = _buf(A<0>,A_i<0>);
+	primitive = _buf(A<1>,A_i<1>);
+	primitive = _buf(A<2>,A_i<2>);
+	primitive = _buf(A<3>,A_i<3>);
+	primitive = _buf(A<4>,A_i<4>);
+	primitive = _buf(A<5>,A_i<5>);
+	primitive = _buf(A<6>,A_i<6>);
+	primitive = _buf(A<7>,A_i<7>);
+	primitive = _buf(A<8>,A_i<8>);
+	primitive = _buf(A<9>,A_i<9>);
+	primitive = _buf(A<10>,A_i<10>);
+	primitive = _buf(A<11>,A_i<11>);
+	primitive = _buf(A<12>,A_i<12>);
+	)		 
+
+
+        intern (Q_0) (
+        data_size = 1;
+        address_size = 13;
+        min_address = 0;
+        max_address = 8191;
+        edge_trigger = rw;
+
+        primitive = _cram ( , ,
+                _read {,h,h,h} ( , CLK, CE_i, A_i, Q_0),
+                _write{,,}     (   CLK, WE_0, A_i, D_0) );
+                )
+        intern (Q_1) (
+        data_size = 1;
+        address_size = 13;
+        min_address = 0;
+        max_address = 8191;
+        edge_trigger = rw;
+
+        primitive = _cram ( , ,
+                _read {,h,h,h} ( , CLK, CE_i, A_i, Q_1),
+                _write{,,}     (   CLK, WE_1, A_i, D_1) );
+                )
+        intern (Q_2) (
+        data_size = 1;
+        address_size = 13;
+        min_address = 0;
+        max_address = 8191;
+        edge_trigger = rw;
+
+        primitive = _cram ( , ,
+                _read {,h,h,h} ( , CLK, CE_i, A_i, Q_2),
+                _write{,,}     (   CLK, WE_2, A_i, D_2) );
+                )
+        intern (Q_3) (
+        data_size = 1;
+        address_size = 13;
+        min_address = 0;
+        max_address = 8191;
+        edge_trigger = rw;
+
+        primitive = _cram ( , ,
+                _read {,h,h,h} ( , CLK, CE_i, A_i, Q_3),
+                _write{,,}     (   CLK, WE_3, A_i, D_3) );
+                )
+        intern (Q_4) (
+        data_size = 1;
+        address_size = 13;
+        min_address = 0;
+        max_address = 8191;
+        edge_trigger = rw;
+
+        primitive = _cram ( , ,
+                _read {,h,h,h} ( , CLK, CE_i, A_i, Q_4),
+                _write{,,}     (   CLK, WE_4, A_i, D_4) );
+                )
+        intern (Q_5) (
+        data_size = 1;
+        address_size = 13;
+        min_address = 0;
+        max_address = 8191;
+        edge_trigger = rw;
+
+        primitive = _cram ( , ,
+                _read {,h,h,h} ( , CLK, CE_i, A_i, Q_5),
+                _write{,,}     (   CLK, WE_5, A_i, D_5) );
+                )
+        intern (Q_6) (
+        data_size = 1;
+        address_size = 13;
+        min_address = 0;
+        max_address = 8191;
+        edge_trigger = rw;
+
+        primitive = _cram ( , ,
+                _read {,h,h,h} ( , CLK, CE_i, A_i, Q_6),
+                _write{,,}     (   CLK, WE_6, A_i, D_6) );
+                )
+        intern (Q_7) (
+        data_size = 1;
+        address_size = 13;
+        min_address = 0;
+        max_address = 8191;
+        edge_trigger = rw;
+
+        primitive = _cram ( , ,
+                _read {,h,h,h} ( , CLK, CE_i, A_i, Q_7),
+                _write{,,}     (   CLK, WE_7, A_i, D_7) );
+                )
+
+
+
+	output (Q) (
+   	   array = 7:0;
+	primitive = _buf(Q_0, Q<0>);
+	primitive = _buf(Q_1, Q<1>);
+	primitive = _buf(Q_2, Q<2>);
+	primitive = _buf(Q_3, Q<3>);
+	primitive = _buf(Q_4, Q<4>);
+	primitive = _buf(Q_5, Q<5>);
+	primitive = _buf(Q_6, Q<6>);
+	primitive = _buf(Q_7, Q<7>);
+	)	
+
+)

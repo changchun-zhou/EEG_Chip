@@ -1,0 +1,133 @@
+
+#********************************************************************************
+#*        Software       : TSMC MEMORY COMPILER 2006.09.01.d.140a
+#*        Technology     : 65 nm CMOS LOGIC Low Power LowK Cu 1P9M 1.2
+#*                         Mix-vt logic, High-vt SRAM
+#*        Memory Type    : TSMC 65nm low power SP SRAM Without Redundancy
+#*        Library Name   : ts1n65lpa1024x4m4_140a ( user specify: TS1N65LPA1024X4M4)
+#*        Generated Time : 2024/04/08, 13:49:29
+#*********************************************************************************
+#*******************************************************************************
+#*
+#*STATEMENT OF USE
+#*
+#*This information contains confidential and proprietary information of TSMC.
+#*No part of this information may be reproduced, transmitted, transcribed,
+#*stored in a retrieval system, or translated into any human or computer
+#*language, in any form or by any means, electronic, mechanical, magnetic,
+#*optical, chemical, manual, or otherwise, without the prior written permission
+#*of TSMC. This information was prepared for informational purpose and is for
+#*use by TSMC's customers only. TSMC reserves the right to make changes in the
+#*information at any time and without notice.
+#*
+#*******************************************************************************
+
+MACRO TS1N65LPA1024X4M4
+
+    PIN A[0]
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END A[0]
+    PIN A[1]
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END A[1]
+    PIN A[2]
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END A[2]
+    PIN A[3]
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END A[3]
+    PIN A[4]
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END A[4]
+    PIN A[5]
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END A[5]
+    PIN A[6]
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END A[6]
+    PIN A[7]
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END A[7]
+    PIN A[8]
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END A[8]
+    PIN A[9]
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END A[9]
+    PIN CEB
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END CEB
+    PIN WEB
+        AntennaGateArea 0.045000 ;
+        AntennaDiffArea 0.106600 ;
+    END WEB
+    PIN TSEL[0]
+        AntennaGateArea 0.030100 ;
+        AntennaDiffArea 0.106600 ;
+    END TSEL[0]
+    PIN TSEL[1]
+        AntennaGateArea 0.030100 ;
+        AntennaDiffArea 0.106600 ;
+    END TSEL[1]
+    PIN CLK
+        AntennaGateArea 1.170000 ;
+        AntennaDiffArea 0.526600 ;
+    END CLK
+    PIN BWEB[0]
+        AntennaGateArea 0.027000 ;
+        AntennaDiffArea 0.106600 ;
+    END BWEB[0]
+    PIN BWEB[1]
+        AntennaGateArea 0.027000 ;
+        AntennaDiffArea 0.106600 ;
+    END BWEB[1]
+    PIN BWEB[2]
+        AntennaGateArea 0.027000 ;
+        AntennaDiffArea 0.106600 ;
+    END BWEB[2]
+    PIN BWEB[3]
+        AntennaGateArea 0.027000 ;
+        AntennaDiffArea 0.106600 ;
+    END BWEB[3]
+    PIN D[0]
+        AntennaGateArea 0.027000 ;
+        AntennaDiffArea 0.106600 ;
+    END D[0]
+    PIN D[1]
+        AntennaGateArea 0.027000 ;
+        AntennaDiffArea 0.106600 ;
+    END D[1]
+    PIN D[2]
+        AntennaGateArea 0.027000 ;
+        AntennaDiffArea 0.106600 ;
+    END D[2]
+    PIN D[3]
+        AntennaGateArea 0.027000 ;
+        AntennaDiffArea 0.106600 ;
+    END D[3]
+    PIN Q[0]
+        AntennaDiffArea 0.540000 ;
+    END Q[0]
+    PIN Q[1]
+        AntennaDiffArea 0.540000 ;
+    END Q[1]
+    PIN Q[2]
+        AntennaDiffArea 0.540000 ;
+    END Q[2]
+    PIN Q[3]
+        AntennaDiffArea 0.540000 ;
+    END Q[3]
+END TS1N65LPA1024X4M4
+
+END LIBRARY

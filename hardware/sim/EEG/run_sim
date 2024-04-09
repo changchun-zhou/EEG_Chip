@@ -1,0 +1,70 @@
+#!/bin/csh
+
+set CASEID = 0
+set DIRECT = ""
+set RANDOM = "-define RANDOM"
+set GUIDEF = ""
+set COVDEF = ""
+set DEFINE = "-define SIM_RAM -define ASSERT_ON"
+set SVSEED = "random"
+set DUMPEN = "-define DUMP_EN"
+set ASSERT = ""
+
+while ($#argv>0)
+	if ( "$argv[1]" == "-case" ) then
+		shift
+		set CASEID = $argv[1]
+	else if ( "$argv[1]" == "-direct" ) then
+		set DIRECT = "-define DIRECT"
+		set RANDOM = ""
+	else if ( "$argv[1]" == "-random" ) then
+		set RANDOM = "-define RANDOM"
+	else if ( "$argv[1]" == "gui" ) then
+		set GUIDEF = "-gui"
+	else if ( "$argv[1]" == "cov" ) then
+		set COVDEF = "-coverage a -covdut EEG_U -covfile exclude_signal.ccf"
+	else if ( "$argv[1]" == "-seed" ) then
+		shift
+		set SVSEED = $argv[1]
+	else if ( "$argv[1]" == "-dump" ) then
+		set DUMPEN = "-define DUMP_EN"
+	else if ( "$argv[1]" == "-assert" ) then
+		set ASSERT = "-define ASSERT_ON"
+	else if ( "$argv[1]" == "-define" ) then
+		shift
+		set DEFINE = "$DEFINE -define $argv[1]"
+	endif
+	shift
+end
+
+rm -rf ./cfg/*
+rm -rf ./dump/*
+irun -access +rwc -sv -64bit -f filelist.f -timescale 1ns/1ps -seq_udp_delay 1ps -fsmdebug  +testcase=$CASEID $DIRECT $RANDOM $COVDEF $GUIDEF $DUMPEN $ASSERT -svseed $SVSEED $DEFINE -l ./log/irun.log
+
+set c = (`grep "from command line:" ./log/irun.log`)
+set seed = `echo $c | cut -d ":" -f2`
+
+find ./dump/F*/Flag* -name "data*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/flag_r.txt/g" |sh
+find ./dump/F*/Data* -name "data*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/data_r.txt/g" |sh
+
+find ./case/F*/Flag* -name "data*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/flag_p.txt/g" |sh
+find ./case/F*/Data* -name "data*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/data_p.txt/g" |sh
+
+set i = 0
+set diff_data = `diff ./dump/flag_r.txt ./dump/flag_p.txt`
+set diff_flag = `diff ./dump/data_r.txt ./dump/data_p.txt`
+
+
+if( ( ! -f ./dump/flag_r.txt )||( ! -f ./dump/data_r.txt  ) ) then
+        echo "seed $seed    FAIL" >> ./log/result.log
+        echo "seed $seed    FAIL"
+else if( ( "$diff_data" == "" )&&( "$diff_flag" == "" ) ) then
+	echo "seed $seed    PASS" >> ./log/result.log
+	echo "seed $seed    PASS"
+else
+	echo "seed $seed    FAIL" >> ./log/result.log
+	echo "seed $seed    FAIL"
+endif
+
+
+

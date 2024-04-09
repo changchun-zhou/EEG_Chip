@@ -1,0 +1,91 @@
+
+//*******************************************************************************
+//*        Software       : TSMC MEMORY COMPILER 2006.09.01.d.140a
+//*        Technology     : 65 nm CMOS LOGIC Low Power LowK Cu 1P9M 1.2
+//*                         Mix-vt logic, High-vt SRAM
+//*        Memory Type    : TSMC 65nm low power SP SRAM Without Redundancy
+//*        Library Name   : ts1n65lpa4096x8m8 ( user specify: TS1N65LPA4096X8M8)
+//*        Library Version: 140a
+//*        Generated Time : 2024/04/08, 13:50:39
+//*******************************************************************************
+//*******************************************************************************
+//*
+//*STATEMENT OF USE
+//*
+//*This information contains confidential and proprietary information of TSMC.
+//*No part of this information may be reproduced, transmitted, transcribed,
+//*stored in a retrieval system, or translated into any human or computer
+//*language, in any form or by any means, electronic, mechanical, magnetic,
+//*optical, chemical, manual, or otherwise, without the prior written permission
+//*of TSMC. This information was prepared for informational purpose and is for
+//*use by TSMC's customers only. TSMC reserves the right to make changes in the
+//*information at any time and without notice.
+//*
+//*******************************************************************************
+//
+
+model TS1N65LPA4096X8M8 (
+
+
+
+
+			CLK, CEB, WEB,
+
+
+                        A, D, BWEB,
+
+
+
+
+
+
+
+                        TSEL,
+
+                        Q)
+
+
+	(
+	bist_definition(
+
+
+
+
+	address  A (array = 11 : 0;);
+        data_in  D (array = 7 : 0;);
+
+        data_out Q (array = 7 : 0;);
+        write_enable WEB low;
+        chip_enable CEB high;
+        clock CLK high;
+
+        control BWEB (array = 7 : 0;) high;
+
+        dont_touch TSEL(array = 1 : 0;) high input;
+
+    
+	tech = "";
+        version = "TSMC MEMORY COMPILER 2006.09.01.100a";
+        message = "65 nm CMOS LOGIC Low Power LowK Cu 1P9M 1.2 Standard-vt logic, High-vt SRAM";
+     
+        min_address = 0;
+        max_address = 4095;
+        data_size = 8;
+        
+  read_write_port(
+        read_cycle (
+            change A ;
+            wait ;
+            assert CLK ;
+            wait ;
+            expect Q move ;
+         )    
+         write_cycle (
+            assert WEB ;
+            change A ;
+            change D ;
+            wait ;
+        )
+    )
+  )
+)

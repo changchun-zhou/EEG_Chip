@@ -1,0 +1,1181 @@
+
+/*******************************************************************************
+*        Software       : TSMC MEMORY COMPILER 2006.09.01.d.140a
+*        Technology     : 65 nm CMOS LOGIC Low Power LowK Cu 1P9M 1.2
+*                         Mix-vt logic, High-vt SRAM
+*        Memory Type    : TSMC 65nm low power SP SRAM Without Redundancy
+*        Library Name   : ts1n65lpa4096x8m8 ( user specify: TS1N65LPA4096X8M8)
+*        Library Version: 140a
+*        Generated Time : 2024/04/08, 13:50:39
+********************************************************************************
+*******************************************************************************
+*
+*STATEMENT OF USE
+*
+*This information contains confidential and proprietary information of TSMC.
+*No part of this information may be reproduced, transmitted, transcribed,
+*stored in a retrieval system, or translated into any human or computer
+*language, in any form or by any means, electronic, mechanical, magnetic,
+*optical, chemical, manual, or otherwise, without the prior written permission
+*of TSMC. This information was prepared for informational purpose and is for
+*use by TSMC's customers only. TSMC reserves the right to make changes in the
+*information at any time and without notice.
+*
+*******************************************************************************/
+
+    library(ts1n65lpa4096x8m8) {
+      technology (cmos) ;
+    delay_model : table_lookup ;
+    date                : "2004 " ;
+    comment : "Copyright TSMC" ;
+    revision    : v1.0 ;
+    simulation  : true ;
+    nom_process        : 1 ;
+    nom_temperature : -40 ;
+    nom_voltage 	       : 1.080 ;
+    operating_conditions("ss1p08vm40c"){
+	process : 1 ;
+	temperature : -40 ;
+	voltage : 1.080 ;
+	tree_type   : "worst_case_tree" ;
+    }
+    default_operating_conditions : ss1p08vm40c ;
+     default_max_transition        : 1.0 ;
+    default_max_fanout            : 20.0 ;
+    default_fanout_load           : 0.1 ;
+    default_inout_pin_cap         : 0.0 ;
+    default_input_pin_cap         : 0.0 ;
+    default_output_pin_cap        : 0.0 ;
+    default_cell_leakage_power    : 0.0 ;
+    default_leakage_power_density : 0.0 ;     
+
+    capacitive_load_unit (1,pf)  ;
+    voltage_unit : "1V" ;
+    current_unit : "1uA" ;
+    time_unit : "1ns" ;
+    pulling_resistance_unit : "1kohm";
+    library_features(report_delay_calculation); 
+    define_cell_area (pad_drivers,pad_driver_sites) ;
+    define_cell_area(bond_pads,pad_slots) 
+    input_voltage(cmos) {
+        vil : 0.3 * VDD ;
+        vih : 0.7 * VDD ;
+        vimin : -0.5 ;
+        vimax : VDD + 0.5 ;
+  }
+  input_voltage(cmos_schmitt) {
+     vil : 0.3 * VDD ;
+     vih : 0.7 * VDD ;
+     vimin : -0.5 ;
+     vimax : VDD + 0.5 ;
+  }
+  input_voltage(schmitt) {
+     vil : 0.3 * VDD ;
+     vih : 0.7 * VDD ;
+     vimin : -0.5 ;
+     vimax : VDD + 0.5 ;
+  }
+  input_voltage(ttl) {
+     vil : 0.8 ;
+     vih : 2.0 ;
+     vimin : -0.5 ;
+     vimax : VDD + 0.5 ;
+   }
+  input_voltage(ttl_schmitt) {
+     vil : 0.8 ;
+     vih : 2.0 ;
+     vimin : -0.5 ;
+     vimax : VDD + 0.5 ;
+  }
+  input_voltage(pci) {
+     vil : 0.8 ;
+     vih : 2.0 ;
+     vimin : -0.5 ;
+     vimax : VDD + 0.5 ;
+  }
+  output_voltage(cmos) {
+     vol : 0.3 * VDD ;
+     voh : 0.7 * VDD ;
+     vomin : -0.5 ;
+     vomax : VDD + 0.5 ;
+  } 
+ output_voltage(cmos_schmitt) {
+     vol : 0.3 * VDD ;
+     voh : 0.7 * VDD ;
+     vomin : -0.5 ;
+     vomax : VDD + 0.5 ;
+  }
+  output_voltage(schmitt) {
+     vol : 0.3 * VDD ;
+     voh : 0.7 * VDD ;
+     vomin : -0.5 ;
+     vomax : VDD + 0.5 ;
+  }
+  output_voltage(ttl) {
+     vol : 0.8 ;
+     voh : 2.0 ;
+     vomin : -0.5 ;
+     vomax : VDD + 0.5 ;
+  }
+  output_voltage(ttl_schmitt) {
+     vol : 0.8 ;
+     voh : 2.0 ;
+     vomin : -0.5 ;
+     vomax : VDD + 0.5 ;
+  }
+  output_voltage(pci) {
+     vol : 0.8 ;
+     voh : 2.0 ;
+     vomin : -0.5 ;
+     vomax : VDD + 0.5 ;
+  }
+  
+wire_load("ForQA") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0 ;
+fanout_length(1,0)
+fanout_length(2,0)
+fanout_length(3,0)
+fanout_length(4,0)
+fanout_length(5,0)
+fanout_length(6,0)
+fanout_length(7,0)
+fanout_length(8,0)
+fanout_length(9,0)
+fanout_length(10,0)
+fanout_length(11,0)
+fanout_length(12,0)
+fanout_length(13,0)
+fanout_length(14,0)
+fanout_length(15,0)
+fanout_length(16,0)
+fanout_length(17,0)
+fanout_length(18,0)
+fanout_length(19,0)
+fanout_length(20,0)
+}
+  
+wire_load("TSMC8K_Fsg_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0035
+fanout_length(1,0.0025)
+fanout_length(2,0.0060)
+fanout_length(3,0.0096)
+fanout_length(4,0.0131)
+fanout_length(5,0.0166)
+fanout_length(6,0.0202)
+fanout_length(7,0.0237)
+fanout_length(8,0.0272)
+fanout_length(9,0.0308)
+fanout_length(10,0.0343)
+}
+wire_load("TSMC16K_Fsg_Conservative") {
+resistance : 0.00001 ; 
+capacitance : 1 ;
+area : 0
+slope : 0.0041
+fanout_length(1,0.0025)
+fanout_length(2,0.0066)
+fanout_length(3,0.0107)
+fanout_length(4,0.0148)
+fanout_length(5,0.0189)
+fanout_length(6,0.0229)
+fanout_length(7,0.0270)
+fanout_length(8,0.0311)
+fanout_length(9,0.0352)
+fanout_length(10,0.0393)
+}
+wire_load("TSMC32K_Fsg_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0052
+fanout_length(1,0.0026)
+fanout_length(2,0.0078)
+fanout_length(3,0.0129)
+fanout_length(4,0.0181)
+fanout_length(5,0.0232)
+fanout_length(6,0.0284)
+fanout_length(7,0.0335)
+fanout_length(8,0.0387)
+fanout_length(9,0.0438)
+fanout_length(10,0.0490)
+}
+wire_load("TSMC64K_Fsg_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0070
+fanout_length(1,0.0028)
+fanout_length(2,0.0099)
+fanout_length(3,0.0169)
+fanout_length(4,0.0239)
+fanout_length(5,0.0310)
+fanout_length(6,0.0380)
+fanout_length(7,0.0450)
+fanout_length(8,0.0521)
+fanout_length(9,0.0591)
+fanout_length(10,0.0661)
+}
+wire_load("TSMC128K_Fsg_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0101
+fanout_length(1,0.0031)
+fanout_length(2,0.0132)
+fanout_length(3,0.0233)
+fanout_length(4,0.0334)
+fanout_length(5,0.0435)
+fanout_length(6,0.0536)
+fanout_length(7,0.0637)
+fanout_length(8,0.0738)
+fanout_length(9,0.0839)
+fanout_length(10,0.0940)
+}
+wire_load("TSMC256K_Fsg_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0171
+fanout_length(1,0.0038)
+fanout_length(2,0.0209)
+fanout_length(3,0.0380)
+fanout_length(4,0.0551)
+fanout_length(5,0.0722)
+fanout_length(6,0.0893)
+fanout_length(7,0.1064)
+fanout_length(8,0.1235)
+fanout_length(9,0.1406)
+fanout_length(10,0.1577)
+}  
+wire_load("TSMC512K_Fsg_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0311
+fanout_length(1,0.0052)
+fanout_length(2,0.0363)
+fanout_length(3,0.0673)
+fanout_length(4,0.0984)
+fanout_length(5,0.1295)
+fanout_length(6,0.1606)
+fanout_length(7,0.1917)
+fanout_length(8,0.2228)
+fanout_length(9,0.2539)
+fanout_length(10,0.2850)
+}
+wire_load_selection(WireAreaFsgCon){
+wire_load_from_area(0, 49223, "TSMC8K_Fsg_Conservative");
+wire_load_from_area(49223, 110753, "TSMC16K_Fsg_Conservative");
+wire_load_from_area(110753, 231079, "TSMC32K_Fsg_Conservative");
+wire_load_from_area(231079, 443016, "TSMC64K_Fsg_Conservative");
+wire_load_from_area(443016, 787586, "TSMC128K_Fsg_Conservative");
+wire_load_from_area(787586, 1575172, "TSMC256K_Fsg_Conservative");
+wire_load_from_area(1575172, 3150344, "TSMC512K_Fsg_Conservative");
+}
+
+wire_load("TSMC8K_Fsg_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0024
+fanout_length(1,0.0013)
+fanout_length(2,0.0037)
+fanout_length(3,0.0061)
+fanout_length(4,0.0085)
+fanout_length(5,0.0109)
+fanout_length(6,0.0133)
+fanout_length(7,0.0157)
+fanout_length(8,0.0181)
+fanout_length(9,0.0205)
+fanout_length(10,0.0229)
+}
+wire_load("TSMC16K_Fsg_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0026
+fanout_length(1,0.0013)
+fanout_length(2,0.0040)
+fanout_length(3,0.0066)
+fanout_length(4,0.0092)
+fanout_length(5,0.0119)
+fanout_length(6,0.0145)
+fanout_length(7,0.0171)
+fanout_length(8,0.0198)
+fanout_length(9,0.0224)
+fanout_length(10,0.0250)
+}
+wire_load("TSMC32K_Fsg_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0031
+fanout_length(1,0.0013)
+fanout_length(2,0.0044)
+fanout_length(3,0.0075)
+fanout_length(4,0.0107)
+fanout_length(5,0.0138)
+fanout_length(6,0.0169)
+fanout_length(7,0.0200)
+fanout_length(8,0.0231)
+fanout_length(9,0.0262)
+fanout_length(10,0.0293)
+}
+wire_load("TSMC64K_Fsg_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0039
+fanout_length(1,0.0014)
+fanout_length(2,0.0053)
+fanout_length(3,0.0092)
+fanout_length(4,0.0132)
+fanout_length(5,0.0171)
+fanout_length(6,0.0210)
+fanout_length(7,0.0250)
+fanout_length(8,0.0289)
+fanout_length(9,0.0328)
+fanout_length(10,0.0368)
+}
+wire_load("TSMC128K_Fsg_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0053
+fanout_length(1,0.0014)
+fanout_length(2,0.0067)
+fanout_length(3,0.0120)
+fanout_length(4,0.0172)
+fanout_length(5,0.0225)
+fanout_length(6,0.0278)
+fanout_length(7,0.0331)
+fanout_length(8,0.0384)
+fanout_length(9,0.0436)
+fanout_length(10,0.0489)
+}
+wire_load("TSMC256K_Fsg_Aggresive") { 
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0084
+fanout_length(1,0.0015)
+fanout_length(2,0.0098)
+fanout_length(3,0.0182)
+fanout_length(4,0.0265)
+fanout_length(5,0.0349)
+fanout_length(6,0.0433)
+fanout_length(7,0.0516)
+fanout_length(8,0.0600)
+fanout_length(9,0.0684)
+fanout_length(10,0.0767)
+}
+wire_load("TSMC512K_Fsg_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0145
+fanout_length(1,0.0016)
+fanout_length(2,0.0161)
+fanout_length(3,0.0307)
+fanout_length(4,0.0452)
+fanout_length(5,0.0597)
+fanout_length(6,0.0742)
+fanout_length(7,0.0888)
+fanout_length(8,0.1033)
+fanout_length(9,0.1178)
+fanout_length(10,0.1323)
+}
+wire_load_selection(WireAreaFsgAgr){
+wire_load_from_area(0, 49223, "TSMC8K_Fsg_Aggresive");
+wire_load_from_area(49223, 110753, "TSMC16K_Fsg_Aggresive");
+wire_load_from_area(110753, 231079, "TSMC32K_Fsg_Aggresive");
+wire_load_from_area(231079, 443016, "TSMC64K_Fsg_Aggresive");
+wire_load_from_area(443016, 787586, "TSMC128K_Fsg_Aggresive");
+wire_load_from_area(787586, 1575172, "TSMC256K_Fsg_Aggresive");
+wire_load_from_area(1575172, 3150344, "TSMC512K_Fsg_Aggresive");
+}
+
+wire_load("TSMC8K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0035
+fanout_length(1,0.0024)
+fanout_length(2,0.0058)
+fanout_length(3,0.0093)
+fanout_length(4,0.0128)
+fanout_length(5,0.0163)
+fanout_length(6,0.0198)
+fanout_length(7,0.0232)
+fanout_length(8,0.0267)
+fanout_length(9,0.0302)
+fanout_length(10,0.0337)
+}
+wire_load("TSMC16K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0038
+fanout_length(1,0.0024)
+fanout_length(2,0.0061)
+fanout_length(3,0.0099)
+fanout_length(4,0.0137)
+fanout_length(5,0.0174)
+fanout_length(6,0.0212)
+fanout_length(7,0.0250)
+fanout_length(8,0.0287)
+fanout_length(9,0.0325)
+fanout_length(10,0.0362)
+}
+wire_load("TSMC32K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0043
+fanout_length(1,0.0024)
+fanout_length(2,0.0067)
+fanout_length(3,0.0110)
+fanout_length(4,0.0153)
+fanout_length(5,0.0197)
+fanout_length(6,0.0240)
+fanout_length(7,0.0283)
+fanout_length(8,0.0326)
+fanout_length(9,0.0369)
+fanout_length(10,0.0413)
+}
+wire_load("TSMC64K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0053
+fanout_length(1,0.0024)
+fanout_length(2,0.0077)
+fanout_length(3,0.0130)
+fanout_length(4,0.0183)
+fanout_length(5,0.0236)
+fanout_length(6,0.0289)
+fanout_length(7,0.0342)
+fanout_length(8,0.0395)
+fanout_length(9,0.0448)
+fanout_length(10,0.0501)
+}
+wire_load("TSMC128K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0069
+fanout_length(1,0.0025)
+fanout_length(2,0.0094)
+fanout_length(3,0.0163)
+fanout_length(4,0.0231)
+fanout_length(5,0.0300)
+fanout_length(6,0.0369)
+fanout_length(7,0.0438)
+fanout_length(8,0.0506)
+fanout_length(9,0.0575)
+fanout_length(10,0.0644)
+}
+wire_load("TSMC256K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0105
+fanout_length(1,0.0026)
+fanout_length(2,0.0131)
+fanout_length(3,0.0236)
+fanout_length(4,0.0341)
+fanout_length(5,0.0446)
+fanout_length(6,0.0552)
+fanout_length(7,0.0657)
+fanout_length(8,0.0762)
+fanout_length(9,0.0867)
+fanout_length(10,0.0972)
+}
+wire_load("TSMC512K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0178
+fanout_length(1,0.0029)
+fanout_length(2,0.0207)
+fanout_length(3,0.0384)
+fanout_length(4,0.0562)
+fanout_length(5,0.0739)
+fanout_length(6,0.0917)
+fanout_length(7,0.1094)
+fanout_length(8,0.1272)
+fanout_length(9,0.1449)
+fanout_length(10,0.1627)
+}
+wire_load_selection(WireAreaLowkCon){
+wire_load_from_area(0, 49223, "TSMC8K_Lowk_Conservative");
+wire_load_from_area(49223, 110753, "TSMC16K_Lowk_Conservative");
+wire_load_from_area(110753, 231079, "TSMC32K_Lowk_Conservative");
+wire_load_from_area(231079, 443016, "TSMC64K_Lowk_Conservative");
+wire_load_from_area(443016, 787586, "TSMC128K_Lowk_Conservative");
+wire_load_from_area(787586, 1575172, "TSMC256K_Lowk_Conservative");
+wire_load_from_area(1575172, 3150344, "TSMC512K_Lowk_Conservative");
+}
+
+wire_load("TSMC8K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0026
+fanout_length(1,0.0013)
+fanout_length(2,0.0039)
+fanout_length(3,0.0065)
+fanout_length(4,0.0091)
+fanout_length(5,0.0117)
+fanout_length(6,0.0143)
+fanout_length(7,0.0169)
+fanout_length(8,0.0195)
+fanout_length(9,0.0221)
+fanout_length(10,0.0247)
+}
+wire_load("TSMC16K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0027
+fanout_length(1,0.0013)
+fanout_length(2,0.0040)
+fanout_length(3,0.0067)
+fanout_length(4,0.0094)
+fanout_length(5,0.0121)
+fanout_length(6,0.0148)
+fanout_length(7,0.0175)
+fanout_length(8,0.0202)
+fanout_length(9,0.0229)
+fanout_length(10,0.0255)
+}
+wire_load("TSMC32K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0029
+fanout_length(1,0.0013)
+fanout_length(2,0.0042)
+fanout_length(3,0.0071)
+fanout_length(4,0.0099)
+fanout_length(5,0.0128)
+fanout_length(6,0.0157)
+fanout_length(7,0.0186)
+fanout_length(8,0.0214)
+fanout_length(9,0.0243)
+fanout_length(10,0.0272)
+}
+wire_load("TSMC64K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0032
+fanout_length(1,0.0013)
+fanout_length(2,0.0045)
+fanout_length(3,0.0077)
+fanout_length(4,0.0109)
+fanout_length(5,0.0141)
+fanout_length(6,0.0173)
+fanout_length(7,0.0205)
+fanout_length(8,0.0237)
+fanout_length(9,0.0269)
+fanout_length(10,0.0301)
+}
+wire_load("TSMC128K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0037
+fanout_length(1,0.0013)
+fanout_length(2,0.0050)
+fanout_length(3,0.0087)
+fanout_length(4,0.0125)
+fanout_length(5,0.0162)
+fanout_length(6,0.0199)
+fanout_length(7,0.0236)
+fanout_length(8,0.0273)
+fanout_length(9,0.0310)
+fanout_length(10,0.0348)
+}
+wire_load("TSMC256K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0049
+fanout_length(1,0.0013)
+fanout_length(2,0.0062)
+fanout_length(3,0.0111)
+fanout_length(4,0.0160)
+fanout_length(5,0.0209)
+fanout_length(6,0.0258)
+fanout_length(7,0.0307)
+fanout_length(8,0.0356)
+fanout_length(9,0.0406)
+fanout_length(10,0.0455)
+}
+wire_load("TSMC512K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0073
+fanout_length(1,0.0013)
+fanout_length(2,0.0086)
+fanout_length(3,0.0158)
+fanout_length(4,0.0231)
+fanout_length(5,0.0304)
+fanout_length(6,0.0377)
+fanout_length(7,0.0450)
+fanout_length(8,0.0523)
+fanout_length(9,0.0596)
+fanout_length(10,0.0669)
+}
+wire_load_selection(WireAreaLowkAgr){
+wire_load_from_area(0, 49223, "TSMC8K_Lowk_Aggresive");
+wire_load_from_area(49223, 110753, "TSMC16K_Lowk_Aggresive");
+wire_load_from_area(110753, 231079, "TSMC32K_Lowk_Aggresive");
+wire_load_from_area(231079, 443016, "TSMC64K_Lowk_Aggresive");
+wire_load_from_area(443016, 787586, "TSMC128K_Lowk_Aggresive");
+wire_load_from_area(787586, 1575172, "TSMC256K_Lowk_Aggresive");
+wire_load_from_area(1575172, 3150344, "TSMC512K_Lowk_Aggresive");
+}
+
+default_wire_load_selection : "WireAreaFsgCon";
+default_wire_load : "TSMC8K_Fsg_Conservative";
+default_wire_load_mode : segmented;
+in_place_swap_mode : match_footprint ;
+  
+slew_lower_threshold_pct_rise :  10.00
+slew_upper_threshold_pct_rise :  90.00
+slew_derate_from_library :  1.00
+input_threshold_pct_fall :  50.00
+output_threshold_pct_fall :  50.00
+input_threshold_pct_rise :  50.00
+output_threshold_pct_rise :  50.00
+slew_lower_threshold_pct_fall :  10.00
+slew_upper_threshold_pct_fall :  90.00
+leakage_power_unit : 1uW;
+k_volt_cell_leakage_power : 0.000000 ;
+k_temp_cell_leakage_power : 0.000000 ;
+k_process_cell_leakage_power : 0.000000 ;
+k_volt_internal_power : 0.000000 ;
+k_temp_internal_power : 0.000000 ;
+k_process_internal_power : 0.000000 ;
+
+
+       lu_table_template(SIG2SRAM_delay_template) {
+             variable_1 : input_net_transition;
+             variable_2 : total_output_net_capacitance;
+             index_1 ("0.010, 0.050, 0.200, 0.400, 1.000");
+             index_2 ("0.0009, 0.060, 0.250, 0.500, 1.000");
+       }
+       lu_table_template(SRAM_delay_template) {
+             variable_1 : input_net_transition;
+             variable_2 : total_output_net_capacitance;
+             index_1 ("1");
+             index_2 ("1");
+       }
+  	lu_table_template(SIG2SRAM_load_template) {
+             variable_1 : total_output_net_capacitance;
+             index_1 ("0.0009, 0.060, 0.250, 0.500, 1.000");
+        }
+  	lu_table_template(SRAM_load_template) {
+             variable_1 : total_output_net_capacitance;
+             index_1 ("1");
+        }
+  	lu_table_template(SIG2SRAM_constraint_template) {
+             variable_1 : related_pin_transition;
+             variable_2 : constrained_pin_transition;
+             index_1 ("0.010, 0.050, 0.200, 0.400, 1.000");
+             index_2 ("0.010, 0.050, 0.200, 0.400, 1.000");
+        }
+        lu_table_template(SRAM_constraint_template) {
+             variable_1 : related_pin_transition;
+             variable_2 : constrained_pin_transition;
+             index_1 ("1");
+             index_2 ("1");
+       }
+        power_lut_template(SIG2SRAM_power_template) {
+              variable_1 :  input_transition_time;
+              index_1 (" 0.010, 0.050, 0.200, 0.400, 1.000");
+       }
+        power_lut_template(SRAM_power_template) {
+              variable_1 :  input_transition_time;
+              index_1( " 0.010");
+              variable_2 :  total_output_net_capacitance;
+             index_2( " 0.0009");
+       }
+
+type( A_bus_11_to_0 ) {
+                base_type : array ;
+                data_type : bit ;
+                bit_width : 12 ;
+                bit_from : 11 ;
+                bit_to : 0 ;
+                downto : true ;
+}
+
+type( Q_bus_7_to_0 ) {
+                base_type : array ;
+                data_type : bit ;
+                bit_width : 8 ;
+                bit_from : 7 ;
+                bit_to : 0 ;
+                downto : true ;
+}
+
+type( TSEL_bus_1_to_0 ) {
+                base_type : array ;
+                data_type : bit ;
+                bit_width : 2 ;
+                bit_from : 1 ;
+                bit_to : 0 ;
+                downto : true ;
+}
+
+cell(TS1N65LPA4096X8M8) {
+
+memory() {
+     type : ram;
+     address_width : 12;
+     word_width : 8;
+   }
+        area		 : 34665.574125
+        dont_use	 : TRUE;
+        dont_touch	 : TRUE;
+
+bus(TSEL) {
+     bus_type : TSEL_bus_1_to_0 ;
+     direction : input;
+     capacitance : 0.005;
+         }
+
+bus(Q) {
+     bus_type : Q_bus_7_to_0 ;
+     direction : output ;
+     max_capacitance : 1  ;
+     max_transition  : 0.8;
+     memory_read() {
+       address : A ;
+     }
+
+     /* Output pin power */
+                pin(Q[7:0]) {
+                internal_power(){
+                       rise_power("scalar") {
+                       values ("0.069");
+                       }
+                       fall_power("scalar") {
+                       values ("0.065");
+                       }
+                    }
+                }
+                timing() {
+                       related_pin :   "CLK" ;
+                       timing_type : rising_edge ;
+                       timing_sense : non_unate ;
+		       retaining_fall(SIG2SRAM_delay_template) {
+		       values ( \
+			  "3.135, 3.201, 3.425, 3.691, 4.249",\
+			  "3.145, 3.211, 3.435, 3.702, 4.259",\
+			  "3.182, 3.248, 3.472, 3.739, 4.297",\
+			  "3.222, 3.288, 3.512, 3.779, 4.337",\
+			  "3.343, 3.408, 3.632, 3.899, 4.457" \
+                        );
+          		}
+  		       retaining_rise(SIG2SRAM_delay_template) {
+  		       values ( \
+  			  "3.135, 3.201, 3.425, 3.691, 4.249",\
+  			  "3.145, 3.211, 3.435, 3.702, 4.259",\
+  			  "3.182, 3.248, 3.472, 3.739, 4.297",\
+  			  "3.222, 3.288, 3.512, 3.779, 4.337",\
+  			  "3.343, 3.408, 3.632, 3.899, 4.457" \
+                        ); 
+  			}
+  			retain_rise_slew(SIG2SRAM_load_template) {
+            		values ("0.030, 0.162, 0.576,1.150, 2.271");
+			}
+
+           		retain_fall_slew(SIG2SRAM_load_template) {
+                         values ("0.029, 0.135, 0.464, 0.925, 1.822");
+  			}
+  			cell_rise(SIG2SRAM_delay_template) {
+  			values ( \
+  			  "3.300, 3.370, 3.606, 3.886, 4.473",\
+  			  "3.311, 3.380, 3.616, 3.897, 4.484",\
+  			  "3.350, 3.419, 3.655, 3.936, 4.523",\
+  			  "3.392, 3.461, 3.697, 3.978, 4.566",\
+  			  "3.519, 3.588, 3.824, 4.105, 4.692" \
+                        ); 
+  			}
+  			rise_transition(SIG2SRAM_load_template) {
+            		values ("0.030, 0.162, 0.576,1.150, 2.271");
+			}
+			cell_fall(SIG2SRAM_delay_template) {
+			values ( \
+			  "3.300, 3.370, 3.606, 3.886, 4.473",\
+			  "3.311, 3.380, 3.616, 3.897, 4.484",\
+			  "3.350, 3.419, 3.655, 3.936, 4.523",\
+			  "3.392, 3.461, 3.697, 3.978, 4.566",\
+			  "3.519, 3.588, 3.824, 4.105, 4.692" \
+                        );
+          		}
+           		fall_transition(SIG2SRAM_load_template) {
+                         values ("0.029, 0.135, 0.464, 0.925, 1.822");
+  		}	}
+	}
+
+
+       pin(CLK) {
+               direction : input;
+               capacitance : 0.023;
+               clock	: true;
+               min_pulse_width_low	: 0.908;
+               min_pulse_width_high	: 0.416;
+               min_period		: 3.484;
+               max_transition		: 1.000;
+        internal_power(){
+                when : " !CEB & WEB";
+                       rise_power("scalar") {
+	               values ("6.695");
+                       }
+                       fall_power("scalar") {
+                       values ("0");
+                       }
+               }
+        internal_power(){
+                 when : "!CEB & !WEB";
+                        rise_power("scalar") {
+  		        values ("6.327");
+                        }
+                        fall_power("scalar") {
+  		        values ("0");
+                        }
+               }
+        /* CLK pin power */
+        internal_power(){
+                when : "CEB";
+                       rise_power("scalar") {
+                       values ("0.084");
+                       }
+                       fall_power("scalar") {
+                       values ("0");
+                       }
+               }
+          }
+  
+          pin(CEB) {
+                direction : input;
+  		capacitance : 0.003;
+               /* ceb pin power */
+                internal_power(){
+                       rise_power("scalar") {
+                       values ("0.065");
+                       }
+                       fall_power("scalar") {
+                       values ("0.081");
+                       }
+                }
+  		timing() {
+  			related_pin	: "CLK" ;
+  			timing_type	: setup_rising ;
+  			rise_constraint(SIG2SRAM_constraint_template) {
+  			values ( \
+  			  "0.649, 0.663, 0.715, 0.771, 0.939",\
+  			  "0.642, 0.656, 0.707, 0.763, 0.931",\
+  			  "0.600, 0.613, 0.662, 0.718, 0.886",\
+  			  "0.577, 0.591, 0.642, 0.697, 0.865",\
+  			  "0.466, 0.479, 0.529, 0.585, 0.752" \
+                        ); 
+               		}
+            		fall_constraint(SIG2SRAM_constraint_template) {
+  			values ( \
+  			  "0.649, 0.663, 0.715, 0.771, 0.939",\
+          		  "0.642, 0.656, 0.707, 0.763, 0.931",\
+  			  "0.600, 0.613, 0.662, 0.718, 0.886",\
+  			  "0.577, 0.591, 0.642, 0.697, 0.865",\
+  			  "0.466, 0.479, 0.529, 0.585, 0.752" \
+                        ); 
+  		}	}
+  		timing() {
+  			related_pin	: "CLK" ;
+  			timing_type	: hold_rising ;
+  			rise_constraint(SIG2SRAM_constraint_template) {
+  			values ( \
+  			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+  			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+  			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+        		  "0.000, 0.000, 0.000, 0.000, 0.000",\
+  			  "0.108, 0.098, 0.057, 0.010, 0.000" \
+  			);
+			}
+			fall_constraint(SIG2SRAM_constraint_template) {
+			values ( \
+                	  "0.000, 0.000, 0.000, 0.000,0.000",\
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+			  "0.108, 0.098, 0.057, 0.010, 0.000" \
+                        );
+	}	}	}
+
+	pin(WEB) {
+  		direction : input;
+  		capacitance : 0.003;
+                /* web pin power */
+                internal_power(){
+                       rise_power("scalar") {
+                       values ("0.031");
+                       }
+                       fall_power("scalar") {
+                       values ("0.039");
+                       }
+                }
+        	timing() {
+		        related_pin	: "CLK" ;
+                        when            :"!CEB";
+                        sdf_cond        :"check_noidle";
+        		timing_type	: setup_rising ;
+        		rise_constraint(SIG2SRAM_constraint_template) {
+                 	values ( \
+			  "0.656, 0.670, 0.721, 0.778, 0.947",\
+			  "0.649, 0.662, 0.714, 0.770, 0.940",\
+			  "0.608, 0.621, 0.670, 0.726, 0.895",\
+        		  "0.584, 0.598, 0.648, 0.705, 0.875",\
+			  "0.474, 0.487, 0.536, 0.593, 0.763" \
+                        );
+	        	}
+	        	fall_constraint(SIG2SRAM_constraint_template) {
+	        	values ( \
+                	  "0.656, 0.670, 0.721, 0.778, 0.947",\
+                	  "0.649, 0.662, 0.714, 0.770, 0.940",\
+                          "0.608, 0.621, 0.670, 0.726, 0.895",\
+	        	  "0.584, 0.598, 0.648, 0.705, 0.875",\
+	        	  "0.474, 0.487, 0.536, 0.593, 0.763" \
+                        );
+                }	}
+	        timing() {
+			related_pin	: "CLK" ;
+                        when            :"!CEB";
+                        sdf_cond        :"check_noidle";
+                	timing_type	: hold_rising ;
+			rise_constraint(SIG2SRAM_constraint_template) {
+			values ( \
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+			  "0.000, 0.000, 0.000, 0.000, 0.000" \
+                        );
+        		}
+  			fall_constraint(SIG2SRAM_constraint_template) {
+        		values ( \
+       			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+       			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+               		  "0.000, 0.000, 0.000, 0.000, 0.000",\
+       			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+       			  "0.000, 0.000, 0.000, 0.000, 0.000" \
+                        );
+        }	}	}
+
+   bus(A)  {
+	bus_type : A_bus_11_to_0 ;
+	direction : input;
+	capacitance : 0.007;
+/* Address pin power */
+        pin(A[11:0]) {
+        internal_power(){
+                       rise_power("scalar") {
+                       values ("0.100");
+                       }
+                       fall_power("scalar") {
+                       values ("0.140");
+                       }
+               }
+        }
+  	timing() {
+         	related_pin	: "CLK"
+                when            :"!CEB";
+                sdf_cond        :"check_noidle";
+		timing_type	: setup_rising ;
+		rise_constraint(SIG2SRAM_constraint_template) {
+			values ( \
+		  "0.863, 0.876, 0.926, 0.988, 1.173",\
+ 		  "0.855, 0.869, 0.919, 0.980, 1.165",\
+ 		  "0.822, 0.835, 0.883, 0.945, 1.130",\
+ 	  	  "0.790, 0.803, 0.852, 0.914, 1.099",\
+                  "0.677, 0.690, 0.738, 0.800, 0.985" \
+                );
+        	}
+  		fall_constraint(SIG2SRAM_constraint_template) {
+        	values ( \
+  		  "0.863, 0.876, 0.926, 0.988, 1.173",\
+ 		  "0.855, 0.869, 0.919, 0.980, 1.165",\
+ 		  "0.822, 0.835, 0.883, 0.945, 1.130",\
+ 		  "0.790, 0.803, 0.852, 0.914, 1.099",\
+ 		  "0.677, 0.690, 0.738, 0.800, 0.985" \
+                ); 
+ 	}	}
+  	timing() {
+		related_pin	: "CLK"
+                when            :"!CEB";
+                sdf_cond        :"check_noidle";
+        	timing_type	: hold_rising ;
+		rise_constraint(SIG2SRAM_constraint_template) {
+		values ( \
+		  "0.000, 0.000, 0.000, 0.000, 0.000",\
+		  "0.000, 0.000, 0.000, 0.000, 0.000",\
+		  "0.000, 0.000, 0.000, 0.000, 0.000",\
+		  "0.000, 0.000, 0.000, 0.000, 0.000",\
+		  "0.081, 0.070, 0.030, 0.000, 0.000" \
+                );
+        	}
+		fall_constraint(SIG2SRAM_constraint_template) {
+		values ( \
+                  "0.000, 0.000, 0.000, 0.000, 0.000",\
+		  "0.000, 0.000, 0.000, 0.000, 0.000",\
+       		  "0.000, 0.000, 0.000, 0.000, 0.000",\
+		  "0.000, 0.000, 0.000, 0.000, 0.000",\
+		  "0.081, 0.070, 0.030, 0.000, 0.000" \
+                );
+  }	}	}
+
+       bus(BWEB)        {
+	       bus_type : Q_bus_7_to_0 ;
+               direction : input;
+               capacitance : 0.002;
+/* Bit-write pin power */
+               pin(BWEB[7:0]) {
+               internal_power(){
+                       rise_power("scalar") {
+                       values ("0.021");
+                       }
+                       fall_power("scalar") {
+                       values ("0.017");
+                       }
+                   }
+               }
+               timing() {
+                   related_pin     : "CLK"
+                   when            :"(!CEB & !WEB)";
+                   sdf_cond        :"check_write";
+                   timing_type     : setup_rising ;
+                   rise_constraint(SIG2SRAM_constraint_template) {
+                    values ( \
+                      "0.336, 0.350, 0.400, 0.460, 0.641",\
+                      "0.329, 0.342, 0.392, 0.453, 0.634",\
+                      "0.297, 0.309, 0.357, 0.417, 0.599",\
+                      "0.265, 0.278, 0.327, 0.387, 0.569",\
+                      "0.155, 0.168, 0.215, 0.276, 0.457" \
+                     ); 
+                     }
+                     fall_constraint(SIG2SRAM_constraint_template) {
+                     values ( \
+                     "0.437, 0.451, 0.501, 0.561, 0.742",\
+                     "0.430, 0.443, 0.493, 0.554, 0.735",\
+                     "0.398, 0.410, 0.458, 0.518, 0.700",\
+                     "0.366, 0.379, 0.428, 0.488, 0.670",\
+                     "0.256, 0.269, 0.316, 0.377, 0.558" \
+                     ); 
+             }      }
+
+         timing() {
+                related_pin     : "CLK"
+                when            :"(!CEB & !WEB)";
+                sdf_cond        :"check_write";
+                timing_type     : hold_rising ;
+                 rise_constraint(SIG2SRAM_constraint_template) {
+                 values ( \
+                   "0.000, 0.000, 0.000, 0.000, 0.000",\
+                   "0.000, 0.000, 0.000, 0.000, 0.000",\
+                   "0.000, 0.000, 0.000, 0.000, 0.000",\
+                   "0.000, 0.000, 0.000, 0.000, 0.000",\
+                   "0.010, 0.001, 0.000, 0.000, 0.000" \
+                 );
+                 }
+                 fall_constraint(SIG2SRAM_constraint_template) {
+                 values ( \
+                   "0.000, 0.000, 0.000, 0.000, 0.000",\
+                   "0.000, 0.000, 0.000, 0.000, 0.000",\
+                   "0.000, 0.000, 0.000, 0.000, 0.000",\
+                   "0.000, 0.000, 0.000, 0.000, 0.000",\
+                   "0.010, 0.001, 0.000, 0.000, 0.000" \
+                 ); 
+       }      }
+  }
+
+     bus(D)	 {
+	bus_type : Q_bus_7_to_0 ;
+  	direction : input;
+        capacitance : 0.002;
+	memory_write() {
+          address : A ;
+          clocked_on : CLK;
+        }
+/* Data pin power */
+        pin(D[7:0]) {
+        internal_power(){
+                       rise_power("scalar") {
+                       values ("0.046");
+                       }
+                       fall_power("scalar") {
+                       values ("0.047");
+                       }
+               }
+        }
+  	timing() {
+        	related_pin	: "CLK"
+                when            :"(!CEB & !WEB)";
+                sdf_cond        :"check_write";
+		timing_type	: setup_rising ;
+		rise_constraint(SIG2SRAM_constraint_template) {
+		values ( \
+			  "0.432, 0.446, 0.497, 0.553, 0.721",\
+			  "0.424, 0.438, 0.488, 0.544, 0.713",\
+			  "0.385, 0.398, 0.446, 0.503, 0.671",\
+			  "0.353, 0.367, 0.416, 0.473, 0.641",\
+			  "0.232, 0.245, 0.293, 0.349, 0.518" \
+                );
+        	}
+		fall_constraint(SIG2SRAM_constraint_template) {
+		values ( \
+			  "0.331, 0.345, 0.396, 0.452, 0.620",\
+			  "0.323, 0.337, 0.387, 0.443, 0.612",\
+			  "0.284, 0.297, 0.345, 0.402, 0.570",\
+			  "0.252, 0.266, 0.315, 0.372, 0.540",\
+			  "0.131, 0.144, 0.192, 0.248, 0.417" \
+                );
+	}	}
+	timing() {
+		related_pin	: "CLK"
+                when            :"(!CEB & !WEB)";
+                sdf_cond        :"check_write";
+		timing_type	: hold_rising ;
+        	rise_constraint(SIG2SRAM_constraint_template) { 
+			values ( \
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+                          "0.000, 0.000, 0.000, 0.000, 0.000",\
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+			  "0.005, 0.001, 0.000, 0.000, 0.000",\
+			  "0.145, 0.134, 0.092, 0.043, 0.000" \
+                );
+		}
+		fall_constraint(SIG2SRAM_constraint_template) {
+		values ( \
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+			  "0.000, 0.000, 0.000, 0.000, 0.000",\
+        		  "0.005, 0.001, 0.000, 0.000, 0.000",\
+			  "0.145, 0.134, 0.092, 0.043, 0.000" \
+                );
+	}	}
+  }
+  cell_leakage_power : 0.099;
+  }
+}
+

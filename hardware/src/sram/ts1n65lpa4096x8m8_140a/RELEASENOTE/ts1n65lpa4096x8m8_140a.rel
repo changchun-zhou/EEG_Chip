@@ -1,0 +1,169 @@
+ 
+*******************************************************************************
+*        Software       : TSMC MEMORY COMPILER 2006.09.01.d.140a
+*        Technology     : 65 nm CMOS LOGIC Low Power LowK Cu 1P9M 1.2
+*                         Mix-vt logic, High-vt SRAM
+*        Memory Type    : TSMC 65nm low power SP SRAM Without Redundancy
+*        Library Name   : ts1n65lpa4096x8m8 (user specify : TS1N65LPA4096X8M8)
+*        Library Version: 140a
+*        Generated Time : 2024/04/08, 13:50:39
+*******************************************************************************
+*******************************************************************************
+*
+*STATEMENT OF USE
+*
+*This information contains confidential and proprietary information of TSMC.
+*No part of this information may be reproduced, transmitted, transcribed,
+*stored in a retrieval system, or translated into any human or computer
+*language, in any form or by any means, electronic, mechanical, magnetic,
+*optical, chemical, manual, or otherwise, without the prior written permission
+*of TSMC. This information was prepared for informational purpose and is for
+*use by TSMC's customers only. TSMC reserves the right to make changes in the
+*information at any time and without notice.
+*
+*******************************************************************************
+
+ RELEASE NOTE
+  ============
+  1) Library Information
+  
+  Library Name: ts1n65lpa4096x8m8
+  Library Version: 140A	
+  Technology:
+  Design Rule Document: T-N65-CL-DR-001, Version: 1.4	
+  Calibre command file for DRC: Doc#: T-N65-CL-DR-001-C1, Version: 1.4a
+  Calibre command file for LVS: Doc#: T-N65-CL-LS-001-C1, Version: 1.2e
+  Star-rcxt command file for LPE: Doc#: T-N65-CL-SP-009-B1, Version 1.1a
+  Bit Cell Spice Model: T-N65-CL-CL-001, Version: 1.1
+  Logic Spice Model: T-N65-CL-SP-009, Version: 1.1 
+
+  
+  VDD: 1.2V
+  Power: average, read write & leakage power
+  
+  
+  2) Update History
+  
+  -----------------------------------------------------------------------------------------------------------------------------
+  |     Date     |    Version     |         Changes        
+  -----------------------------------------------------------------------------------------------------------------------------
+  | Jan/31/2006   2006.01.00.100a    Pre-silicon release                                  
+  -----------------------------------------------------------------------------------------------------------------------------
+  | May/30/2006   2006.05.00.100a    Silicon verified release                             
+  -----------------------------------------------------------------------------------------------------------------------------
+  | Jul/21/2006   2006.05.00.100b    Remove 5m in antenna LEF and LEF when false for use tsmc naming convention
+  | Jul/21/2006   2006.05.00.100b    Remove tapeout layers information of release note
+  | Jul/21/2006   2006.05.00.100b    Remove _100a for file name and library name when use tsmc naming convention is false
+  | Jul/21/2006   2006.05.00.100b    Fill timing for retain_rise_slew and retain_fall_slew
+  | Jul/21/2006   2006.05.00.100b    Add when and sdf_cond statement for synopsys timing model 
+  | Jul/21/2006   2006.05.00.100b    Revise verilog model for back-annotation from revised synopsys timing model 
+  | Jul/21/2006   2006.05.00.100b    BIST setting parameter is BIST_Enable and options is yes or no
+  | Jul/21/2006   2006.05.00.100b    Bus delimiter parameter is Bus_Delimiter and options is 0 and [
+  | Jul/21/2006   2006.05.00.100b    Add output data tHOLD timing statement for synopsys & verilog timing model 
+  | Jul/21/2006   2006.05.00.100b    Update mux16 TSEL=2'b00 circuit for better read margin
+  -----------------------------------------------------------------------------------------------------------------------------
+  | Agu/15/2006   2006.05.00.120a    Add another five corners
+  |								1. SS 1.08v -20 degreed C
+  |								2. SS 1.08v 105 degreed C
+  |								3. TT 1.2v  105 degreed C
+  |								4. FF 1.32v -20 degreed C
+  |								5. FF 1.32v 105 degreed C
+  | Agu/15/2006   2006.05.00.120a    change CLK input transmission gate to inverter buffer
+  | Agu/15/2006   2006.05.00.120a    change LEF pin define
+  | Agu/15/2006   2006.05.00.120a    SPICE model version update from 1.0 to 1.1
+  | Agu/15/2006   2006.05.00.120a    Add TetraMax model
+  | Agu/15/2006   2006.05.00.120a    Add unit delay model
+  -----------------------------------------------------------------------------------------------------------------------------
+  | Agu/31/2006   2006.08.06.120a    Put power Data within Synopsys Library Files 
+  | Agu/31/2006   2006.08.06.120a    Add library_features(report_delay_calculation) into all SYNOPSYS LIBRARY FILES
+  | Agu/31/2006   2006.08.06.120a    Changing of the CORNER NAMES to SPECIFIC CORNER NAMES for datasheets 
+  | Agu/31/2006   2006.08.06.120a    Exist unbuffered IO CLK input pin
+  | Agu/31/2006   2006.08.06.120a    Monotonic Problems with Synopsys Library Files
+  -----------------------------------------------------------------------------------------------------------------------------
+  | Sep/15/2006   C20060915_2006.08.06.120a   Add another four corners 
+  |                                                             1. SS 1.15v 125 degreed C
+  |                                                             2. SS 1.15v -40 degreed C
+  |                                                             3. TT 1.15v 125 degreed C
+  |                                                             4. TT 1.15v -40 degreed C
+  -----------------------------------------------------------------------------------------------------------------------------
+  | Sep/30/2006   2006.09.01.120a     Rename all VSS pins name to GND
+  | Sep/30/2006   2006.09.01.120a     Provide models for Mentor Fastscan Model
+  | Sep/30/2006   2006.09.01.120a     Provide Mentor MBIST model
+  | Sep/30/2006   2006.09.01.120a     Fix LVG Issues relating to the holation rule
+  | Sep/30/2006   2006.09.01.120a     Preview datasheet in GUI mode is enabled
+  | Sep/30/2006   2006.09.01.120a     Add a parameter SRAM_Delay for unit delay model
+  | Sep/30/2006   2006.09.01.120a     Combine unit delay model and verilog model to a verilog model
+  | Sep/30/2006   2006.09.01.120a     Provide  Logic Vision MBIST model
+  -----------------------------------------------------------------------------------------------------------------------------
+  | Nov/30/2006   2006.09.01.120b     Add 5% on Hspice model v1.1 leakage current to comply with SPICE model v1.2
+  | Nov/30/2006   2006.09.01.120b     Fix TetraMax Model sub-module naming 
+  | Nov/30/2006   2006.09.01.120b     Fix Synopsys model load template issue
+  | Nov/30/2006   2006.09.01.120b     Fix antenna gate area of the pin CLK
+  | Nov/30/2006   2006.09.01.120b     Add 1 corner SS/1.08v/-40 degreed C
+  -----------------------------------------------------------------------------------------------------------------------------
+  | Mar/14/2007   2006.09.01.120c     Remove VIA3 blockage from LEF file
+  | Mar/14/2007   2006.09.01.120c     Support M5 power mesh remove options
+  | Mar/14/2007   2006.09.01.120c     Remove average active power from datasheet of macros
+  | Mar/14/2007   2006.09.01.120c     Correct pin power calculation method in datasheet of macros
+  | Mar/14/2007   2006.09.01.120c     Modify default setting in synopsys .lib file
+  | Mar/14/2007   2006.09.01.120c     Modify verilog model to fix output Q transition during CE tied to high
+  -----------------------------------------------------------------------------------------------------------------------------
+  | Apr/12/2007   2006.09.01.130a     Correct tCKH and tCKL opposite definition in Synopsys model
+  -----------------------------------------------------------------------------------------------------------------------------
+  -----------------------------------------------------------------------------------------------------------------------------
+  | May/15/2007   2006.09.01.130b     Fix LEF vs GDS mismatch issue when top metal of SRAM macro is metal4
+  | May/15/2007   2006.09.01.130b     Add constructs description into .lib file to recognize memory characteristics
+  -----------------------------------------------------------------------------------------------------------------------------
+  | Dec/25/2007   2006.09.01.140a     Add retaining_rise/fall definition into synopsys model when BIST_enable=no
+  -----------------------------------------------------------------------------------------------------------------------------
+  
+  3) Design Kit Version Dependency Table
+
+  ------------------------------------------
+  |rel |gds |spi |lef |alef |lib | v  |doc |
+  ------------------------------------------
+  |140a|140a|140a|140a|140a |140a|140a|140a|
+  ------------------------------------------
+  
+ 
+  ---------------------------------------------------
+  |rel        = release note                        |
+  |gds        = GDSII layout view                   |
+  |spi        = Spice/lvs netlist                   |
+  |lef        = SOC Ensemble LEF (phantom) view     |
+  |alef       = SOC Ensemble Antenna LEF            |
+  |lib        = synopsys timing model               |
+  |v          = Verilog                             |
+  |ds         = Documents (Datasheets)              |
+  |tmax.v     = Synopsys Tetramax Model             |
+  |fscan.lib  = Mentor Fastscan Model               |
+  |mentor.lib = Mentor MBIST model                  |
+  |logicv.lib = Logic Vision MBIST model            |
+  ---------------------------------------------------
+  
+ 
+  
+  4) Note
+  
+  1. Please do the LVS check either in flattern or include HCELL option.
+  
+
+  5) Library content 
+  
+  Cell List:
+   TS1N65LPA4096X8M8 
+  
+
+  6) Power/Ground Connection Guideline
+
+    To have a better IR drop and EM management, please follow the power/ground connection guideline below:
+   
+    1.If M5 power mesh is generated by MC2, Connect all the horizontal M5 VDD/VSS pins located at left side and right side of macro.
+    2.If M5 power mesh is NOT generated by MC2, M5 density (VDD+VSS) should be larger than 50%.
+    3.Drop vias in full of any two metals corss-area.
+    
+
+  7) Known limitations
+     
+     1. Please add command -edge_iopath for VCS simulation 
+     2. LEF versus GDS will inconsistent at pins with holation area, it will be fixed at next release

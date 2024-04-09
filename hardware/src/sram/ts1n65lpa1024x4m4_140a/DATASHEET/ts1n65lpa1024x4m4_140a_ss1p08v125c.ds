@@ -1,0 +1,472 @@
+
+*******************************************************************************
+*        Software       : TSMC MEMORY COMPILER 2006.09.01.d.140a
+*        Technology     : 65 nm CMOS LOGIC Low Power LowK Cu 1P9M 1.2
+*                         Mix-vt logic, High-vt SRAM
+*        Memory Type    : TSMC 65nm low power SP SRAM Without Redundancy
+*        Library Name   : ts1n65lpa1024x4m4 ( user specify: TS1N65LPA1024X4M4)
+*        Library Version: 140a
+*        Generated Time : 2024/04/08, 13:49:29
+*******************************************************************************
+*******************************************************************************
+*
+*STATEMENT OF USE
+*
+*This information contains confidential and proprietary information of TSMC.
+*No part of this information may be reproduced, transmitted, transcribed,
+*stored in a retrieval system, or translated into any human or computer
+*language, in any form or by any means, electronic, mechanical, magnetic,
+*optical, chemical, manual, or otherwise, without the prior written permission
+*of TSMC. This information was prepared for informational purpose and is for
+*use by TSMC's customers only. TSMC reserves the right to make changes in the
+*information at any time and without notice.
+*
+*******************************************************************************
+
+1. Features and Naming Conventions
+
+1.1 Features
+  
+    - TSMC 1P9M 65nm CLN65LP (1.2V) CMOS process
+    - High density area 11337.202um^2 with 6T SRAM 1.05x0.5 =0.525um^2
+    - Support power mesh in metal5 pin
+    - Over SRAM routing for metal4 and above
+    - Use all static circuit. No DC leakage
+    - Support global EDA models and precise timing characterization data
+    - Near-Zero Hold Time(Data, Address, and Control Inputs)
+    - Bit write function with each data input
+  
+1.2 Naming Conventions
+
+  SRAM cell: TS1N65LPA1024X4M4 
+  Note:The cell name length would fewer than 27 characters for top cell and each leaf cell
+  
+
+2. Memory Description
+
+    The TS1N65LPA1024X4M4 is a high performance synchronous single-port, 1024 words by 4 bits
+  mux4 memory designed with high density TSMC 6T SRAM bit cell in TSMC's nine-layer metal, 65nm
+  CLN65LP (1.2V) CMOS process.
+    The SRAM operates at a voltage of 1.2V +/- 10% and a junction temperature range of -40 deg to
+  +125 deg.
+
+  
+3. Pin Description
+  
+   SRAM macro : TS1N65LPA1024X4M4
+
+  --------------------------------------------------------------------------------------
+  |          Pin           |          Type         |            Description            |
+  --------------------------------------------------------------------------------------
+  |          VDD           |          Supply       |            Power bus              |
+  --------------------------------------------------------------------------------------
+  |          VSS           |          Supply       |            Ground bus             |
+  --------------------------------------------------------------------------------------
+  |      A[0] ~ A[9]       |          Input        |           Address input           |
+  --------------------------------------------------------------------------------------
+  |      D[0] ~ D[3]       |          Input        |            Data input             |
+  --------------------------------------------------------------------------------------
+  |          CLK           |          Input        |            Clock input            |
+  --------------------------------------------------------------------------------------
+  |          CEB(M)        |          Input        |            Chip enable(BIST)      |
+  --------------------------------------------------------------------------------------
+  |          WEB(M)        |          Input        |            Write enable(BIST)     |
+  --------------------------------------------------------------------------------------
+  |   BWEB[0] ~ BWEB[3]    |          Input        |          Bit write enable         |
+  |      Q[0] ~ Q[3]       |          Output       |            Data output            |
+  --------------------------------------------------------------------------------------
+  |          TSEL[1:0]     |         Input         |       Timing selection            |
+  --------------------------------------------------------------------------------------
+  |          BIST          |         Input         |       Bist enable                 |
+  --------------------------------------------------------------------------------------
+  |          AWT           |         Input         |       Asynchrous write through    |
+  --------------------------------------------------------------------------------------
+
+  Note: Timing are characterized by setting TSEL[1:0] to 2'b01, user must connect these 
+        two pins to the correct logic values 2'b01. 
+	TSEL[1:0]= 2'b00 : Aggressive read margin setting. 
+	TSEL[1:0]= 2'b01 : Default timing characterization setting.
+	TSEL[1:0]= 2'b10 : Better read margin setting. 
+	TSEL[1:0]= 2'b11 : Best read margin setting. 
+  
+4. Area
+
+-------------------------------------------------------------------------
+|      Area type       |  Width(um)  | Height(um)  |  Area (um^2)        | 
+-------------------------------------------------------------------------
+|      Core            |   62.445 |  181.555  |   11337.202       |
+-------------------------------------------------------------------------
+
+
+5. Timing specification
+
+I. Time waveform of READ cycle with a bit write mask
+
+                                Timing Waveform of Read Cycle, with bit write mask
+
+
+            |                                     |                                     |                  
+            |<-------------- tcyc --------------->|<-------------- tcyc --------------->|                  
+            |                                     |                                     |                   
+            |<------ tkh ----->|                  |                  |<------ tkl ----->|                  
+            | ---------------- |                  | ---------------- |                  | ---------------- 
+            |/                \|                  |/                \|                  |/                \ 
+ CLK        |                  |                  |                  |                  |                  \
+           /|                  |\                /|                  |\                /|                   \ 
+   -------- |                  | ---------------- |                  | ---------------- |                    ------  
+       |tcs    tch                            tcs    tch                            tcs    tch   
+       |<-->|<------>|                       |<-->|<------>|                       |<-->|<------>|   
+   --- |    |        | --------------------- | ----------- | --------------------- |             | ----------- 
+      \|             |/                     \|/           \|/                     \|             |/ 
+ CEB   |             |                       |             |                       |             |
+      /|\           /|\                     /|             |\                     /|\           /|\
+   --- | ----------- | --------------------- |             | --------------------- | ----------- | ------------
+       |tws    twh                                                                   tws   twh   
+       |<-->|<------>|                                                             |<-->|<------>|   
+   --- | ----------- | ----------------------------------------------------------- | ----------- | ----------- 
+      \|/           \|/                                                           \|/           \|/ 
+ WEB   |             |                                                             |             |
+      /|             |\                                                           /|             |\
+   --- |             | ----------------------------------------------------------  |             | ------------
+       |tbws   tbwh                                                                  tbws  tbwh   
+       |<-->|<------>|                                                             |<-->|<------>|   
+   --- |    |        | ----------------------------------------------------------  |             | ----------- 
+      \|             |/                                                           \|             |/ 
+BWEB[j]|             |                                                             |             |
+      /|\           /|\                                                           /|\           /|\
+   --- | ----------- | ----------------------------------------------------------- | ----------- | -----------
+       |tas    tah                                                                   tas   tah   
+       |<-->|<------>|                                                             |<-->|<------>|   
+   --- | ----------- | ----------------------------------------------------------- | ----------- | ----------- 
+      \|/           \|/                                                           \|/           \|/  
+ A[i]  |    A[0]     |                                                             |    A[1]     |
+      /|\           /|\                                                           /|\           /|\
+   --- | ----------- | ----------------------------------------------------------- | ----------- | -----------
+            |<------------ tcd ------------->|                                          |<------- tcd ----------->|
+            |<--------- thold -------->|     |                                          |<--- thold ------->|     |
+   ---------|------------------------- | --- | ------------------------------------------------------------ | --- | ------
+                                      \|/   \|/                                                            \|/   \|/    
+ Q[k]           pre-Q                  |     |         Q[0]                                    Q[0]         |     |   Q[1]
+                                      /|\   /|\                                                            /|\   /|\
+   ----------------------------------- | --- | ------------------------------------------------------------ | --- | ------
+
+
+ 
+II. Time waveform of write cycle with bit write mask
+
+                                  Timing Waveform of Write Cycle, with bit write mask
+
+
+            |                                     |                                     |                  
+            |<-------------- tcyc --------------->|<-------------- tcyc --------------->|                  
+            |                                     |                                     |                   
+            |<------ tkh ----->|                  |                  |<------ tkl ----->|                  
+            | ---------------- |                  | ---------------- |                  | ---------------- 
+            |/                \|                  |/                \|                  |/                \ 
+ CLK        |                  |                  |                  |                  |                  \
+           /|                  |\                /|                  |\                /|                   \ 
+   -------- |                  | ---------------- |                  | ---------------- |                    ------  
+       |tcs    tch                            tcs    tch                             tcs   tch   
+       |<-->|<------>|                       |<-->|<------>|                       |<-->|<------>|   
+   --- |    |        | --------------------- | ----------- | --------------------- |             | ----------- 
+      \|             |/                     \|/           \|/                     \|             |/ 
+ CEB   |             |                       |             |                       |             |
+      /|\           /|\                     /|             |\                     /|\           /|\
+   --- | ----------- | --------------------- |             | --------------------- | ----------- | ------------
+       |tws    twh                                                                   tws   twh   
+       |<-->|<------>|                                                             |<-->|<------>|   
+   --- |    |        | ----------------------------------------------------------  |             | ----------- 
+      \|             |/                                                           \|             |/ 
+ WEB   |             |                                                             |             |
+      /|\           /|\                                                           /|\           /|\
+   --- | ----------- | ----------------------------------------------------------  | ----------- | ------------
+       |tbws   tbwh                                                                  tbws  tbwh   
+       |<-->|<------>|                                                             |<-->|<------>|   
+   --- |    |        | ----------------------------------------------------------  |             | ----------- 
+      \|             |/                                                           \|             |/ 
+BWEB[j]|             |                                                             |             |
+      /|\           /|\                                                           /|\           /|\
+   --- | ----------- | ----------------------------------------------------------  | ----------- | ------------
+       |tas    tah                                                                   tas   tah   
+       |<-->|<------>|                                                             |<-->|<------>|   
+   --- | ----------- | ----------------------------------------------------------- | ----------- | ----------- 
+      \|/           \|/                                                           \|/           \|/  
+ A[i]  |    A[0]     |                                                             |    A[1]     |
+      /|\           /|\                                                           /|\           /|\
+   --- | ----------- | ----------------------------------------------------------- | ----------- | -----------
+       |tds    tdh                                                                    tds   tdh   
+       |<-->|<------>|                                                             |<-->|<------>|   
+   --- | ----------- | ----------------------------------------------------------- | ----------- | ----------- 
+      \|/           \|/                                                           \|/           \|/  
+ D[k]  |    D[0]     |                                                             |    D[1]     |
+      /|\           /|\                                                           /|\           /|\
+   --- | ----------- | ----------------------------------------------------------- | ----------- | -----------
+ 
+   -----------------------------------------------------------------------------------------------------------
+ 
+ Q[k]                            Previous Q
+ 
+III. Time waveform of asynchronous write through
+
+
+         | -------------------------------------------------------- |         
+         |/                                                        \|            
+AWT      |                                                          |           
+        /|                                                          |\        
+  ------ |                                                          | --------------
+                                          |<---tdq------>|          |                                          
+  --------------------------------------- | -- ----------|----------|---------------
+                                         \|/             |          |                                     
+D[k]                                      |              |          |                                    
+                                         /|\             |          |                                   
+  --------------------------------------- | -------------|----------|---------------
+                            | tbwq        |              |          |                                 
+                            |<----------->|              |          |                                 
+  ------------------------- | ------------|--------------|----------|--------------- 
+                           \|/            |              |          |        
+BWEB[k]                     |             |              |          |
+                           /|\            |              |          |     
+  ------------------------- | ------------|--------------|----------|---------------
+         |<---tawtq---->|   |             |              |          |<---tawtq---->|
+         |<-tawtqh->        |<-tbwqh->|   |<--tdqh-->|   |          |<-tawtqh->|   |                                    
+  ----------------- | - | ------------| - |--------- | - | ---------|--------- | - | -------- 
+                   \|/ \|/            |/ \|/        \|/ \|/                   \|/ \|/       
+Q[k]                |   |             |   |          |   |                     |   |
+                   /|\ /|\            |\ /|\        /|\ /|\                   /|\ /|\    
+  ----------------- | - | ------------| - | -------- | - | ------------------- | - | --------
+
+
+IV. Timing waveform of BIST operation
+
+
+
+                    |tbists |                           |       |                                   
+                    |<----->|                           |       |                                   
+  ----------------- | ------|---------------------------|------ | --------------
+                   \|/      |                           |      \|/                                    
+BIST                |       |                           |       |                                    
+                   /|\      |                           |      /|\                                  
+  ----------------- | ------|---------------------------|------ | --------------
+                            |                           |tbisth |
+                            |                           |<----->|
+  ----------- |             | ----------- |             | -----------
+             \|             |/           \|             |/                                     
+CLK           |             |             |             |                                    
+              |\           /|             |\           /|                                   
+              | ----------- |             | ----------- |
+
+
+  Note: The maximum slew for each input signal is 1ns
+        Rising signals are measured at 50% of VDD and falling signals are measured at 50% of VDD
+        Rising and falling slews are measured from 10% VDD to 90% VDD
+
+   -----------------------------------------------------------------------------------------------------------
+ 
+  Note: The maximum slew for each input signal is 1ns
+        Rising signals are measured at 50% of VDD and falling signals are measured at 50% of VDD
+        Rising and falling slews are measured from 10% VDD to 90% VDD
+
+
+6. SRAM truth table
+
+   I. BIST mode
+   ------------------------------------------------------------------------------------------------
+   |         |       |         |              |             |                 |          |          |
+   |  Mode   |  BIST |  CLOCK  |  Chip select |  Read/Write |  Bit Write mask |  Address |  Data in |
+   ------------------------------------------------------------------------------------------------
+   |  Normal |  Low  |  CLK    |  CEB         |  WEB        |  BWEB           |  A       |  D       |
+   ------------------------------------------------------------------------------------------------
+   |  Bist   |  High |  CLK    |  CEBM        |  WEBM       |  BWEBM          |  AM      |  DM      |
+   ------------------------------------------------------------------------------------------------
+
+   II. Functional
+   -------------------------------------------------------------------------------------------------
+   |                    |      |      |      |          |      |    |            |                 |
+   |   stage            | CLK  | CEB  |  WEB | BWEB     |  D   |  A |  Q         |       mem       |
+   -------------------------------------------------------------------------------------------------
+   |  Deselect          | L->H |   1  |   -  |   -      |  -   |  - |  No change |  No change      |
+   -------------------------------------------------------------------------------------------------
+   |  write bit[i]      | L->H |   0  |   0  |   0      | d[i] |  a |  No change |  Mem[a][i]=d[i] |
+   -------------------------------------------------------------------------------------------------
+   |  read              | L->H |   0  |   1  |   -      |  -   |  a |  Mem[a][i] |  No change      |
+   -------------------------------------------------------------------------------------------------
+   |  write bit[i] mask | L->H |   0  |   0  | BWEB[i]=1|  -   |  a |  No change |  No change      |
+   -------------------------------------------------------------------------------------------------
+
+   III. Asynchronous write through
+   ----------------------------------------------
+   |  AWT   |   D    |   BWEB  |   Q            |
+   ----------------------------------------------
+   |   1    |   d[i] |   b[i]  | b[i](xor)d[i]  |
+   ----------------------------------------------
+
+
+
+   Condition:                              
+   -------------------------------------------------------
+     0     : low
+     1     : high
+     -     : don't care,no matter with this pin
+     valid : Address, Data-in, BWEB only. It means stable(0 or 1);in fixed condition.
+     L->H  : clock only,rising edge
+     H->L  : clock only,falling edge
+     L->L  : clock only
+     H->H  : clock only
+
+   Output buffer-in:
+   -------------------------------------------------------
+     hold     : keep previous state
+     x        : unknown for this cycle
+     Data-out : normal read function case
+
+   Q:
+   -------------------------------------------------------
+     hold       : keep previous state
+     Z          : high impendence
+     x          : unknown for this cycle
+     buffer-out : same with output buffer-in
+
+   mem:
+   -------------------------------------------------------
+     Data-in(except BWEB) : normal write function case except BWEBj=1
+     hold                 : keep previous state
+
+
+7. SRAM timing:(SS, 1.08V, 125C)
+
+           Parameter                 Symbol    Param. Value (ns)
+           ---------                 ------    -----------------
+
+           Cycle time                tcyc          2.547
+           Access time               tcd           2.532
+           Address setup             tas           0.797
+           Address hold              tah           0.000
+           Chip enable setup         tcs           0.710
+           Chip enable hold          tch           0.000
+           Write enable setup        tws           0.719
+           Write enable hold         twh           0.000
+           Bit-write enable setup    tbws          0.448
+           Bit-write enable hold     tbwh          0.000
+           Data setup                tds           0.542
+           Data hold                 tdh           0.000
+           Clock high                tckh          0.457
+           Clock low                 tckl          0.844
+           AWT to valid Q            tawtq         0.383
+           D to valid Q              tdq           0.908
+           BWEB to valid Q           tbwebq        0.917
+
+  1. tcyc and tcd are based on simulation data with clk skew = 0.01ns  and output loading = 0.0009pf.
+
+
+8. Pin capacitance
+
+           Pin          Value (pF)
+           -----        ----------
+
+           A[9:0]        0.009
+           AM[9:0]        0.009
+           D[3:0]       0.002
+           DM[3:0]       0.002
+           CLK           0.028
+           CEB           0.005
+           CEBM          0.005
+           WEB           0.004
+           WEBM          0.004
+
+
+9. Power
+
+           Type                                         Value 
+           ------------------------                     ----------------
+           Read Current            (uA)                   2.963 * F
+           Write Current           (uA)                   4.197 * F
+	   Deselect Current        (uA)                   0.139 * F
+           Standby Current         (uA)                   3.593
+           Worst corner Standby Current (uA)              115.192
+	   Data Current            (uA)                   0.232 * F
+	   Address A Current       (uA)                   0.823 * F
+	   BitWrite Current        (uA)                   0.113 * F
+	   WriteEnable Current     (uA)                   0.063 * F
+	   Bist Current            (uA)                   0.934 * F
+	   Dataout Current         (uA)                   0.335 * F
+
+  1. V = the power supply potential (Volts) and F = frequency of operation in (Mhz)
+  2. Read/write powers are not including pin powers
+  3. worst case standby is based on best process corner, 1.32v and 125 degree 
+
+10. Clock noise limit          
+         25% of Vdd  
+         
+11. Power and ground noise limit
+         25% of Vdd  
+         
+12. Power/ground routing guideline
+
+    To have a better IR drop and EM management, please follow the power/ground connection
+    guidelines as below:
+
+   1.Connect all the horizontal M5 VDD/VSS pins located at left side and right side of macro.
+   2.Drop vias in full of any two metals corss-area.
+
+
+13. Scramble table
+
+
+   -------------------------------------------------------------------------------------------------------------
+   |            |            |        |            |     255   |            |        |            |            |
+   |            |            |        |            |-----------|            |        |            |            |
+   |            |            |        |            |     254   |            |        |            |            |
+   |            |            |        |            |-----------|            |        |            |            |
+   |            |            |        |            |     253   |            |        |            |            |
+   |            |            |        |            |-----------|            |        |            |            |
+   |            |            |        |            |     .     |            |        |            |            |
+   |            |            |  ...   |            |     .     |            |  ...   |            |            |
+   |            |            |        |            |     .     |            |        |            |            |
+   |            |            |        |            |-----------|            |        |            |            |
+   |            |            |        |            |     2     |            |        |            |            |
+   |            |            |        |            |-----------|            |        |            |            |
+   |            |            |        |            |     1     |            |        |            |            |
+   |            |            |        |            |-----------|            |        |            |            |
+   |            |            |        |            |     0     |            |        |            |            |
+   -------------------------------------------------------------------------------------------------------------
+   |  3 ... 10  |  3 ... 10  |  ...   |  3 ... 10  |           |  01 ... 3  |  ...   |  01 ... 3  |  01 ... 3  |
+   |D[0],Q[0]   |D[1],Q[1]   |  ...   | D[1], Q[1]|           | D[2], Q[2] |    ... | D[2], Q[2] | D[3], Q[3] |
+                /            \                                                       /            \
+               /              \                                                     /              \
+              /                \                                                   /                \
+             /                  \                                                 /                  \
+     BL3,BLB3,BLB2,BL2,BL1,BLB1,BLB0,BL0                                  BL0,BLB0,BLB1,BL1,BL2,BLB2,BLB3,BL3
+
+
+15. Known problems and limitations
+
+APPENDIX:
+
+PVT -- Process and Temperature Characterization Conditions
+
+   ----------------------------------------------------------------------------------
+   |  PVT                  |  Process         |  Voltage(V)      |  Temperature(C)  |
+   ----------------------------------------------------------------------------------
+   |  ss1p08vm40c          |  SS              |  1.08            |  -40             |
+   ----------------------------------------------------------------------------------
+   |  ss1p08vm20c          |  SS              |  1.08            |  -20             |
+   ----------------------------------------------------------------------------------
+   |  ss1p08v105c          |  SS              |  1.08            |  105             |
+   ----------------------------------------------------------------------------------
+   |  ss1p08v125c          |  SS              |  1.08            |  125             |
+   ----------------------------------------------------------------------------------
+   |  tt1p2v25c            |  TT              |  1.2             |   25             |
+   ----------------------------------------------------------------------------------
+   |  tt1p2v40c            |  TT              |  1.2             |   40             |
+   ----------------------------------------------------------------------------------
+   |  ff1p32vm40c          |  FF              |  1.32            |  -40             |
+   ----------------------------------------------------------------------------------
+   |  ff1p32vm20c          |  FF              |  1.32            |  -20             |
+   ----------------------------------------------------------------------------------
+   |  ff1p32v0c            |  FF              |  1.32            |    0             |
+   ----------------------------------------------------------------------------------
+   |  ff1p32v105c          |  FF              |  1.32            |  105             |
+   ----------------------------------------------------------------------------------
+   |  Worst Leakage Power  |  FF              |  1.32            |  125             |
+   ----------------------------------------------------------------------------------
+  
