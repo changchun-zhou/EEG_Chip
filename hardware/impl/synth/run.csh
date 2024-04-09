@@ -7,7 +7,7 @@
 #    RTSEL: 00 tapeout, 10: Only synth for Simulation
 # 3. PERIOD_CLK
 
-set DESIGN_NAME="WCA"
+set DESIGN_NAME="EEG_ACC"
 ################################################################################
 set VT="3vt"
 set PERIOD_CLK="10"

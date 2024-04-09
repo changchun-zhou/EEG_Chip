@@ -287,10 +287,17 @@ wire [PE_ROW -1:0][PE_COL -1:0][ORAM_ADD_AW    -1:0] peay_oram_dat_add;
 wire [PE_ROW -1:0][PE_COL -1:0][ORAM_DAT_DW    -1:0] peay_oram_dat_dat;
 
 //WRAM_WBUF
-wire wbuf_cfg_info_vld;
-wire wbuf_cfg_info_rdy;
-wire wbuf_cfg_info_ena = wbuf_cfg_info_vld && wbuf_cfg_info_rdy;
-CPM_REG_CE #( 1 ) WBUF_CFG_INFO_VLD_REG( clk, rst_n, wbuf_cfg_info_ena, cfg_acmd_vld, 1'd1, wbuf_cfg_info_vld );
+wire [PE_ROW    -1 : 0] wbuf_cfg_info_vld;
+wire [PE_ROW    -1 : 0] wbuf_cfg_info_rdy;
+wire [PE_ROW    -1 : 0] wbuf_cfg_info_ena;
+genvar gv_i;
+generate
+    for(gv_i=0; gv_i<PE_ROW; gv_i=gv_i+1)begin
+        assign wbuf_cfg_info_ena[gv_i] = wbuf_cfg_info_vld[gv_i] && wbuf_cfg_info_rdy[gv_i];
+    end
+endgenerate
+
+CPM_REG_CE #( 1 ) WBUF_CFG_INFO_VLD_REG [PE_ROW -1 : 0]( clk, rst_n, wbuf_cfg_info_ena, cfg_acmd_vld, 1'd1, wbuf_cfg_info_vld );
 
 reg  [PE_ROW -1:0][PE_COL -1:0]                      wbuf_ptow_add_vld;
 reg  [PE_ROW -1:0][PE_COL -1:0]                      wbuf_ptow_add_lst;

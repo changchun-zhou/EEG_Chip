@@ -25,7 +25,7 @@ module CPM_REG_CE #(
   always @ ( posedge Clk or negedge Rstn )begin
     if( ~Rstn )
       data_out <= 'd0;
-    if( Clear )
+    else if( Clear )
       data_out <= 'd0;
     else if( Enable )
       data_out <= DataIn;

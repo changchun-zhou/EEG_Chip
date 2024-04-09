@@ -39,7 +39,7 @@ module EEG_PEA #(
     output                                                 IS_IDLE,
                                                                   
     input                                                  CFG_INFO_VLD,
-    input                                                  CFG_INFO_RDY,
+    output                                                 CFG_INFO_RDY,
     input  [PEAY_CMD_DW                              -1:0] CFG_INFO_CMD,
     
     input  [ARAM_ADD_AW                              -1:0] CFG_ARAM_ADD,
@@ -308,7 +308,7 @@ generate
                 else if( pea_idle )
                     pea_run_done[gen_i][gen_j] <= 'd0;
                 else if( oram_dat_vld[gen_i][gen_j] && oram_dat_rdy[gen_i][gen_j] && oram_dat_lst[gen_i][gen_j] )begin
-                    pea_run_done[gen_i[gen_j]] <= 'd1;
+                    pea_run_done[gen_i][gen_j] <= 'd1;
                 end
             end
         end

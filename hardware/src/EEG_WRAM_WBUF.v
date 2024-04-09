@@ -216,7 +216,7 @@ end
 
 generate
     for(gv_port=0; gv_port<WBUF_NUM_DW; gv_port=gv_port+1)begin
-        assign PortRdAddrLst[gv_port] = {PTOW_ADD_ADD[gv_port], PTOW_ADD_LST[gv_port]};
+        assign PortRdAddrLst[gv_port] = PortRdAddrVld? {PTOW_ADD_ADD[gv_port], PTOW_ADD_LST[gv_port]} : 0;
     end
 endgenerate
 ArbCore#(
@@ -279,7 +279,7 @@ generate
             .Array ( compare_vector ),
             .Addr  ( hit_addr       )
         );
-        assign PortRdAddrVld[gv_port] = state == WORK & (byp | PTOW_ADD_VLD[gv_port] & !hit & !hit_last & !hit_rdata_s2);
+        assign PortRdAddrVld[gv_port] = state == WORK & PTOW_ADD_VLD[gv_port] & (byp | !hit & !hit_last & !hit_rdata_s2);
         assign PTOW_ADD_RDY [gv_port] = state == WORK & ( (WRAM_ADD_RDY & ArbIdx == gv_port) | hit | hit_last | hit_rdata_s2 ) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
         //=====================================================================================================================
         // Logic Design: S2

@@ -27,7 +27,7 @@ module EEG_PEA_ENG #(
     input                                                  clk,
     input                                                  rst_n,
     
-    input                                                  IS_IDLE,
+    output                                                 IS_IDLE,
 
     input  [CONV_RUN_DW                              -1:0] CFG_CONV_RUN,
     input  [CONV_WEI_DW                              -1:0] CFG_CONV_WEI,
@@ -142,7 +142,7 @@ generate
                 pe_wei_dat[gen_i][gen_j] = pe_fifo_out[gen_i][gen_j][   PE_ACT_DW +:PE_WEI_DW];
                 pe_act_add[gen_i][gen_j] = pe_fifo_out[gen_i][gen_j][   PE_ACT_DW + PE_WEI_DW +:ARAM_ADD_AW];
                 pe_wei_idx[gen_i][gen_j] = pe_fifo_out[gen_i][gen_j][   PE_ACT_DW + PE_WEI_DW + ARAM_ADD_AW +:CONV_WEI_DW];
-                pe_din_vld[gen_i][gen_j] = pe_fifo_out[gen_i][gen_j][PE_BUF_DW -3];
+                // pe_din_vld[gen_i][gen_j] = pe_fifo_out[gen_i][gen_j][PE_BUF_DW -3];
                 pe_act_lst[gen_i][gen_j] = pe_fifo_out[gen_i][gen_j][PE_BUF_DW -2];
                 pe_wei_lst[gen_i][gen_j] = pe_fifo_out[gen_i][gen_j][PE_BUF_DW -1];
             end

@@ -29,7 +29,7 @@ module EEG_XRAM_RAM #(
     output [XRAM_NUM_DW -1:0]                      XRAM_ADD_RDY,
     input  [XRAM_NUM_DW -1:0][XRAM_ADD_AW    -1:0] XRAM_ADD_ADD,
     output [XRAM_NUM_DW -1:0]                      XRAM_DAT_VLD,
-    input  [XRAM_NUM_DW -1:0]                      XRAM_DAT_LST,
+    output [XRAM_NUM_DW -1:0]                      XRAM_DAT_LST,
     input  [XRAM_NUM_DW -1:0]                      XRAM_DAT_RDY,
     output [XRAM_NUM_DW -1:0][XRAM_DAT_DW    -1:0] XRAM_DAT_DAT
   );

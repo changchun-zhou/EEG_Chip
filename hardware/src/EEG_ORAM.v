@@ -25,7 +25,7 @@ module EEG_ORAM #(
     input                                                         clk,
     input                                                         rst_n,
 
-    input                                                         IS_IDLE,
+    output                                                        IS_IDLE,
 
     input                                                         CFG_INFO_VLD,
     output                                                        CFG_INFO_RDY,
@@ -309,7 +309,7 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
         for( gen_j=0 ; gen_j < ORAM_MUX_DW; gen_j = gen_j+1 )begin
-            always @ ( posedge clk or negedge rst_n )begin
+            always @ ( * )begin
                 etoo_buf_wen[gen_i][gen_j] = oram_ptoo && etoo_dat_vld[gen_i][gen_j] && etoo_dat_rdy[gen_i][gen_j];
                 etoo_buf_ren[gen_i][gen_j] = oram_ptoo && etoo_dat_vld[gen_i][gen_j] && etoo_dat_rdy[gen_i][gen_j];
                 etoo_buf_din[gen_i][gen_j] = {etoo_dat_lst[gen_i][gen_j], etoo_dat_add[gen_i][gen_j], etoo_dat_dat[gen_i][gen_j]};

@@ -110,8 +110,8 @@ generate for( gen_i=0 ; gen_i < REQ_DW; gen_i = gen_i+1 ) begin : ARB_BLOCK
     assign gnt_arb[gen_i] = req_arb[gen_i] & ~req_idx_equ[gen_i];
     
     always @ ( * )begin
+        gnt_idx[gen_i] = 'd0;
         for( i = REQ_DW-1; i >= 0; i = i - 1 )begin
-            gnt_idx[gen_i] = 'd0;
             if( gen_i == req_idx[ req_pri[i] ] )
                 gnt_idx[gen_i] = req_pri[i];
         end

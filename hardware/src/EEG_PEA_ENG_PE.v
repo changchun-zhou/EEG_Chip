@@ -25,7 +25,7 @@ module EEG_PEA_ENG_PE #(
     input                             clk,
     input                             rst_n,
 
-    input                             IS_IDLE,
+    output                            IS_IDLE,
 
     input  [CONV_RUN_DW         -1:0] CFG_CONV_RUN,//CONV_DILA_FAC or CONV_DILA_STRIDE
     input  [CONV_WEI_DW         -1:0] CFG_CONV_WEI,//WEI_LEN

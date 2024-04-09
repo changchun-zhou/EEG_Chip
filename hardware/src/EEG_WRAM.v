@@ -19,7 +19,7 @@ module EEG_WRAM #(
     input                                          clk,
     input                                          rst_n,
     
-    input                                          IS_IDLE,
+    output                                         IS_IDLE,
     
     input                                          CFG_INFO_VLD,
     output                                         CFG_INFO_RDY,

@@ -43,7 +43,7 @@ module EEG_RAM_MOVER #(
     input                                          clk,
     input                                          rst_n,
     
-    input                                          IS_IDLE,
+    output                                         IS_IDLE,
     
     input                                          CFG_INFO_VLD,
     output                                         CFG_INFO_RDY,
@@ -446,10 +446,9 @@ generate
             if( ~rst_n )
                 cfg_from_idx[gen_i] <= 'd0;
             else if( cfg_info_ena )begin
-                cfg_from_idx[gen_i] <= CFG_INFO_CMD;
                 case( CFG_INFO_CMD )
-                    MOVE_ATOW: cfg_from_idx[gen_i] = &CFG_WRAM_IDX ? gen_i : cfg_wram_sel;
-                      default: cfg_from_idx[gen_i] = &CFG_ARAM_IDX ? gen_i : cfg_aram_sel;
+                    MOVE_ATOW: cfg_from_idx[gen_i] <= &CFG_WRAM_IDX ? gen_i : cfg_wram_sel;
+                      default: cfg_from_idx[gen_i] <= &CFG_ARAM_IDX ? gen_i : cfg_aram_sel;
                 endcase
             end
         end
