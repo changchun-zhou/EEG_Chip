@@ -258,7 +258,6 @@ generate
         wire                            hit;
         wire                            hit_last;
         wire [HIT_ADDR_WIDTH    -1 : 0] hit_addr;
-        wire                            hit_rdata_s2;
         reg                             hit_last_vld_s2;
         reg [WRAM_DAT_DW         -1 : 0] last_data_s2;
         reg                             last_data_LST_s2;
@@ -279,8 +278,8 @@ generate
             .Array ( compare_vector ),
             .Addr  ( hit_addr       )
         );
-        assign PortRdAddrVld[gv_port] = state == WORK & PTOW_ADD_VLD[gv_port] & (byp | !hit & !hit_last & !hit_rdata_s2);
-        assign PTOW_ADD_RDY [gv_port] = state == WORK & ( (WRAM_ADD_RDY & ArbIdx == gv_port) | hit | hit_last | hit_rdata_s2 ) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
+        assign PortRdAddrVld[gv_port] = state == WORK & PTOW_ADD_VLD[gv_port] & (byp | !hit & !hit_last);
+        assign PTOW_ADD_RDY [gv_port] = state == WORK & ( (WRAM_ADD_RDY & ArbIdx == gv_port) | hit | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
         //=====================================================================================================================
         // Logic Design: S2
         //=====================================================================================================================
@@ -325,17 +324,16 @@ generate
             end else if(state == IDLE) begin
                 {last_data_s2, last_data_LST_s2, hit_last_vld_s2} <= 0;
             end else if( hit_last_ena_s2 ) begin
-                {last_data_s2, last_data_LST_s2, hit_last_vld_s2} <= {last_data, PTOW_ADD_LST[gv_port], hit_last};
+                {last_data_s2, last_data_LST_s2, hit_last_vld_s2} <= {last_data, PTOW_ADD_LST[gv_port], hit_last & PTOW_ADD_VLD[gv_port]};
             end
         end
 
         assign hit_array     [gv_port] = hit;
         assign addr_hit_array[gv_port] = hit_addr;
 
-        assign hit_rdata_s2                                    = state == WORK & ( (WCAWBF_Adr_s2 == PTOW_ADD_ADD[gv_port]) & WRAM_DAT_VLD) ; // directly hit rdata
         always @(*) begin
             if(state == WORK) begin
-                if((hit_rdata_s2 | ArbIdx_d == gv_port)) begin
+                if(( ArbIdx_d == gv_port)) begin
                     {PTOW_DAT_DAT  [gv_port], PTOW_DAT_LST[gv_port]} = {WRAM_DAT_DAT, WRAM_DAT_LST};
                 end else if(hit_last_vld_s2) begin
                     {PTOW_DAT_DAT  [gv_port], PTOW_DAT_LST[gv_port]} = {last_data_s2, last_data_LST_s2};
@@ -348,7 +346,7 @@ generate
                     {PTOW_DAT_DAT  [gv_port], PTOW_DAT_LST[gv_port]} = 0;
             end
         end
-        assign PTOW_DAT_VLD  [gv_port]= state == WORK & ( (  byp & ArbIdx_d == gv_port | hit_rdata_s2 | ArbIdx_d == gv_port) & WRAM_DAT_VLD | hit_last_vld_s2               | hit_vld_s2                  );
+        assign PTOW_DAT_VLD  [gv_port]= state == WORK & ( (  byp & ArbIdx_d == gv_port | ArbIdx_d == gv_port) & WRAM_DAT_VLD | hit_last_vld_s2               | hit_vld_s2                  );
 
     end
 endgenerate
