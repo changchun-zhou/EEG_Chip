@@ -194,7 +194,7 @@ endgenerate
 //=====================================================================================================================
 EEG_XRAM_RAM #(
     .XRAM_NUM_DW          ( FRAM_NUM_DW      ),
-    .XRAM_ADD_AW          ( FRAM_ADD_AW      ),
+    .XRAM_ADD_AW          ( FRAM_ADD_AW -2   ),
     .XRAM_DAT_DW          ( FRAM_DAT_DW      )
 ) EEG_FRAM_RAM_U(
     .clk                  ( clk              ),
