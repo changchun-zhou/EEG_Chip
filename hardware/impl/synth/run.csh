@@ -1,7 +1,5 @@
 # Check List:
-# 1. PLL: 
-#   TOP.v, ITF.v, and CLK.v: `define PLL; 
-#   TOP.sdc: False Path
+# 1. TOP.sdc: False Path
 # 2. RAM.v: `define RTSELDB (Debuging)
 #    TapeOut: ndef for synth and Force to 10 when Simulation
 #    RTSEL: 00 tapeout, 10: Only synth for Simulation
@@ -9,26 +7,15 @@
 
 set DESIGN_NAME="EEG_ACC"
 ################################################################################
-set VT="3vt"
-set PERIOD_CLK="10"
-set PERIOD_SCK="10" # <= 100MHz
-set PLL="0"
+set PERIOD_CLK="1000"
 set UNGROUP="group"
 set MAXPOWER="0" # 100MHz -> 100mW
 set OPTWGT="0.5" # Larger optimization weight, lower leakage(1/20~1/10 of Total Synth Power)
-set NOTE="TestLib"
 set SDC_FILE=./TOP.sdc
+set TECH_SETTING=tech_settings.tcl
+set NOTE="0p45wc"
 
 ################################################################################
-if ($VT == "3vt") then
-    set TECH_SETTING=tech_settings.tcl
-else if($VT == "rvt") then
-    set TECH_SETTING=tech_settings_rvt.tcl  
-else 
-    echo "<<<<<<<<<<<<<<<<<<<error VT>>>>>>>>>>>>>>>>>>>>>>"
-    exit  
-endif 
-
 if($PERIOD_CLK == "") then 
     echo "<<<<<<<<<<<<<<<<<<<empty PERIOD_CLK>>>>>>>>>>>>>>>>>>>>>>"
     exit
@@ -36,7 +23,7 @@ endif
 
 set DATE_VALUE = `date "+%y%m%d_%H%M" ` 
 set SYNTH_OUTDIR = ../../work/synth
-set SYNTH_PROJDIR = ${SYNTH_OUTDIR}/$DESIGN_NAME/Date${DATE_VALUE}_Periodclk${PERIOD_CLK}_Periodsck${PERIOD_SCK}_PLL${PLL}_${UNGROUP}_Track${VT}_MaxDynPwr${MAXPOWER}_OptWgt${OPTWGT}_Note_${NOTE}
+set SYNTH_PROJDIR = ${SYNTH_OUTDIR}/$DESIGN_NAME/Date${DATE_VALUE}_Periodclk${PERIOD_CLK}_${UNGROUP}_MaxDynPwr${MAXPOWER}_OptWgt${OPTWGT}_Note_${NOTE}
 rm -rf ${SYNTH_PROJDIR}
 mkdir -p ${SYNTH_OUTDIR}/$DESIGN_NAME ${SYNTH_PROJDIR}
 
@@ -45,8 +32,6 @@ rm ./define.vh
 
 echo "set DESIGN_NAME   $DESIGN_NAME"   >> ./config_temp.tcl
 echo "set PERIOD_CLK    $PERIOD_CLK"    >> ./config_temp.tcl
-echo "set PERIOD_SCK    $PERIOD_SCK"    >> ./config_temp.tcl
-echo "set PLL           $PLL"           >> ./config_temp.tcl
 echo "set MAXPOWER      $MAXPOWER"      >> ./config_temp.tcl
 echo "set OPTWGT        $OPTWGT"        >> ./config_temp.tcl
 echo "set DATE_VALUE    $DATE_VALUE"    >> ./config_temp.tcl
