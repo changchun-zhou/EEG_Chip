@@ -1,10 +1,10 @@
 #############################################################
-# CPF for MIPS
+# CPF for EEG_ACC
 #############################################################
 
 set_cpf_version 2.0
 set_hierarchy_separator /
-set_design LT_RISC_32p5
+set_design EEG_ACC
 
 #############################################################################################
 ##                                     Library settings                                    ## 
@@ -35,6 +35,7 @@ define_library_set -name cadence45_wc_LV_lib -libraries $slow_LV_lib
 ##                                  Define typical-case library sets                       ## 
 #############################################################################################
 
+
 #############################################################################################
 ##                                  Define best-case library sets                          ## 
 #############################################################################################
@@ -62,7 +63,10 @@ define_library_set -name cadence45_bc_LV_lib -libraries $fast_LV_lib
 create_power_domain -name PDcore -default
 
 ## low voltage one:
-create_power_domain -name PDau -instances ARC_RegisterFile
+create_power_domain -name PDau -instances {
+    EEG_ACC.EEG_ARAM_U.EEG_ARAM_RAM_U.XRAM_U[*]   
+    EEG_ACC.EEG_FRAM_U.EEG_FRAM_RAM_U.XRAM_U[*]  
+    EEG_ACC.EEG_ORAM_U.EEG_ORAM_RAM_U.XRAM_U[*]}
 
 ################################
 ## Defining Power/Ground Nets ##
