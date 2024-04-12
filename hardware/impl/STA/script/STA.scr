@@ -25,10 +25,9 @@ read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/timing/slow_vdd
 read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/celtic/fast.cdb
 read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/celtic/slow.cdb
 
-
 read_verilog ../p+r_enc/data_out/LT_RISC_32p5_layout.v
 set_top_module LT_RISC_32p5
-read_power_domain -cpf ../p+r_enc/cpf/RISC.cpf
+read_power_domain -cpf /workspace/home/zhoucc/Proj_HW/EEG_Chip/hardware/impl/synth/EEG_ACC.cpf
 
 
 ######################
@@ -52,7 +51,7 @@ update_delay_corner -name AV_fastHV_fastHV_rcbest_hold_dc  \
 
 
 set_analysis_view -setup {AV_slowHV_slowHV_rcworst_setup} -hold {AV_fastHV_fastHV_rcbest_hold}
-set_default_view -setup {AV_slowHV_slowHV_rcworst_setup} -hold {AV_fastHV_fastHV_rcbest_hold}
+set_default_view  -setup {AV_slowHV_slowHV_rcworst_setup} -hold {AV_fastHV_fastHV_rcbest_hold}
 set_interactive_constraint_modes [ all_constraint_modes -active ]
 
 set_analysis_mode -cppr both -analysisType onChipVariation -checkType setup
@@ -86,9 +85,9 @@ check_timing -verbose > ${reportDir}/checkTiming.rpt
 
 
 group_path -name reg2reg -from [ all_registers ] -to [ all_registers ]
-group_path -name in2reg -from [ all_inputs ] -to [ all_registers ]
-group_path -name reg2out -from [ all_registers ] -to [ all_outputs ]
-group_path -name in2out -from [ all_inputs ] -to [ all_outputs ]
+group_path -name in2reg  -from [ all_inputs    ] -to [ all_registers ]
+group_path -name reg2out -from [ all_registers ] -to [ all_outputs   ]
+group_path -name in2out  -from [ all_inputs    ] -to [ all_outputs   ]
 
 set pathGroups [ list default ]
 foreach_in_collection group [ get_path_groups -quiet ] {
@@ -101,13 +100,13 @@ report_timing -late -net -path_type full_clock -nworst 5 -max_points 250 > ${rep
 
 report_critical_instance -max_slack 0.0 -cost_type worst_slack -max_insts 600 > ${reportDir}/criticalInstance.rpt
 
-set_table_style -no_frame_fix_width -nosplit
-report_constraint -all_violators > ${reportDir}/allConstraintViolations.rpt
-report_constraint -all_violators -drv_violation_type max_transition > ${reportDir}/maxTran.rpt
-report_constraint -all_violators -drv_violation_type max_capacitance > ${reportDir}/maxCap.rpt
-report_constraint -all_violators -drv_violation_type max_fanout > ${reportDir}/maxFanout.rpt
-report_min_pulse_width -violation_only > ${reportDir}/minPulseWidth.rpt
-report_analysis_coverage > ${reportDir}/analysisCoverage.rpt
+set_table_style         -no_frame_fix_width -nosplit
+report_constraint       -all_violators                                      > ${reportDir}/allConstraintViolations.rpt
+report_constraint       -all_violators -drv_violation_type max_transition   > ${reportDir}/maxTran.rpt
+report_constraint       -all_violators -drv_violation_type max_capacitance  > ${reportDir}/maxCap.rpt
+report_constraint       -all_violators -drv_violation_type max_fanout       > ${reportDir}/maxFanout.rpt
+report_min_pulse_width  -violation_only                                     > ${reportDir}/minPulseWidth.rpt
+report_analysis_coverage                                                    > ${reportDir}/analysisCoverage.rpt
 
 exit
 
