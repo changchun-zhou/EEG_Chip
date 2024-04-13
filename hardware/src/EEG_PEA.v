@@ -24,6 +24,7 @@ module EEG_PEA #(
     parameter ARAM_ADD_AW = 12,//4k
     parameter WRAM_ADD_AW = 13,//8k
     parameter ORAM_ADD_AW = 10,//1k
+    parameter OMUX_ADD_AW =  8,
     parameter FRAM_ADD_AW = ARAM_ADD_AW,
     parameter ARAM_DAT_DW = 8,
     parameter WRAM_DAT_DW = 8,
@@ -88,7 +89,7 @@ module EEG_PEA #(
     output [PE_ROW -1:0][PE_COL -1:0]                      ORAM_DAT_VLD,
     output [PE_ROW -1:0][PE_COL -1:0]                      ORAM_DAT_LST,
     input  [PE_ROW -1:0][PE_COL -1:0]                      ORAM_DAT_RDY,
-    output [PE_ROW -1:0][PE_COL -1:0][ORAM_ADD_AW    -1:0] ORAM_DAT_ADD,
+    output [PE_ROW -1:0][PE_COL -1:0][OMUX_ADD_AW    -1:0] ORAM_DAT_ADD,
     output [PE_ROW -1:0][PE_COL -1:0][ORAM_DAT_DW    -1:0] ORAM_DAT_DAT
   );
 //=====================================================================================================================
@@ -126,24 +127,25 @@ reg pea_conv_done;
 //=====================================================================================================================
 //CFG_IO
 wire cfg_info_vld = CFG_INFO_VLD;
-wire [PEAY_CMD_DW -1:0] cfg_info_cmd = CFG_INFO_CMD;
 reg  cfg_info_rdy;
-reg  [PE_COL -1:0][ARAM_ADD_AW -1:0] cfg_aram_add;
-reg  [PE_COL -1:0][WRAM_ADD_AW -1:0] cfg_wram_add;
-reg  [PE_COL -1:0]                   cfg_splt_ena;
-reg  [PE_COL -1:0][CONV_ICH_DW -1:0] cfg_conv_ich;
-reg  [PE_COL -1:0][CONV_OCH_DW -1:0] cfg_conv_och;
-reg  [PE_COL -1:0][CONV_LEN_DW -1:0] cfg_conv_len;
-reg  [PE_COL -1:0][CONV_MUL_DW -1:0] cfg_conv_mul;
-reg  [PE_COL -1:0][CONV_ADD_DW -1:0] cfg_conv_add;
-reg  [PE_COL -1:0][CONV_WEI_DW -1:0] cfg_conv_wei;
-reg  [PE_COL -1:0]                   cfg_flag_vld;
-reg  [PE_COL -1:0][DILA_FAC_DW -1:0] cfg_dila_fac;
-reg  [PE_COL -1:0][STRD_FAC_DW -1:0] cfg_strd_fac;
-reg  [PE_COL -1:0][CONV_RUN_DW -1:0] cfg_conv_run;
-reg  [PE_COL -1:0][ORAM_ADD_AW -1:0] cfg_conv_lst;
 
-wire [CONV_WEI_DW -1:0] cfg_conv_pad = cfg_conv_wei[0][CONV_WEI_DW -1:1];
+wire [PEAY_CMD_DW -1:0] cfg_info_cmd = CFG_INFO_CMD;
+reg  [ARAM_ADD_AW -1:0] cfg_aram_add;
+reg  [WRAM_ADD_AW -1:0] cfg_wram_add;
+reg                     cfg_splt_ena;
+reg  [CONV_ICH_DW -1:0] cfg_conv_ich;
+reg  [CONV_OCH_DW -1:0] cfg_conv_och;
+reg  [CONV_LEN_DW -1:0] cfg_conv_len;
+reg  [CONV_MUL_DW -1:0] cfg_conv_mul;
+reg  [CONV_ADD_DW -1:0] cfg_conv_add;
+reg  [CONV_WEI_DW -1:0] cfg_conv_wei;
+reg                     cfg_flag_vld;
+reg  [DILA_FAC_DW -1:0] cfg_dila_fac;
+reg  [STRD_FAC_DW -1:0] cfg_strd_fac;
+reg  [CONV_RUN_DW -1:0] cfg_conv_run;
+reg  [ORAM_ADD_AW -1:0] cfg_conv_lst;
+wire [CONV_WEI_DW -1:0] cfg_conv_pad = cfg_conv_wei[CONV_WEI_DW -1:1];
+
 assign CFG_INFO_RDY = cfg_info_rdy;
 
 wire cfg_info_ena = cfg_info_vld && cfg_info_rdy && cfg_info_cmd[PEAY_CMD_DW-1];
@@ -205,7 +207,7 @@ assign WRAM_DAT_RDY = wram_dat_vld;
 reg  [PE_ROW -1:0][PE_COL -1:0]                     oram_dat_vld;
 reg  [PE_ROW -1:0][PE_COL -1:0]                     oram_dat_lst;
 wire [PE_ROW -1:0][PE_COL -1:0]                     oram_dat_rdy= ORAM_DAT_RDY;
-reg  [PE_ROW -1:0][PE_COL -1:0][ORAM_ADD_AW   -1:0] oram_dat_add;
+reg  [PE_ROW -1:0][PE_COL -1:0][OMUX_ADD_AW   -1:0] oram_dat_add;
 reg  [PE_ROW -1:0][PE_COL -1:0][ORAM_DAT_DW   -1:0] oram_dat_dat;
 
 assign ORAM_DAT_VLD = oram_dat_vld;
@@ -235,50 +237,46 @@ wire [PE_COL -1:0][PE_ROW -1:0][PE_WEI_IW  -1:0] wei_inf;
                                            
 wire [PE_ROW -1:0][PE_COL -1:0]                  out_vld;
 wire [PE_ROW -1:0][PE_COL -1:0]                  out_lst;
-wire [PE_ROW -1:0][PE_COL -1:0]                  out_rdy;
+wire [PE_ROW -1:0][PE_COL -1:0]                  out_rdy = oram_dat_rdy;
 wire [PE_ROW -1:0][PE_COL -1:0][PE_WEI_DW  -1:0] out_dat;
-wire [PE_ROW -1:0][PE_COL -1:0][ORAM_ADD_AW-1:0] out_add;
+wire [PE_ROW -1:0][PE_COL -1:0][OMUX_ADD_AW-1:0] out_add;
 //=====================================================================================================================
 // IO Logic Design :
 //=====================================================================================================================
-generate
-    for( gen_i=0 ; gen_i < PE_COL; gen_i = gen_i+1 ) begin : PE_CFG_ROW
-        always @ ( posedge clk or negedge rst_n )begin
-            if( ~rst_n )begin
-                cfg_aram_add[gen_i] <= 'd0;
-                cfg_wram_add[gen_i] <= 'd0;
-                cfg_splt_ena[gen_i] <= 'd0;
-                cfg_conv_ich[gen_i] <= 'd0;
-                cfg_conv_och[gen_i] <= 'd0;
-                cfg_conv_len[gen_i] <= 'd0;
-                cfg_conv_mul[gen_i] <= 'd0;
-                cfg_conv_add[gen_i] <= 'd0;
-                cfg_conv_wei[gen_i] <= 'd0;
-                cfg_flag_vld[gen_i] <= 'd0;
-                cfg_dila_fac[gen_i] <= 'd0;
-                cfg_strd_fac[gen_i] <= 'd0;
-                cfg_conv_run[gen_i] <= 'd0;
-                cfg_conv_lst[gen_i] <= 'd0;
-            end
-            else if( cfg_info_ena )begin
-                cfg_aram_add[gen_i] <= CFG_ARAM_ADD;
-                cfg_wram_add[gen_i] <= CFG_WRAM_ADD;
-                cfg_splt_ena[gen_i] <= CFG_SPLT_ENA;
-                cfg_conv_ich[gen_i] <= CFG_CONV_ICH;
-                cfg_conv_och[gen_i] <= CFG_CONV_OCH;
-                cfg_conv_len[gen_i] <= CFG_CONV_LEN;
-                cfg_conv_mul[gen_i] <= CFG_CONV_MUL;
-                cfg_conv_add[gen_i] <= CFG_CONV_ADD;
-                cfg_conv_wei[gen_i] <= CFG_CONV_WEI;
-                cfg_flag_vld[gen_i] <= CFG_FLAG_VLD;
-                cfg_dila_fac[gen_i] <= CFG_DILA_FAC;
-                cfg_strd_fac[gen_i] <= CFG_STRD_FAC;
-                cfg_conv_run[gen_i] <=|CFG_DILA_FAC ? 1<<CFG_DILA_FAC : 1<<CFG_STRD_FAC;
-                cfg_conv_lst[gen_i] <=(CFG_CONV_LEN+'d1)*(CFG_CONV_OCH+'d1)-'d1;
-            end
-        end
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        cfg_aram_add <= 'd0;
+        cfg_wram_add <= 'd0;
+        cfg_splt_ena <= 'd0;
+        cfg_conv_ich <= 'd0;
+        cfg_conv_och <= 'd0;
+        cfg_conv_len <= 'd0;
+        cfg_conv_mul <= 'd0;
+        cfg_conv_add <= 'd0;
+        cfg_conv_wei <= 'd0;
+        cfg_flag_vld <= 'd0;
+        cfg_dila_fac <= 'd0;
+        cfg_strd_fac <= 'd0;
+        cfg_conv_run <= 'd0;
+        cfg_conv_lst <= 'd0;
     end
-endgenerate
+    else if( cfg_info_ena )begin
+        cfg_aram_add <= CFG_ARAM_ADD;
+        cfg_wram_add <= CFG_WRAM_ADD;
+        cfg_splt_ena <= CFG_SPLT_ENA;
+        cfg_conv_ich <= CFG_CONV_ICH;
+        cfg_conv_och <= CFG_CONV_OCH;
+        cfg_conv_len <= CFG_CONV_LEN;
+        cfg_conv_mul <= CFG_CONV_MUL;
+        cfg_conv_add <= CFG_CONV_ADD;
+        cfg_conv_wei <= CFG_CONV_WEI;
+        cfg_flag_vld <= CFG_FLAG_VLD;
+        cfg_dila_fac <= CFG_DILA_FAC;
+        cfg_strd_fac <= CFG_STRD_FAC;
+        cfg_conv_run <=|CFG_DILA_FAC ? 1<<CFG_DILA_FAC : 1<<CFG_STRD_FAC;
+        cfg_conv_lst <=(CFG_CONV_LEN+'d1)*(CFG_CONV_OCH[CONV_OCH_DW -1:2]+'d1)-'d1;
+    end
+end
 
 always @ ( * )begin
     cfg_info_rdy = &pea_gen_idle && pea_eng_idle;
@@ -290,6 +288,7 @@ always @ ( * )begin
     oram_dat_add = out_add;
     oram_dat_dat = out_dat;
 end
+
 //=====================================================================================================================
 // Logic Design :
 //=====================================================================================================================
@@ -401,7 +400,7 @@ EEG_PEA_DAT_GEN #(
     .ACT_RDY         ( act_rdy           ),
     .ACT_DAT         ( act_dat           ),
     .ACT_INF         ( act_inf           ),
-                                         
+
     .WEI_VLD         ( wei_vld           ),
     .WEI_LST         ( wei_lst           ),
     .WEI_RDY         ( wei_rdy           ),
@@ -417,6 +416,7 @@ EEG_PEA_ENG #(
     .PE_OUT_DW       ( PE_OUT_DW      ),
     .ARAM_ADD_AW     ( ARAM_ADD_AW    ),
     .ORAM_ADD_AW     ( ORAM_ADD_AW    ),
+    .OMUX_ADD_AW     ( OMUX_ADD_AW    ),
     .CONV_WEI_DW     ( CONV_WEI_DW    ),
     .CONV_RUN_DW     ( CONV_RUN_DW    ),
     .CONV_MUL_DW     ( CONV_MUL_DW    ),
@@ -427,12 +427,12 @@ EEG_PEA_ENG #(
 
     .IS_IDLE         ( pea_eng_idle   ),
 
-    .CFG_CONV_RUN    ( cfg_conv_run[0]),
-    .CFG_CONV_WEI    ( cfg_conv_wei[0]),
+    .CFG_CONV_RUN    ( cfg_conv_run   ),
+    .CFG_CONV_WEI    ( cfg_conv_wei   ),
     .CFG_CONV_PAD    ( cfg_conv_pad   ),
-    .CFG_CONV_MUL    ( cfg_conv_mul[0]),
-    .CFG_CONV_ADD    ( cfg_conv_add[0]),
-    .CFG_CONV_LST    ( cfg_conv_lst[0]),
+    .CFG_CONV_MUL    ( cfg_conv_mul   ),
+    .CFG_CONV_ADD    ( cfg_conv_add   ),
+    .CFG_CONV_LST    ( cfg_conv_lst   ),
 
     .ACT_VLD         ( act_vld        ),
     .ACT_LST         ( act_lst        ),

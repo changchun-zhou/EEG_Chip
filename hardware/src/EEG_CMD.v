@@ -27,6 +27,7 @@ module EEG_CMD #(
     parameter ARAM_NUM_DW = BANK_NUM_DW,
     parameter WRAM_NUM_DW = BANK_NUM_DW,
     parameter ORAM_NUM_DW = BANK_NUM_DW,
+    parameter OMUX_NUM_DW = BANK_NUM_DW,
     parameter ARAM_ADD_AW = 12,//4k
     parameter WRAM_ADD_AW = 13,//8k
     parameter ORAM_ADD_AW = 10,//1k
@@ -63,6 +64,7 @@ module EEG_CMD #(
     output [ARAM_NUM_DW    -1:0] CFG_ARAM_IDX,
     output [WRAM_NUM_DW    -1:0] CFG_WRAM_IDX,
     output [ORAM_NUM_DW    -1:0] CFG_ORAM_IDX,
+    output [OMUX_NUM_DW    -1:0] CFG_OMUX_IDX,
     output [ARAM_ADD_AW    -1:0] CFG_ARAM_ADD,
     output [WRAM_ADD_AW    -1:0] CFG_WRAM_ADD,
     output [ORAM_ADD_AW    -1:0] CFG_ORAM_ADD,
@@ -125,6 +127,7 @@ CPM_REG #( 1 ) CFG_VLD_REG( clk, rst_n, cfg_acmd_vld, cfg_info_vld );
 reg [ARAM_NUM_DW  -1:0] cfg_aram_idx;
 reg [WRAM_NUM_DW  -1:0] cfg_wram_idx;
 reg [ORAM_NUM_DW  -1:0] cfg_oram_idx;
+reg [OMUX_NUM_DW  -1:0] cfg_omux_idx;
 reg [ARAM_ADD_AW  -1:0] cfg_aram_add;
 reg [WRAM_ADD_AW  -1:0] cfg_wram_add;
 reg [ORAM_ADD_AW  -1:0] cfg_oram_add;
@@ -135,6 +138,7 @@ reg [ORAM_ADD_AW  -1:0] cfg_oram_len;
 assign CFG_ARAM_IDX = cfg_aram_idx;
 assign CFG_WRAM_IDX = cfg_wram_idx;
 assign CFG_ORAM_IDX = cfg_oram_idx;
+assign CFG_OMUX_IDX = cfg_omux_idx;
 assign CFG_ARAM_ADD = cfg_aram_add;
 assign CFG_WRAM_ADD = cfg_wram_add;
 assign CFG_ORAM_ADD = cfg_oram_add;
@@ -308,7 +312,7 @@ always @ ( posedge clk or negedge rst_n )begin
         cfg_wram_idx <= 'd0;
     end else if( cfg_acmd_vld )begin
         case( cfg_mode_cmd )
-            CMD_ITOW: cfg_wram_idx <= cfg_acmd_dat[13 +:2] == 'd3 ? 4'b1000 : cfg_acmd_dat[13 +:2] == 'd2 ? 4'b0100 : cfg_acmd_dat[13 +:2] == 'd1 ? 4'b0010 : 4'b0001;
+            CMD_ITOW: cfg_wram_idx <= cfg_acmd_dat[17 +:2] == 'd3 ? 4'b1000 : cfg_acmd_dat[17 +:2] == 'd2 ? 4'b0100 : cfg_acmd_dat[17 +:2] == 'd1 ? 4'b0010 : 4'b0001;
             CMD_ATOW: cfg_wram_idx <= cfg_acmd_dat[12 +:4];
             CMD_WTOA: cfg_wram_idx <= cfg_acmd_dat[12 +:4];
             CMD_READ: cfg_wram_idx <= cfg_acmd_dat[12 +:4];
@@ -326,6 +330,17 @@ always @ ( posedge clk or negedge rst_n )begin
             CMD_STAT: cfg_oram_idx <= cfg_acmd_dat[8 +:4];
             CMD_READ: cfg_oram_idx <= cfg_acmd_dat[8 +:4];
              default: cfg_oram_idx <= cfg_oram_idx;
+        endcase
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        cfg_omux_idx <= 'd0;
+    end else if( cfg_acmd_vld )begin
+        case( cfg_mode_cmd )
+            CMD_OTOA: cfg_omux_idx <= cfg_acmd_dat[12+:4];
+             default: cfg_omux_idx <= cfg_oram_idx;
         endcase
     end
 end

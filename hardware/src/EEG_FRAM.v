@@ -116,13 +116,13 @@ wire [FRAM_NUM_DW -1:0] ftoe_dat_end = ftoe_dat_vld & ftoe_dat_rdy & ftoe_dat_ls
 //RAM
 reg  [FRAM_NUM_DW -1:0]                      ram_fram_din_vld;
 wire [FRAM_NUM_DW -1:0]                      ram_fram_din_rdy;
-reg  [FRAM_NUM_DW -1:0][FRAM_ADD_AW    -1:0] ram_fram_din_add;
+reg  [FRAM_NUM_DW -1:0][FRAM_ADD_AW-2  -1:0] ram_fram_din_add;
 reg  [FRAM_NUM_DW -1:0][FRAM_DAT_DW    -1:0] ram_fram_din_dat;
 
 reg  [FRAM_NUM_DW -1:0]                      ram_fram_add_vld;
 reg  [FRAM_NUM_DW -1:0]                      ram_fram_add_lst;
 wire [FRAM_NUM_DW -1:0]                      ram_fram_add_rdy;
-reg  [FRAM_NUM_DW -1:0][FRAM_ADD_AW    -1:0] ram_fram_add_add;
+reg  [FRAM_NUM_DW -1:0][FRAM_ADD_AW-2  -1:0] ram_fram_add_add;
 wire [FRAM_NUM_DW -1:0]                      ram_fram_dat_vld;
 wire [FRAM_NUM_DW -1:0]                      ram_fram_dat_lst;
 reg  [FRAM_NUM_DW -1:0]                      ram_fram_dat_rdy;
@@ -130,12 +130,12 @@ wire [FRAM_NUM_DW -1:0][FRAM_DAT_DW    -1:0] ram_fram_dat_dat;
 wire [FRAM_NUM_DW -1:0]                      ram_fram_add_ena = ram_fram_add_vld & ram_fram_add_rdy;
 wire [FRAM_NUM_DW -1:0]                      ram_fram_dat_ena = ram_fram_dat_vld & ram_fram_dat_rdy;
 
-CPM_REG_RCE #( 1 ) ITOF_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, 1'd0, etof_dat_end, 1'd1, itof_lst_done );
-CPM_REG_RCE #( 1 ) CONV_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, 1'd0, ftoe_dat_end, 1'd1, conv_lst_done );
-CPM_REG_RCE #( 1 ) OTOF_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, 1'd0, etof_dat_end, 1'd1, otof_lst_done );
+CPM_REG_RCE #( 1, 1 ) ITOF_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 1'd0, etof_dat_end, 1'd1, itof_lst_done );
+CPM_REG_RCE #( 1, 1 ) CONV_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 1'd0, ftoe_dat_end, 1'd1, conv_lst_done );
+CPM_REG_RCE #( 1, 1 ) OTOF_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 1'd0, etof_dat_end, 1'd1, otof_lst_done );
 //=====================================================================================================================
 // IO Logic Design :
-//=====================================================================================================================        
+//=====================================================================================================================
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )begin
         cfg_info_cmd <= 'd0;
@@ -173,7 +173,7 @@ generate
     for( gen_i=0 ; gen_i < FRAM_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
             ram_fram_din_vld[gen_i] = etof_dat_vld[gen_i];
-            ram_fram_din_add[gen_i] = etof_dat_add[gen_i];
+            ram_fram_din_add[gen_i] = etof_dat_add[gen_i][0 +:FRAM_ADD_AW -2];
             ram_fram_din_dat[gen_i] = etof_dat_dat[gen_i];
         end
     end
@@ -184,7 +184,7 @@ generate
         always @ ( * )begin
             ram_fram_add_vld[gen_i] = etof_add_vld[gen_i];
             ram_fram_add_lst[gen_i] = etof_add_lst[gen_i];
-            ram_fram_add_add[gen_i] = etof_add_add[gen_i];
+            ram_fram_add_add[gen_i] = etof_add_add[gen_i][0 +:FRAM_ADD_AW -2];
             ram_fram_dat_rdy[gen_i] = ftoe_dat_rdy[gen_i];
         end
     end
@@ -194,7 +194,7 @@ endgenerate
 //=====================================================================================================================
 EEG_XRAM_RAM #(
     .XRAM_NUM_DW          ( FRAM_NUM_DW      ),
-    .XRAM_ADD_AW          ( FRAM_ADD_AW -2   ),
+    .XRAM_ADD_AW          ( FRAM_ADD_AW-2    ),
     .XRAM_DAT_DW          ( FRAM_DAT_DW      )
 ) EEG_FRAM_RAM_U(
     .clk                  ( clk              ),

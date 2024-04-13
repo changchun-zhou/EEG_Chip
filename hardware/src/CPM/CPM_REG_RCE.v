@@ -10,11 +10,11 @@
 // Description :
 //========================================================
 module CPM_REG_RCE #(
-    parameter DW = 1
+    parameter DW = 1,
+    parameter RST_DAT = 0
 ) (
     input            Clk   ,
     input            Rstn  ,
-    input  [DW -1:0] DataRst,
     input            Clear ,
     input  [DW -1:0] DataClr,
     input            Enable,
@@ -25,7 +25,7 @@ module CPM_REG_RCE #(
   assign DataOut = data_out;
   always @ ( posedge Clk or negedge Rstn )begin
     if( ~Rstn )
-      data_out <= 0;
+      data_out <= RST_DAT;
     else if( Clear )
       data_out <= DataClr;
     else if( Enable )

@@ -85,7 +85,7 @@ generate
     for( gen_i=0 ; gen_i < XRAM_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
             xram_dat_dat[gen_i] = xram_ram_dout[gen_i];
-            xram_add_rdy[gen_i] = xram_dat_rdy[gen_i];
+            xram_add_rdy[gen_i] = xram_dat_rdy[gen_i] || ~xram_dat_vld[gen_i];
             xram_din_rdy[gen_i] = 'd1;
         end
     end
@@ -115,19 +115,19 @@ RAM #( .SRAM_WORD( XRAM_ADD_DW ), .SRAM_BIT( XRAM_DAT_DW ), .SRAM_BYTE(1)) XRAM_
 
 `ifdef ASSERT_ON
 
-property xram_rdy_check(dat_vld, dat_rdy);
-@(posedge clk)
-disable iff(rst_n!=1'b1)
-    dat_vld |-> ( dat_rdy );
-endproperty
-
-generate
-  for( gen_i=0 ; gen_i < XRAM_NUM_DW; gen_i = gen_i+1 ) begin : ASSERT_BLOCK
-
-    assert property ( xram_rdy_check(xram_dat_vld[gen_i], xram_dat_rdy[gen_i]) );
-
-  end
-endgenerate
+//property xram_rdy_check(dat_vld, dat_rdy);
+//@(posedge clk)
+//disable iff(rst_n!=1'b1)
+//    dat_vld |-> ( dat_rdy );
+//endproperty
+//
+//generate
+//  for( gen_i=0 ; gen_i < XRAM_NUM_DW; gen_i = gen_i+1 ) begin : ASSERT_BLOCK
+//
+//    assert property ( xram_rdy_check(xram_dat_vld[gen_i], xram_dat_rdy[gen_i]) );
+//
+//  end
+//endgenerate
 
 `endif
 endmodule

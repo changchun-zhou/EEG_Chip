@@ -1,12 +1,9 @@
 module CPM_FIFO_EX
 #(  // Parameters
     parameter   DATA_WIDTH          = 64,
-    parameter   INIT                = "init.mif",
     parameter   ADDR_WIDTH          = 4,
     parameter   RAM_DEPTH           = (1 << ADDR_WIDTH),
-    parameter   INITIALIZE_FIFO     = "no",
-    parameter   TYPE                = "MLAB",
-    parameter   REG_OUT             = "true"
+    parameter   REG_OUT             = 0
 )(  // Ports
     input  wire                         clk,
     input  wire                         rst_n,
@@ -27,17 +24,10 @@ module CPM_FIFO_EX
 // ******************************************************************
 reg     [ADDR_WIDTH-1:0]        wr_pointer;             //Write Pointer
 reg     [ADDR_WIDTH-1:0]        rd_pointer;             //Read Pointer
-//(* ram_style = TYPE *)
 reg     [DATA_WIDTH-1:0]        mem[0:RAM_DEPTH-1];     //Memory/*synthesis ramstyle = "MLAB" */
 // ******************************************************************
 // INSTANTIATIONS
 // ******************************************************************
-initial begin
-  if (INITIALIZE_FIFO == "yes") begin
-    $readmemb(INIT, mem, 0, RAM_DEPTH-1);
-  end
-end
-
 always @ (fifo_count)
 begin : FIFO_STATUS
   empty   = (fifo_count == 0);
@@ -47,9 +37,6 @@ end
 always @ (posedge clk or negedge rst_n)
 begin : FIFO_COUNTER
   if (!rst_n) begin
-    if( INITIALIZE_FIFO == "yes")
-      fifo_count <= RAM_DEPTH;
-    else
       fifo_count <= 0;
   end else if( Reset) begin
       fifo_count <= 0;
@@ -62,9 +49,6 @@ end
 always @ (posedge clk or negedge rst_n)
 begin : FIFO_COUNTER_EMPTY
   if (!rst_n) begin
-    if( INITIALIZE_FIFO == "yes")
-      fifo_count_empty <= 'd0;
-    else
       fifo_count_empty <= RAM_DEPTH;
   end else if( Reset) begin
       fifo_count_empty <= RAM_DEPTH;
@@ -108,7 +92,7 @@ always @ (posedge clk or negedge rst_n) begin :WRITE
 end
 
 generate
-    if( REG_OUT=="true" )begin
+    if( REG_OUT==1 )begin
         always @ (posedge clk or negedge rst_n)
         begin : READ
           if (!rst_n) begin

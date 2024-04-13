@@ -10,7 +10,8 @@ integer i;
 reg     flag;
 
 always@(*) begin
-    flag = 1'b0;
+    flag = 'd0;
+    Addr = 'd0;
     for(i=0; i<LEN; i=i+1) begin
         if(Array[i] & !flag) begin
             Addr = i;

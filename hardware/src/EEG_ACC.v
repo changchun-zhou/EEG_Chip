@@ -38,11 +38,13 @@ localparam DATA_OUT_DW =  8;
 localparam ARAM_NUM_DW = BANK_NUM_DW;
 localparam WRAM_NUM_DW = BANK_NUM_DW;
 localparam ORAM_NUM_DW = BANK_NUM_DW;
+localparam OMUX_NUM_DW = BANK_NUM_DW;
 localparam FRAM_NUM_DW = BANK_NUM_DW;
 localparam WBUF_NUM_DW = BANK_NUM_DW;
 localparam ARAM_NUM_AW = $clog2(ARAM_NUM_DW);
 localparam WRAM_NUM_AW = $clog2(WRAM_NUM_DW);
 localparam ORAM_NUM_AW = $clog2(ORAM_NUM_DW);
+localparam OMUX_NUM_AW = $clog2(OMUX_NUM_DW);
 localparam FRAM_NUM_AW = $clog2(FRAM_NUM_DW);
 localparam WBUF_NUM_AW = $clog2(WBUF_NUM_DW);
 
@@ -50,14 +52,13 @@ localparam ARAM_ADD_AW = 12;//4k
 localparam WRAM_ADD_AW = 13;//8k
 localparam ORAM_ADD_AW = 10;//4x0.25k
 localparam FRAM_ADD_AW = ARAM_ADD_AW;//4x1k
+localparam OMUX_ADD_AW = ORAM_ADD_AW-2;
 
 localparam MOVE_DAT_DW = CHIP_DAT_DW;
 localparam ARAM_DAT_DW = DATA_ACT_DW;
 localparam WRAM_DAT_DW = DATA_WEI_DW;
 localparam ORAM_DAT_DW = DATA_OUT_DW;
 localparam FRAM_DAT_DW =  4;
-localparam ORAM_MUX_DW =  4;
-localparam ORAM_ADD_MW = ORAM_ADD_AW-2;
 
 localparam CONV_ICH_DW =  8;//256
 localparam CONV_OCH_DW =  8;//256
@@ -82,11 +83,11 @@ localparam STAT_NUM_AW = $clog2(STAT_NUM_DW);
 localparam STAT_CMD_DW =  9;
 localparam CHIP_CMD_DW = 32;
 localparam PEAY_CMD_DW =  3;
-localparam ARAM_CMD_DW =  7;
-localparam WRAM_CMD_DW =  5;
+localparam ARAM_CMD_DW =  8;
+localparam WRAM_CMD_DW =  6;
 localparam FRAM_CMD_DW =  4;
-localparam ORAM_CMD_DW =  8;
-localparam MOVE_CMD_DW =  7;
+localparam ORAM_CMD_DW =  9;
+localparam MOVE_CMD_DW =  8;
 
 localparam ACC_STATE = 12;
 localparam ACC_IDLE  = 12'b0000_0000_0001;
@@ -197,6 +198,7 @@ CPM_REG_CE #( 1 ) CHIP_ITOX_LST_REG( clk, rst_n, acc_idle, chip_data_lst, 1'd1, 
 wire [ARAM_NUM_DW    -1:0] cfg_aram_idx;
 wire [WRAM_NUM_DW    -1:0] cfg_wram_idx;
 wire [ORAM_NUM_DW    -1:0] cfg_oram_idx;
+wire [OMUX_NUM_DW    -1:0] cfg_omux_idx;
 wire [ARAM_ADD_AW    -1:0] cfg_aram_add;
 wire [WRAM_ADD_AW    -1:0] cfg_wram_add;
 wire [ORAM_ADD_AW    -1:0] cfg_oram_add;
@@ -213,6 +215,8 @@ wire [DILA_FAC_DW    -1:0] cfg_dila_fac;
 wire [STRD_FAC_DW    -1:0] cfg_strd_fac;
 wire [CONV_WEI_DW    -1:0] cfg_conv_wei;
 wire                       cfg_flag_vld;
+wire                       cfg_stat_vld;
+wire                       cfg_wbuf_ena;
 
 wire                       cfg_relu_ena;
 wire                       cfg_splt_ena;
@@ -223,6 +227,8 @@ wire                       cfg_maxp_ena;
 wire                       cfg_avgp_ena;
 wire                       cfg_resn_ena;
 
+
+
 wire [CONV_SPT_DW    -1:0] cfg_splt_len;
 
 wire [POOL_LEN_DW    -1:0] cfg_pool_len;
@@ -231,11 +237,11 @@ wire [POOL_FAC_DW    -1:0] cfg_pool_fac;
 assign cmd_otof_ena = cmd_otoa_ena && cfg_flag_ena;
 
 wire [PEAY_CMD_DW   -2:0] peay_cfg_info_cmd_tmp = {cmd_conv_ena, 1'd0};
-wire [WRAM_CMD_DW   -2:0] wram_cfg_info_cmd_tmp = {cmd_wtoa_ena, cmd_atow_ena, cmd_conv_ena, cmd_itow_ena};
+wire [WRAM_CMD_DW   -2:0] wram_cfg_info_cmd_tmp = {cmd_read_ena && |cfg_wram_idx, cmd_wtoa_ena, cmd_atow_ena, cmd_conv_ena, cmd_itow_ena};
 wire [FRAM_CMD_DW   -2:0] fram_cfg_info_cmd_tmp = {cmd_otof_ena, cmd_conv_ena, 1'd0};
-wire [ARAM_CMD_DW   -2:0] aram_cfg_info_cmd_tmp = {1'd0, cmd_atow_ena, cmd_wtoa_ena, cmd_otoa_ena, cmd_conv_ena, cmd_itoa_ena};
-wire [ORAM_CMD_DW   -2:0] oram_cfg_info_cmd_tmp = {cmd_stat_ena, cmd_otoa_ena, cmd_pool_ena, cmd_conv_ena&&cfg_resn_ena, cmd_conv_ena, 1'd0};
-wire [MOVE_CMD_DW   -2:0] move_cfg_info_cmd_tmp = {cmd_stat_ena, cmd_wtoa_ena, cmd_atow_ena, cmd_otoa_ena, cmd_itow_ena, cmd_itoa_ena};
+wire [ARAM_CMD_DW   -2:0] aram_cfg_info_cmd_tmp = {cmd_read_ena && |cfg_aram_idx, 1'd0, cmd_atow_ena, cmd_wtoa_ena, cmd_otoa_ena, cmd_conv_ena, cmd_itoa_ena};
+wire [ORAM_CMD_DW   -2:0] oram_cfg_info_cmd_tmp = {cmd_read_ena && |cfg_oram_idx, cmd_stat_ena, cmd_otoa_ena, cmd_pool_ena, cmd_conv_ena&&cfg_resn_ena, cmd_conv_ena, 1'd0};
+wire [MOVE_CMD_DW   -2:0] move_cfg_info_cmd_tmp = {cmd_read_ena, cmd_stat_ena, cmd_wtoa_ena, cmd_atow_ena, cmd_otoa_ena, cmd_itow_ena, cmd_itoa_ena};
 
 wire [PEAY_CMD_DW   -1:0] peay_cfg_info_cmd = {peay_cfg_info_cmd_tmp, ~|peay_cfg_info_cmd_tmp};
 wire [WRAM_CMD_DW   -1:0] wram_cfg_info_cmd = {wram_cfg_info_cmd_tmp, ~|wram_cfg_info_cmd_tmp};
@@ -283,21 +289,23 @@ reg  [PE_ROW -1:0][PE_COL -1:0][WRAM_DAT_DW    -1:0] peay_wram_dat_dat;
 wire [PE_ROW -1:0][PE_COL -1:0]                      peay_oram_dat_vld;
 wire [PE_ROW -1:0][PE_COL -1:0]                      peay_oram_dat_lst;
 reg  [PE_ROW -1:0][PE_COL -1:0]                      peay_oram_dat_rdy;
-wire [PE_ROW -1:0][PE_COL -1:0][ORAM_ADD_AW    -1:0] peay_oram_dat_add;
+wire [PE_ROW -1:0][PE_COL -1:0][OMUX_ADD_AW    -1:0] peay_oram_dat_add;
 wire [PE_ROW -1:0][PE_COL -1:0][ORAM_DAT_DW    -1:0] peay_oram_dat_dat;
 
 //WRAM_WBUF
-wire [PE_ROW    -1 : 0] wbuf_cfg_info_vld;
-wire [PE_ROW    -1 : 0] wbuf_cfg_info_rdy;
-wire [PE_ROW    -1 : 0] wbuf_cfg_info_ena;
-genvar gv_i;
+wire wbuf_cfg_info_change = cfg_acmd_dat[0 +:4]=='d5;
+
+wire [PE_ROW -1:0] wbuf_cfg_info_vld;
+wire [PE_ROW -1:0] wbuf_cfg_info_rdy;
+wire [PE_ROW -1:0] wbuf_cfg_info_ena;
+
 generate
-    for(gv_i=0; gv_i<PE_ROW; gv_i=gv_i+1)begin
-        assign wbuf_cfg_info_ena[gv_i] = wbuf_cfg_info_vld[gv_i] && wbuf_cfg_info_rdy[gv_i];
+    for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
+        assign wbuf_cfg_info_ena[gen_i] = wbuf_cfg_info_vld[gen_i] && wbuf_cfg_info_rdy[gen_i];
     end
 endgenerate
 
-CPM_REG_CE #( 1 ) WBUF_CFG_INFO_VLD_REG [PE_ROW -1 : 0]( clk, rst_n, wbuf_cfg_info_ena, cfg_acmd_vld, 1'd1, wbuf_cfg_info_vld );
+CPM_REG_CE #( 1 ) WBUF_CFG_INFO_VLD_REG [PE_ROW -1:0]( clk, rst_n, wbuf_cfg_info_ena, cfg_acmd_vld, wbuf_cfg_info_change, wbuf_cfg_info_vld );
 
 reg  [PE_ROW -1:0][PE_COL -1:0]                      wbuf_ptow_add_vld;
 reg  [PE_ROW -1:0][PE_COL -1:0]                      wbuf_ptow_add_lst;
@@ -369,7 +377,7 @@ reg  [FRAM_NUM_DW -1:0][FRAM_NUM_AW    -1:0] farb_aram_add_rid;
 reg  [FRAM_NUM_DW -1:0]                      farb_aram_add_vld;
 reg  [FRAM_NUM_DW -1:0]                      farb_aram_add_lst;
 wire [FRAM_NUM_DW -1:0]                      farb_aram_add_rdy;
-reg  [FRAM_NUM_DW -1:0][FRAM_ADD_AW    -1:0] farb_aram_add_dat;
+reg  [FRAM_NUM_DW -1:0][FRAM_ADD_AW    -1:0] farb_aram_add_add;
 wire [FRAM_NUM_DW -1:0]                      farb_aram_dat_vld;
 wire [FRAM_NUM_DW -1:0]                      farb_aram_dat_lst;
 reg  [FRAM_NUM_DW -1:0]                      farb_aram_dat_rdy;
@@ -378,7 +386,7 @@ wire [FRAM_NUM_DW -1:0][FRAM_DAT_DW    -1:0] farb_aram_dat_dat;
 wire [FRAM_NUM_DW -1:0]                      farb_aarb_add_vld;
 wire [FRAM_NUM_DW -1:0]                      farb_aarb_add_lst;
 reg  [FRAM_NUM_DW -1:0]                      farb_aarb_add_rdy;
-wire [FRAM_NUM_DW -1:0][FRAM_ADD_AW    -1:0] farb_aarb_add_dat;
+wire [FRAM_NUM_DW -1:0][FRAM_ADD_AW    -1:0] farb_aarb_add_add;
 reg  [FRAM_NUM_DW -1:0]                      farb_aarb_dat_vld;
 reg  [FRAM_NUM_DW -1:0]                      farb_aarb_dat_lst;
 wire [FRAM_NUM_DW -1:0]                      farb_aarb_dat_rdy;
@@ -410,7 +418,7 @@ reg  [ARAM_NUM_DW -1:0][ARAM_NUM_AW    -1:0] aarb_aram_add_rid;
 reg  [ARAM_NUM_DW -1:0]                      aarb_aram_add_vld;
 reg  [ARAM_NUM_DW -1:0]                      aarb_aram_add_lst;
 wire [ARAM_NUM_DW -1:0]                      aarb_aram_add_rdy;
-reg  [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] aarb_aram_add_dat;
+reg  [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] aarb_aram_add_add;
 wire [ARAM_NUM_DW -1:0]                      aarb_aram_dat_vld;
 wire [ARAM_NUM_DW -1:0]                      aarb_aram_dat_lst;
 reg  [ARAM_NUM_DW -1:0]                      aarb_aram_dat_rdy;
@@ -419,7 +427,7 @@ wire [ARAM_NUM_DW -1:0][ARAM_DAT_DW    -1:0] aarb_aram_dat_dat;
 wire [ARAM_NUM_DW -1:0]                      aarb_aarb_add_vld;
 wire [ARAM_NUM_DW -1:0]                      aarb_aarb_add_lst;
 reg  [ARAM_NUM_DW -1:0]                      aarb_aarb_add_rdy;
-wire [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] aarb_aarb_add_dat;
+wire [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] aarb_aarb_add_add;
 reg  [ARAM_NUM_DW -1:0]                      aarb_aarb_dat_vld;
 reg  [ARAM_NUM_DW -1:0]                      aarb_aarb_dat_lst;
 wire [ARAM_NUM_DW -1:0]                      aarb_aarb_dat_rdy;
@@ -431,20 +439,20 @@ wire                     oram_cfg_info_rdy;
 wire                     oram_cfg_info_ena = oram_cfg_info_vld && oram_cfg_info_rdy;
 CPM_REG_CE #( 1 ) ORAM_CFG_INFO_VLD_REG( clk, rst_n, oram_cfg_info_ena, cfg_acmd_vld, 1'd1, oram_cfg_info_vld );
 
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   oram_etoo_dat_vld;
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   oram_etoo_dat_lst;
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   oram_etoo_dat_rdy;
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_ADD_MW -1:0] oram_etoo_dat_add;
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_DAT_DW -1:0] oram_etoo_dat_dat;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   oram_etoo_dat_vld;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   oram_etoo_dat_lst;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   oram_etoo_dat_rdy;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW -1:0] oram_etoo_dat_add;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] oram_etoo_dat_dat;
 
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   oram_etoo_add_vld;
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   oram_etoo_add_lst;
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   oram_etoo_add_rdy;
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_ADD_AW -1:0] oram_etoo_add_add;
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   oram_otoe_dat_vld;
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   oram_otoe_dat_lst;
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   oram_otoe_dat_rdy;
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_DAT_DW -1:0] oram_otoe_dat_dat;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   oram_etoo_add_vld;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   oram_etoo_add_lst;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   oram_etoo_add_rdy;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW -1:0] oram_etoo_add_add;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   oram_otoe_dat_vld;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   oram_otoe_dat_lst;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   oram_otoe_dat_rdy;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] oram_otoe_dat_dat;
 
 //ORAM_DEMUX
 reg  [ORAM_NUM_DW -1:0]                                     omux_mtoo_dat_vld;
@@ -462,20 +470,20 @@ wire [ORAM_NUM_DW -1:0]                                     omux_otom_dat_lst;
 reg  [ORAM_NUM_DW -1:0]                                     omux_otom_dat_rdy;
 wire [ORAM_NUM_DW -1:0]                  [ORAM_DAT_DW -1:0] omux_otom_dat_dat;
 
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   odmx_mtoo_dat_vld;
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   odmx_mtoo_dat_lst;
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   odmx_mtoo_dat_rdy;
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_ADD_MW -1:0] odmx_mtoo_dat_add;
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_DAT_DW -1:0] odmx_mtoo_dat_dat;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   odmx_mtoo_dat_vld;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   odmx_mtoo_dat_lst;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   odmx_mtoo_dat_rdy;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW -1:0] odmx_mtoo_dat_add;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] odmx_mtoo_dat_dat;
 
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   odmx_mtoo_add_vld;
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   odmx_mtoo_add_lst;
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   odmx_mtoo_add_rdy;
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_ADD_MW -1:0] odmx_mtoo_add_add;
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   odmx_otom_dat_vld;
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   odmx_otom_dat_lst;
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   odmx_otom_dat_rdy;
-reg  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_DAT_DW -1:0] odmx_otom_dat_dat;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   odmx_mtoo_add_vld;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   odmx_mtoo_add_lst;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   odmx_mtoo_add_rdy;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW -1:0] odmx_mtoo_add_add;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   odmx_otom_dat_vld;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   odmx_otom_dat_lst;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   odmx_otom_dat_rdy;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] odmx_otom_dat_dat;
 
 //MOVER
 wire                      move_cfg_info_vld;
@@ -487,6 +495,11 @@ reg                                          move_itom_dat_vld;
 reg                                          move_itom_dat_lst;
 wire                                         move_itom_dat_rdy;
 reg  [MOVE_DAT_DW                      -1:0] move_itom_dat_dat;
+
+wire                                         move_mtoc_dat_vld;
+wire                                         move_mtoc_dat_lst;
+reg                                          move_mtoc_dat_rdy;
+wire [MOVE_DAT_DW                      -1:0] move_mtoc_dat_dat;
 
 wire                                         move_mtos_dat_vld;
 wire                                         move_mtos_dat_lst;
@@ -509,7 +522,7 @@ wire [ARAM_NUM_DW -1:0][ARAM_DAT_DW    -1:0] move_mtoa_dat_dat;
 wire [ARAM_NUM_DW -1:0]                      move_mtoa_add_vld;
 wire [ARAM_NUM_DW -1:0]                      move_mtoa_add_lst;
 reg  [ARAM_NUM_DW -1:0]                      move_mtoa_add_rdy;
-wire [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] move_mtoa_add_dat;
+wire [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] move_mtoa_add_add;
 reg  [ARAM_NUM_DW -1:0]                      move_atom_dat_vld;
 reg  [ARAM_NUM_DW -1:0]                      move_atom_dat_lst;
 wire [ARAM_NUM_DW -1:0]                      move_atom_dat_rdy;
@@ -524,7 +537,7 @@ wire [WRAM_NUM_DW -1:0][WRAM_DAT_DW    -1:0] move_mtow_dat_dat;
 wire [WRAM_NUM_DW -1:0]                      move_mtow_add_vld;
 wire [WRAM_NUM_DW -1:0]                      move_mtow_add_lst;
 reg  [WRAM_NUM_DW -1:0]                      move_mtow_add_rdy;
-wire [WRAM_NUM_DW -1:0][WRAM_ADD_AW    -1:0] move_mtow_add_dat;
+wire [WRAM_NUM_DW -1:0][WRAM_ADD_AW    -1:0] move_mtow_add_add;
 reg  [WRAM_NUM_DW -1:0]                      move_wtom_dat_vld;
 reg  [WRAM_NUM_DW -1:0]                      move_wtom_dat_lst;
 wire [WRAM_NUM_DW -1:0]                      move_wtom_dat_rdy;
@@ -548,6 +561,12 @@ reg  [ORAM_NUM_DW -1:0][ORAM_DAT_DW    -1:0] move_otom_dat_dat;
 // IO Logic Design :
 //=====================================================================================================================
 always @ ( * )begin
+    chip_out_vld = acc_read && move_mtoc_dat_vld;
+    chip_out_lst = acc_read && move_mtoc_dat_lst;
+    chip_out_dat = move_mtoc_dat_dat;
+end
+
+always @ ( * )begin
     case( acc_cs )
         ACC_IDLE: chip_dat_rdy = 'd1;
         ACC_LOAD: chip_dat_rdy = 'd1;
@@ -556,7 +575,6 @@ always @ ( * )begin
          default: chip_dat_rdy = 'd0;
     endcase
 end
-
 //=====================================================================================================================
 // Logic Design :
 //=====================================================================================================================
@@ -572,7 +590,7 @@ always @ ( * )begin
   acc_conv_done =/*~cfg_acmd_vld && */peay_idle;
   acc_pool_done =/*~cfg_acmd_vld && */oram_idle;
   acc_stat_done =/*~cfg_acmd_vld && */oram_idle;
-  acc_read_done =/*~cfg_acmd_vld && */move_idle;
+  acc_read_done =/*~cfg_acmd_vld && */move_idle && wram_idle && aram_idle && oram_idle;
 end
 
 generate
@@ -683,10 +701,10 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            wram_etow_add_vld[gen_i] = wbuf_wram_add_vld[gen_i];
-            wram_etow_add_lst[gen_i] = wbuf_wram_add_lst[gen_i];
-            wram_etow_add_add[gen_i] = wbuf_wram_add_add[gen_i];
-            wram_wtoe_dat_rdy[gen_i] = wbuf_wram_dat_rdy[gen_i];
+            wram_etow_add_vld[gen_i] = acc_conv ? wbuf_wram_add_vld[gen_i] : move_mtow_add_vld[gen_i];
+            wram_etow_add_lst[gen_i] = acc_conv ? wbuf_wram_add_lst[gen_i] : move_mtow_add_lst[gen_i];
+            wram_etow_add_add[gen_i] = acc_conv ? wbuf_wram_add_add[gen_i] : move_mtow_add_add[gen_i];
+            wram_wtoe_dat_rdy[gen_i] = acc_conv ? wbuf_wram_dat_rdy[gen_i] : move_wtom_dat_rdy[gen_i];
         end
     end
 endgenerate
@@ -708,7 +726,7 @@ generate
         always @ ( * )begin
             fram_etof_add_vld[gen_i] = farb_aarb_add_vld[gen_i];
             fram_etof_add_lst[gen_i] = farb_aarb_add_lst[gen_i];
-            fram_etof_add_add[gen_i] = farb_aarb_add_dat[gen_i];
+            fram_etof_add_add[gen_i] = farb_aarb_add_add[gen_i];
             fram_ftoe_dat_rdy[gen_i] = farb_aarb_dat_rdy[gen_i];
         end
     end
@@ -721,7 +739,7 @@ generate
             farb_aram_add_rid[gen_i] = peay_fram_add_rid[gen_i];
             farb_aram_add_vld[gen_i] = peay_fram_add_vld[gen_i];
             farb_aram_add_lst[gen_i] = peay_fram_add_lst[gen_i];
-            farb_aram_add_dat[gen_i] = peay_fram_add_add[gen_i];
+            farb_aram_add_add[gen_i] = peay_fram_add_add[gen_i];
             farb_aram_dat_rdy[gen_i] = peay_fram_dat_rdy[gen_i];
         end
     end
@@ -753,10 +771,10 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < PE_COL; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            aram_etoa_add_vld[gen_i] = aarb_aarb_add_vld[gen_i];
-            aram_etoa_add_lst[gen_i] = aarb_aarb_add_lst[gen_i];
-            aram_etoa_add_add[gen_i] = aarb_aarb_add_dat[gen_i];
-            aram_atoe_dat_rdy[gen_i] = aarb_aarb_dat_rdy[gen_i];
+            aram_etoa_add_vld[gen_i] = acc_read || acc_atow ? move_mtoa_add_vld[gen_i] : aarb_aarb_add_vld[gen_i];
+            aram_etoa_add_lst[gen_i] = acc_read || acc_atow ? move_mtoa_add_lst[gen_i] : aarb_aarb_add_lst[gen_i];
+            aram_etoa_add_add[gen_i] = acc_read || acc_atow ? move_mtoa_add_add[gen_i] : aarb_aarb_add_add[gen_i];
+            aram_atoe_dat_rdy[gen_i] = acc_read || acc_atow ? move_atom_dat_rdy[gen_i] : aarb_aarb_dat_rdy[gen_i];
         end
     end
 endgenerate
@@ -768,7 +786,7 @@ generate
             aarb_aram_add_rid[gen_i] = peay_aram_add_rid[gen_i];
             aarb_aram_add_vld[gen_i] = peay_aram_add_vld[gen_i];
             aarb_aram_add_lst[gen_i] = peay_aram_add_lst[gen_i];
-            aarb_aram_add_dat[gen_i] = peay_aram_add_add[gen_i];
+            aarb_aram_add_add[gen_i] = peay_aram_add_add[gen_i];
             aarb_aram_dat_rdy[gen_i] = peay_aram_dat_rdy[gen_i];
         end
     end
@@ -777,10 +795,10 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < PE_COL; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            aarb_aarb_add_rdy[gen_i] = aram_etoa_add_rdy[gen_i];
-            aarb_aarb_dat_vld[gen_i] = aram_atoe_dat_vld[gen_i];
-            aarb_aarb_dat_lst[gen_i] = aram_atoe_dat_lst[gen_i];
-            aarb_aarb_dat_dat[gen_i] = aram_atoe_dat_dat[gen_i];
+            aarb_aarb_add_rdy[gen_i] = acc_conv ? aram_etoa_add_rdy[gen_i] : 'd0;
+            aarb_aarb_dat_vld[gen_i] = acc_conv ? aram_atoe_dat_vld[gen_i] : 'd0;
+            aarb_aarb_dat_lst[gen_i] = acc_conv ? aram_atoe_dat_lst[gen_i] : 'd0;
+            aarb_aarb_dat_dat[gen_i] = acc_conv ? aram_atoe_dat_dat[gen_i] : 'd0;
         end
     end
 endgenerate
@@ -790,10 +808,10 @@ generate
     for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
         for( gen_j=0 ; gen_j < PE_COL; gen_j = gen_j+1 )begin
             always @ ( * )begin
-                oram_etoo_dat_vld[gen_i][gen_j] = odmx_mtoo_dat_vld[gen_i][gen_j];
-                oram_etoo_dat_lst[gen_i][gen_j] = odmx_mtoo_dat_lst[gen_i][gen_j];
-                oram_etoo_dat_add[gen_i][gen_j] = odmx_mtoo_dat_add[gen_i][gen_j];
-                oram_etoo_dat_dat[gen_i][gen_j] = odmx_mtoo_dat_dat[gen_i][gen_j];
+                oram_etoo_dat_vld[gen_i][gen_j] = acc_conv ? peay_oram_dat_vld[gen_i][gen_j] : odmx_mtoo_dat_vld[gen_i][gen_j];
+                oram_etoo_dat_lst[gen_i][gen_j] = acc_conv ? peay_oram_dat_lst[gen_i][gen_j] : odmx_mtoo_dat_lst[gen_i][gen_j];
+                oram_etoo_dat_add[gen_i][gen_j] = acc_conv ? peay_oram_dat_add[gen_i][gen_j] : odmx_mtoo_dat_add[gen_i][gen_j];
+                oram_etoo_dat_dat[gen_i][gen_j] = acc_conv ? peay_oram_dat_dat[gen_i][gen_j] : odmx_mtoo_dat_dat[gen_i][gen_j];
             end
         end
     end
@@ -866,6 +884,10 @@ always @ ( * )begin
 end
 
 always @ ( * )begin
+    move_mtoc_dat_rdy = acc_read && chip_out_rdy;
+end
+
+always @ ( * )begin
     move_mtos_dat_rdy = &wbuf_mtow_dat_rdy;
 end
 
@@ -883,10 +905,10 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < PE_COL; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            move_mtoa_add_rdy[gen_i] = acc_atow || acc_read ? farb_aram_add_rdy[gen_i] : 'd0;
-            move_atom_dat_vld[gen_i] = acc_atow || acc_read ? farb_aram_dat_vld[gen_i] : 'd0;
-            move_atom_dat_lst[gen_i] = acc_atow || acc_read ? farb_aram_dat_lst[gen_i] : 'd0;
-            move_atom_dat_dat[gen_i] = acc_atow || acc_read ? farb_aram_dat_dat[gen_i] : 'd0;
+            move_mtoa_add_rdy[gen_i] = acc_atow || acc_read ? aram_etoa_add_rdy[gen_i] : 'd0;
+            move_atom_dat_vld[gen_i] = acc_atow || acc_read ? aram_atoe_dat_vld[gen_i] : 'd0;
+            move_atom_dat_lst[gen_i] = acc_atow || acc_read ? aram_atoe_dat_lst[gen_i] : 'd0;
+            move_atom_dat_dat[gen_i] = acc_atow || acc_read ? aram_atoe_dat_dat[gen_i] : 'd0;
         end
     end
 endgenerate
@@ -958,6 +980,7 @@ EEG_CMD #(
     .CFG_ARAM_IDX         ( cfg_aram_idx     ),
     .CFG_WRAM_IDX         ( cfg_wram_idx     ),
     .CFG_ORAM_IDX         ( cfg_oram_idx     ),
+    .CFG_OMUX_IDX         ( cfg_omux_idx     ),
     .CFG_ARAM_ADD         ( cfg_aram_add     ),
     .CFG_WRAM_ADD         ( cfg_wram_add     ),
     .CFG_ORAM_ADD         ( cfg_oram_add     ),
@@ -1006,6 +1029,7 @@ EEG_PEA #(
     .ARAM_ADD_AW          ( ARAM_ADD_AW       ),
     .WRAM_ADD_AW          ( WRAM_ADD_AW       ),
     .ORAM_ADD_AW          ( ORAM_ADD_AW       ),
+    .OMUX_ADD_AW          ( OMUX_ADD_AW       ),
     .FRAM_ADD_AW          ( FRAM_ADD_AW       ),
     .ARAM_DAT_DW          ( ARAM_DAT_DW       ),
     .WRAM_DAT_DW          ( WRAM_DAT_DW       ),
@@ -1185,7 +1209,7 @@ EEG_ARAM_ROUTER #(
     .ARAM_ADD_VLD         ( farb_aram_add_vld ),
     .ARAM_ADD_LST         ( farb_aram_add_lst ),
     .ARAM_ADD_RDY         ( farb_aram_add_rdy ),
-    .ARAM_ADD_DAT         ( farb_aram_add_dat ),
+    .ARAM_ADD_ADD         ( farb_aram_add_add ),
     .ARAM_DAT_VLD         ( farb_aram_dat_vld ),
     .ARAM_DAT_LST         ( farb_aram_dat_lst ),
     .ARAM_DAT_RDY         ( farb_aram_dat_rdy ),
@@ -1194,7 +1218,7 @@ EEG_ARAM_ROUTER #(
     .AARB_ADD_VLD         ( farb_aarb_add_vld ),
     .AARB_ADD_LST         ( farb_aarb_add_lst ),
     .AARB_ADD_RDY         ( farb_aarb_add_rdy ),
-    .AARB_ADD_DAT         ( farb_aarb_add_dat ),
+    .AARB_ADD_ADD         ( farb_aarb_add_add ),
     .AARB_DAT_VLD         ( farb_aarb_dat_vld ),
     .AARB_DAT_LST         ( farb_aarb_dat_lst ),
     .AARB_DAT_RDY         ( farb_aarb_dat_rdy ),
@@ -1245,7 +1269,7 @@ EEG_ARAM_ROUTER #(
     .ARAM_ADD_VLD         ( aarb_aram_add_vld ),
     .ARAM_ADD_LST         ( aarb_aram_add_lst ),
     .ARAM_ADD_RDY         ( aarb_aram_add_rdy ),
-    .ARAM_ADD_DAT         ( aarb_aram_add_dat ),
+    .ARAM_ADD_ADD         ( aarb_aram_add_add ),
     .ARAM_DAT_VLD         ( aarb_aram_dat_vld ),
     .ARAM_DAT_LST         ( aarb_aram_dat_lst ),
     .ARAM_DAT_RDY         ( aarb_aram_dat_rdy ),
@@ -1254,7 +1278,7 @@ EEG_ARAM_ROUTER #(
     .AARB_ADD_VLD         ( aarb_aarb_add_vld ),
     .AARB_ADD_LST         ( aarb_aarb_add_lst ),
     .AARB_ADD_RDY         ( aarb_aarb_add_rdy ),
-    .AARB_ADD_DAT         ( aarb_aarb_add_dat ),
+    .AARB_ADD_ADD         ( aarb_aarb_add_add ),
     .AARB_DAT_VLD         ( aarb_aarb_dat_vld ),
     .AARB_DAT_LST         ( aarb_aarb_dat_lst ),
     .AARB_DAT_RDY         ( aarb_aarb_dat_rdy ),
@@ -1264,9 +1288,9 @@ EEG_ARAM_ROUTER #(
 EEG_ORAM #(
     .ORAM_CMD_DW          ( ORAM_CMD_DW       ),
     .ORAM_NUM_DW          ( ORAM_NUM_DW       ),
-    .ORAM_MUX_DW          ( ORAM_MUX_DW       ),
+    .OMUX_NUM_DW          ( OMUX_NUM_DW       ),
     .ORAM_ADD_AW          ( ORAM_ADD_AW       ),
-    .ORAM_ADD_MW          ( ORAM_ADD_MW       ),
+    .OMUX_ADD_AW          ( OMUX_ADD_AW       ),
     .ORAM_DAT_DW          ( ORAM_DAT_DW       ),
     .ARAM_DAT_DW          ( ARAM_DAT_DW       ),
     .POOL_FAC_DW          ( POOL_FAC_DW       ),
@@ -1307,9 +1331,9 @@ EEG_ORAM #(
 
 EEG_ORAM_DEMUX #(
     .ORAM_NUM_DW          ( ORAM_NUM_DW       ),
-    .ORAM_MUX_DW          ( ORAM_MUX_DW       ),
+    .OMUX_NUM_DW          ( OMUX_NUM_DW       ),
     .ORAM_ADD_AW          ( ORAM_ADD_AW       ),
-    .ORAM_ADD_MW          ( ORAM_ADD_MW       ),
+    .OMUX_ADD_AW          ( OMUX_ADD_AW       ),
     .ORAM_DAT_DW          ( ORAM_DAT_DW       )
 ) EEG_ORAM_DEMUX_U(
     .clk                  ( clk               ),
@@ -1354,6 +1378,7 @@ EEG_RAM_MOVER #(
     .ARAM_ADD_AW          ( ARAM_ADD_AW       ),
     .WRAM_ADD_AW          ( WRAM_ADD_AW       ),
     .ORAM_ADD_AW          ( ORAM_ADD_AW       ),
+    .OMUX_ADD_AW          ( OMUX_ADD_AW       ),
     .CONV_LEN_DW          ( CONV_LEN_DW       ),
     .CONV_ICH_DW          ( CONV_ICH_DW       ),
     .CONV_OCH_DW          ( CONV_OCH_DW       ),
@@ -1373,6 +1398,7 @@ EEG_RAM_MOVER #(
     .CFG_ARAM_IDX         ( cfg_aram_idx ),
     .CFG_WRAM_IDX         ( cfg_wram_idx ),
     .CFG_ORAM_IDX         ( cfg_oram_idx ),
+    .CFG_OMUX_IDX         ( cfg_omux_idx ),
     .CFG_ARAM_ADD         ( cfg_aram_add ),
     .CFG_WRAM_ADD         ( cfg_wram_add ),
     .CFG_ORAM_ADD         ( cfg_oram_add ),
@@ -1390,6 +1416,11 @@ EEG_RAM_MOVER #(
     .ITOM_DAT_LST         ( move_itom_dat_lst ),
     .ITOM_DAT_RDY         ( move_itom_dat_rdy ),
     .ITOM_DAT_DAT         ( move_itom_dat_dat ),
+
+    .MTOC_DAT_VLD         ( move_mtoc_dat_vld ),
+    .MTOC_DAT_LST         ( move_mtoc_dat_lst ),
+    .MTOC_DAT_RDY         ( move_mtoc_dat_rdy ),
+    .MTOC_DAT_DAT         ( move_mtoc_dat_dat ),
 
     .MTOS_DAT_VLD         ( move_mtos_dat_vld ),
     .MTOS_DAT_LST         ( move_mtos_dat_lst ),
@@ -1412,7 +1443,7 @@ EEG_RAM_MOVER #(
     .MTOA_ADD_VLD         ( move_mtoa_add_vld ),
     .MTOA_ADD_LST         ( move_mtoa_add_lst ),
     .MTOA_ADD_RDY         ( move_mtoa_add_rdy ),
-    .MTOA_ADD_DAT         ( move_mtoa_add_dat ),
+    .MTOA_ADD_ADD         ( move_mtoa_add_add ),
     .ATOM_DAT_VLD         ( move_atom_dat_vld ),
     .ATOM_DAT_LST         ( move_atom_dat_lst ),
     .ATOM_DAT_RDY         ( move_atom_dat_rdy ),
@@ -1427,7 +1458,7 @@ EEG_RAM_MOVER #(
     .MTOW_ADD_VLD         ( move_mtow_add_vld ),
     .MTOW_ADD_LST         ( move_mtow_add_lst ),
     .MTOW_ADD_RDY         ( move_mtow_add_rdy ),
-    .MTOW_ADD_DAT         ( move_mtow_add_dat ),
+    .MTOW_ADD_ADD         ( move_mtow_add_add ),
     .WTOM_DAT_VLD         ( move_wtom_dat_vld ),
     .WTOM_DAT_LST         ( move_wtom_dat_lst ),
     .WTOM_DAT_RDY         ( move_wtom_dat_rdy ),

@@ -10,15 +10,16 @@
 // Description :
 //========================================================
 module EEG_PEA_ENG_PE #(
-    parameter ACT_DW      = 8,
-    parameter WEI_DW      = 8,
-    parameter OUT_DW      = 8,
+    parameter ACT_DW      =  8,
+    parameter WEI_DW      =  8,
+    parameter OUT_DW      =  8,
     parameter SUM_DW      = 24,
-    parameter SUM_NW      = 8,
+    parameter SUM_NW      =  8,
     parameter ARAM_ADD_AW = 10,
-    parameter ORAM_ADD_AW = 8,
-    parameter CONV_WEI_DW = 3,
-    parameter CONV_RUN_DW = 3,
+    parameter ORAM_ADD_AW = 10,
+    parameter OMUX_ADD_AW =  8,
+    parameter CONV_WEI_DW =  3,
+    parameter CONV_RUN_DW =  3,
     parameter CONV_MUL_DW = 24,
     parameter CONV_ADD_DW = 24
   )(
@@ -45,7 +46,7 @@ module EEG_PEA_ENG_PE #(
 
     output                            OUT_VLD,
     output                            OUT_LST,
-    output [ORAM_ADD_AW         -1:0] OUT_ADD,
+    output [OMUX_ADD_AW         -1:0] OUT_ADD,
     input                             OUT_RDY,
     output [OUT_DW              -1:0] OUT_DAT
   );
@@ -91,7 +92,7 @@ wire din_ena = DIN_VLD & DIN_RDY;
 //out
 reg                     out_vld;
 reg                     out_lst;
-reg  [ORAM_ADD_AW -1:0] out_add;
+reg  [OMUX_ADD_AW -1:0] out_add;
 wire                    out_rdy = OUT_RDY;
 reg  [OUT_DW      -1:0] out_dat;
 
@@ -120,7 +121,7 @@ wire is_addr_out_range = act_add>(aram_add_reg+cfg_conv_pad);
 
 wire pe_data_ena = din_ena;
 wire pe_last_din = din_ena&&act_lst&&wei_lst;
-wire pe_psum_rst = out_ena&&out_idx_cnt==cfg_conv_wei;
+wire pe_psum_rst = out_ena&&out_idx_cnt==cfg_conv_pad;//is_addr_out_range make sure aram_add_reg within (cfg_conv_pad) bit act_add
 
 wire psum_out_lst = psum_add_reg==cfg_conv_lst;
 //=====================================================================================================================   
@@ -209,6 +210,8 @@ always @ ( posedge clk or negedge rst_n )begin
     else if( pe_psum_rst )
         psum_out_vld <= 'd0;
     else if( is_addr_out_range && din_ena )
+        psum_out_vld <= 'd1;
+    else if( pe_psum )
         psum_out_vld <= 'd1;
     else if( out_ena )
         psum_out_vld <= 'd0;

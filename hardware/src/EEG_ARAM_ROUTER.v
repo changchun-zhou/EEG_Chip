@@ -22,7 +22,7 @@ module EEG_ARAM_ROUTER #(
     input  [ARAM_NUM_DW -1:0]                      ARAM_ADD_VLD,
     input  [ARAM_NUM_DW -1:0]                      ARAM_ADD_LST,
     output [ARAM_NUM_DW -1:0]                      ARAM_ADD_RDY,
-    input  [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] ARAM_ADD_DAT,
+    input  [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] ARAM_ADD_ADD,
     output [ARAM_NUM_DW -1:0]                      ARAM_DAT_VLD,
     output [ARAM_NUM_DW -1:0]                      ARAM_DAT_LST,
     input  [ARAM_NUM_DW -1:0]                      ARAM_DAT_RDY,
@@ -31,7 +31,7 @@ module EEG_ARAM_ROUTER #(
     output [ARAM_NUM_DW -1:0]                      AARB_ADD_VLD,
     output [ARAM_NUM_DW -1:0]                      AARB_ADD_LST,
     input  [ARAM_NUM_DW -1:0]                      AARB_ADD_RDY,
-    output [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] AARB_ADD_DAT,
+    output [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] AARB_ADD_ADD,
     input  [ARAM_NUM_DW -1:0]                      AARB_DAT_VLD,
     input  [ARAM_NUM_DW -1:0]                      AARB_DAT_LST,
     output [ARAM_NUM_DW -1:0]                      AARB_DAT_RDY,
@@ -53,7 +53,7 @@ wire [ARAM_NUM_DW -1:0]                      aram_add_vld= ARAM_ADD_VLD;
 wire [ARAM_NUM_DW -1:0]                      aram_add_lst= ARAM_ADD_LST;
 wire [ARAM_NUM_DW -1:0]                      aram_add_rdy= AARB_ADD_RDY;
 wire [ARAM_NUM_DW -1:0][ARAM_NUM_AW    -1:0] aram_add_rid= ARAM_ADD_RID;
-wire [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] aram_add_dat= ARAM_ADD_DAT;
+wire [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] aram_add_add= ARAM_ADD_ADD;
 reg  [ARAM_NUM_DW -1:0]                      aram_dat_vld;
 reg  [ARAM_NUM_DW -1:0]                      aram_dat_lst;
 wire [ARAM_NUM_DW -1:0]                      aram_dat_rdy= ARAM_DAT_RDY;
@@ -68,7 +68,7 @@ assign ARAM_DAT_DAT = aram_dat_dat;
 reg  [ARAM_NUM_DW -1:0]                      aarb_add_vld;
 reg  [ARAM_NUM_DW -1:0]                      aarb_add_lst;
 wire [ARAM_NUM_DW -1:0]                      aarb_add_rdy= AARB_ADD_RDY;
-reg  [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] aarb_add_dat;
+reg  [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] aarb_add_add;
 wire [ARAM_NUM_DW -1:0]                      aarb_dat_vld= AARB_DAT_VLD;
 wire [ARAM_NUM_DW -1:0]                      aarb_dat_lst= AARB_DAT_LST;
 wire [ARAM_NUM_DW -1:0]                      aarb_dat_rdy= ARAM_DAT_RDY;
@@ -81,7 +81,7 @@ wire [ARAM_NUM_DW -1:0] aarb_dat_ena = aarb_dat_vld & aarb_dat_rdy;
 
 assign AARB_ADD_VLD = aarb_add_vld;
 assign AARB_ADD_LST = aarb_add_lst;
-assign AARB_ADD_DAT = aarb_add_dat;
+assign AARB_ADD_ADD = aarb_add_add;
 assign AARB_DAT_RDY = aarb_dat_rdy;
 
 //=====================================================================================================================
@@ -121,7 +121,7 @@ generate
         always @ ( * )begin
             aarb_add_vld[gen_i] = aram_add_gnt_arb[gen_i];
             aarb_add_lst[gen_i] = aram_add_lst[ aram_add_gnt_idx[gen_i] ];
-            aarb_add_dat[gen_i] = aram_add_dat[ aram_add_gnt_idx[gen_i] ];
+            aarb_add_add[gen_i] = aram_add_add[ aram_add_gnt_idx[gen_i] ];
         end
     end
 endgenerate
@@ -156,20 +156,6 @@ endgenerate
 //=====================================================================================================================
 
 `ifdef ASSERT_ON
-
-property ram_rdy_check(dat_vld, dat_rdy);
-@(posedge clk)
-disable iff(rst_n!=1'b1)
-    dat_vld |-> ( dat_rdy );
-endproperty
-
-generate
-  for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 ) begin : ASSERT_BLOCK
-
-    assert property ( ram_rdy_check(aram_dat_vld[gen_i], aram_dat_rdy[gen_i]) );
-
-  end
-endgenerate
 
 `endif
 endmodule

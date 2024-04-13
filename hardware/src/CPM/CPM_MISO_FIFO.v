@@ -5,7 +5,7 @@ module CPM_MISO_FIFO
     parameter   DATA_NUMAW          = 3,
     parameter   DATA_MAX_N          = (1 << DATA_NUMAW),
     parameter   RAM_DEPTH           = (1 << ADDR_WIDTH),
-    parameter   REG_OUT             = "true"
+    parameter   REG_OUT             = "false"
 )(  // Ports
     input  wire                                  clk,
     input  wire                                  rst_n,
@@ -94,8 +94,12 @@ always @ (posedge clk or negedge rst_n)begin
         end
     end else if (push && !full_mi) begin
         for(i=0; i<DATA_MAX_N; i=i+1)begin
-            if( i<=data_in_num )
-                mem[wr_pointer+i] <= data_in_sep[i];
+            if( i<=data_in_num )begin
+                if( wr_pointer+i<RAM_DEPTH )
+                    mem[wr_pointer+i] <= data_in_sep[i];
+                else
+                    mem[wr_pointer+i-RAM_DEPTH] <= data_in_sep[i];
+            end
         end
     end
 end

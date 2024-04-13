@@ -10,12 +10,13 @@
 // Description : RAM MOVER 
 //========================================================
 module EEG_RAM_MOVER #(
-    parameter MOVE_CMD_DW =  7,
+    parameter MOVE_CMD_DW =  8,
     parameter MOVE_DAT_DW =  8,
     parameter BANK_NUM_DW =  4,
     parameter ARAM_ADD_AW = 12,
     parameter WRAM_ADD_AW = 13,
     parameter ORAM_ADD_AW = 10,
+    parameter OMUX_ADD_AW =  8,
     parameter FRAM_ADD_AW = ARAM_ADD_AW,
     parameter CONV_LEN_DW = 10,
     parameter CONV_ICH_DW =  8,
@@ -28,6 +29,7 @@ module EEG_RAM_MOVER #(
     parameter ARAM_NUM_DW = BANK_NUM_DW,
     parameter WRAM_NUM_DW = BANK_NUM_DW,
     parameter ORAM_NUM_DW = BANK_NUM_DW,
+    parameter OMUX_NUM_DW = BANK_NUM_DW,
     parameter FRAM_NUM_DW = BANK_NUM_DW,
     parameter ARAM_DAT_DW = MOVE_DAT_DW,
     parameter WRAM_DAT_DW = MOVE_DAT_DW,
@@ -37,6 +39,7 @@ module EEG_RAM_MOVER #(
     parameter ARAM_NUM_AW = BANK_NUM_AW,
     parameter WRAM_NUM_AW = BANK_NUM_AW,
     parameter ORAM_NUM_AW = BANK_NUM_AW,
+    parameter OMUX_NUM_AW = BANK_NUM_AW,
     parameter STAT_DAT_DW = CONV_ICH_DW+CONV_WEI_DW,
     parameter STAT_NUM_AW = $clog2(STAT_NUM_DW)
   )(
@@ -51,6 +54,7 @@ module EEG_RAM_MOVER #(
     input  [ARAM_NUM_DW                      -1:0] CFG_ARAM_IDX,
     input  [WRAM_NUM_DW                      -1:0] CFG_WRAM_IDX,
     input  [ORAM_NUM_DW                      -1:0] CFG_ORAM_IDX,
+    input  [OMUX_NUM_DW                      -1:0] CFG_OMUX_IDX,
     input  [ARAM_ADD_AW                      -1:0] CFG_ARAM_ADD,
     input  [WRAM_ADD_AW                      -1:0] CFG_WRAM_ADD,
     input  [ORAM_ADD_AW                      -1:0] CFG_ORAM_ADD,
@@ -68,6 +72,11 @@ module EEG_RAM_MOVER #(
     input                                          ITOM_DAT_LST,
     output                                         ITOM_DAT_RDY,
     input  [MOVE_DAT_DW                      -1:0] ITOM_DAT_DAT,
+
+    output                                         MTOC_DAT_VLD,
+    output                                         MTOC_DAT_LST,
+    input                                          MTOC_DAT_RDY,
+    output [MOVE_DAT_DW                      -1:0] MTOC_DAT_DAT,
 
     //STAT
     output                                         MTOS_DAT_VLD,
@@ -93,7 +102,7 @@ module EEG_RAM_MOVER #(
     output [ARAM_NUM_DW -1:0]                      MTOA_ADD_VLD,
     output [ARAM_NUM_DW -1:0]                      MTOA_ADD_LST,
     input  [ARAM_NUM_DW -1:0]                      MTOA_ADD_RDY,
-    output [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] MTOA_ADD_DAT,
+    output [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] MTOA_ADD_ADD,
     input  [ARAM_NUM_DW -1:0]                      ATOM_DAT_VLD,
     input  [ARAM_NUM_DW -1:0]                      ATOM_DAT_LST,
     output [ARAM_NUM_DW -1:0]                      ATOM_DAT_RDY,
@@ -108,7 +117,7 @@ module EEG_RAM_MOVER #(
     output [WRAM_NUM_DW -1:0]                      MTOW_ADD_VLD,
     output [WRAM_NUM_DW -1:0]                      MTOW_ADD_LST,
     input  [WRAM_NUM_DW -1:0]                      MTOW_ADD_RDY,
-    output [WRAM_NUM_DW -1:0][WRAM_ADD_AW    -1:0] MTOW_ADD_DAT,
+    output [WRAM_NUM_DW -1:0][WRAM_ADD_AW    -1:0] MTOW_ADD_ADD,
     input  [WRAM_NUM_DW -1:0]                      WTOM_DAT_VLD,
     input  [WRAM_NUM_DW -1:0]                      WTOM_DAT_LST,
     output [WRAM_NUM_DW -1:0]                      WTOM_DAT_RDY,
@@ -132,6 +141,7 @@ module EEG_RAM_MOVER #(
 //=====================================================================================================================
 // Constant Definition :
 //=====================================================================================================================
+localparam OMUX_ADD_DW = 1<<OMUX_ADD_AW;
 localparam MOVE_BUF_DW = MOVE_DAT_DW+1;
 localparam MOVE_BUF_AW = 2;
 
@@ -139,13 +149,14 @@ integer i, j;
 genvar gen_i, gen_j;  
 
 localparam MOVE_STATE = MOVE_CMD_DW;
-localparam MOVE_IDLE  = 7'b0000001;
-localparam MOVE_ITOA  = 7'b0000010;
-localparam MOVE_ITOW  = 7'b0000100;
-localparam MOVE_OTOA  = 7'b0001000;
-localparam MOVE_ATOW  = 7'b0010000;
-localparam MOVE_WTOA  = 7'b0100000;
-localparam MOVE_STAT  = 7'b1000000;
+localparam MOVE_IDLE  = 8'b00000001;
+localparam MOVE_ITOA  = 8'b00000010;
+localparam MOVE_ITOW  = 8'b00000100;
+localparam MOVE_OTOA  = 8'b00001000;
+localparam MOVE_ATOW  = 8'b00010000;
+localparam MOVE_WTOA  = 8'b00100000;
+localparam MOVE_STAT  = 8'b01000000;
+localparam MOVE_READ  = 8'b10000000;
 
 reg [MOVE_STATE -1:0] move_cs;
 reg [MOVE_STATE -1:0] move_ns;
@@ -157,6 +168,7 @@ wire move_otoa = move_cs == MOVE_OTOA;
 wire move_atow = move_cs == MOVE_ATOW;
 wire move_wtoa = move_cs == MOVE_WTOA;
 wire move_stat = move_cs == MOVE_STAT;
+wire move_read = move_cs == MOVE_READ;
 wire move_itoo = 1'd0;
 wire move_flag;
 assign IS_IDLE = move_idle;
@@ -166,6 +178,7 @@ reg  [BANK_NUM_DW -1:0] otom_lst_done;
 reg  [BANK_NUM_DW -1:0] mtoa_lst_done;
 reg  [BANK_NUM_DW -1:0] mtow_lst_done;
 reg  [BANK_NUM_DW -1:0] stat_lst_done;
+reg                     read_lst_done;
 //reg  [BANK_NUM_DW -1:0] mtoo_dat_done;
 wire move_itoa_done = &mtoa_lst_done;
 wire move_itow_done = &mtow_lst_done;
@@ -173,6 +186,7 @@ wire move_otoa_done = &mtoa_lst_done;
 wire move_atow_done = &mtow_lst_done;
 wire move_wtoa_done = &mtoa_lst_done;
 wire move_stat_done = &stat_lst_done;
+wire move_read_done =  read_lst_done;
 //=====================================================================================================================
 // IO Signal :
 //=====================================================================================================================
@@ -184,6 +198,7 @@ reg  [5                                -1:0] cfg_info_cmd;
 reg  [ARAM_NUM_DW                      -1:0] cfg_aram_idx;
 reg  [WRAM_NUM_DW                      -1:0] cfg_wram_idx;
 reg  [ORAM_NUM_DW                      -1:0] cfg_oram_idx;
+reg  [OMUX_NUM_DW                      -1:0] cfg_omux_idx;
 reg  [ARAM_ADD_AW                      -1:0] cfg_aram_add;
 reg  [WRAM_ADD_AW                      -1:0] cfg_wram_add;
 reg  [ORAM_ADD_AW                      -1:0] cfg_oram_add;
@@ -197,6 +212,11 @@ reg                                          cfg_flag_ena;
 reg                                          cfg_splt_ena;
 reg  [CONV_SPT_DW                      -1:0] cfg_splt_len;
 
+reg  [OMUX_NUM_AW                      -1:0] cal_omux_num, cal_omux_num_tmp;
+reg                                          cal_aram_ena;
+reg                                          cal_wram_ena;
+reg                                          cal_oram_ena;
+
 assign CFG_INFO_RDY = cfg_info_rdy;
 
 assign move_flag = move_otoa && cfg_flag_ena;
@@ -209,6 +229,17 @@ assign ITOM_DAT_RDY = itom_dat_rdy;
 
 wire itom_dat_ena = itom_dat_vld & itom_dat_rdy;
 
+//MTOC_IO
+reg                                          mtoc_dat_vld;
+reg                                          mtoc_dat_lst;
+wire                                         mtoc_dat_rdy = MTOC_DAT_RDY;
+reg  [MOVE_DAT_DW                      -1:0] mtoc_dat_dat;
+
+assign MTOC_DAT_VLD = mtoc_dat_vld;
+assign MTOC_DAT_LST = mtoc_dat_lst;
+assign MTOC_DAT_DAT = mtoc_dat_dat;
+
+wire mtoc_dat_ena = mtoc_dat_vld & mtoc_dat_rdy;
 //STAT_IO
 reg                                          mtos_dat_vld;
 reg                                          mtos_dat_lst;
@@ -247,14 +278,14 @@ assign MTOA_DAT_DAT = mtoa_dat_dat;
 reg  [ARAM_NUM_DW -1:0]                      mtoa_add_vld;
 reg  [ARAM_NUM_DW -1:0]                      mtoa_add_lst;
 wire [ARAM_NUM_DW -1:0]                      mtoa_add_rdy = MTOA_ADD_RDY;
-reg  [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] mtoa_add_dat;
+reg  [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] mtoa_add_add;
 wire [ARAM_NUM_DW -1:0]                      atom_dat_vld = ATOM_DAT_VLD;
 wire [ARAM_NUM_DW -1:0]                      atom_dat_lst = ATOM_DAT_LST;
 reg  [ARAM_NUM_DW -1:0]                      atom_dat_rdy;
 wire [ARAM_NUM_DW -1:0][ARAM_DAT_DW    -1:0] atom_dat_dat = ATOM_DAT_DAT;
 assign MTOA_ADD_VLD = mtoa_add_vld;
 assign MTOA_ADD_LST = mtoa_add_lst;
-assign MTOA_ADD_DAT = mtoa_add_dat;
+assign MTOA_ADD_ADD = mtoa_add_add;
 assign ATOM_DAT_RDY = atom_dat_rdy;
 
 wire [ARAM_NUM_DW -1:0] mtoa_dat_ena = mtoa_dat_vld & mtoa_dat_rdy;
@@ -274,14 +305,14 @@ assign MTOW_DAT_DAT = mtow_dat_dat;
 reg  [WRAM_NUM_DW -1:0]                      mtow_add_vld;
 reg  [WRAM_NUM_DW -1:0]                      mtow_add_lst;
 wire [WRAM_NUM_DW -1:0]                      mtow_add_rdy = MTOW_ADD_RDY;
-reg  [WRAM_NUM_DW -1:0][WRAM_ADD_AW    -1:0] mtow_add_dat;
+reg  [WRAM_NUM_DW -1:0][WRAM_ADD_AW    -1:0] mtow_add_add;
 wire [WRAM_NUM_DW -1:0]                      wtom_dat_vld = WTOM_DAT_VLD;
 wire [WRAM_NUM_DW -1:0]                      wtom_dat_lst = WTOM_DAT_LST;
 reg  [WRAM_NUM_DW -1:0]                      wtom_dat_rdy;
 wire [WRAM_NUM_DW -1:0][WRAM_DAT_DW    -1:0] wtom_dat_dat = WTOM_DAT_DAT;
 assign MTOW_ADD_VLD = mtow_add_vld;
 assign MTOW_ADD_LST = mtow_add_lst;
-assign MTOW_ADD_DAT = mtow_add_dat;
+assign MTOW_ADD_ADD = mtow_add_add;
 assign WTOM_DAT_RDY = wtom_dat_rdy;
 
 wire [WRAM_NUM_DW -1:0] mtow_dat_ena = mtow_dat_vld & mtow_dat_rdy;
@@ -353,6 +384,7 @@ reg  [BANK_NUM_DW -1:0] from_cnt_add_done;
 CPM_CNT_C #( WRAM_ADD_AW ) FROM_CNT_NUM_U[BANK_NUM_DW -1:0] ( clk, rst_n, cfg_info_ena, from_cnt_add_ena, from_cnt_num );
 CPM_CNT_C #( WRAM_ADD_AW ) DEST_CNT_NUM_U[BANK_NUM_DW -1:0] ( clk, rst_n, cfg_info_ena, dest_cnt_add_ena, dest_cnt_num );
 
+reg  [BANK_NUM_DW -1:0][OMUX_NUM_AW -1:0] otom_mux_cnt;
 //FLAG
 reg  [BANK_NUM_DW -1:0][FRAM_DAT_DW -1:0] flag_buf_dat;
 reg  [BANK_NUM_DW -1:0][WRAM_ADD_AW -1:0] otom_och_cnt, mtof_och_cnt;
@@ -396,6 +428,7 @@ always @ ( posedge clk or negedge rst_n )begin
         cfg_aram_idx <= 'd0;
         cfg_wram_idx <= 'd0;
         cfg_oram_idx <= 'd0;
+        cfg_omux_idx <= 'd0;
         cfg_aram_add <= 'd0;
         cfg_wram_add <= 'd0;
         cfg_oram_add <= 'd0;
@@ -413,6 +446,7 @@ always @ ( posedge clk or negedge rst_n )begin
         cfg_aram_idx <= CFG_ARAM_IDX;
         cfg_wram_idx <= CFG_WRAM_IDX;
         cfg_oram_idx <= CFG_ORAM_IDX;
+        cfg_omux_idx <= CFG_OMUX_IDX;
         cfg_aram_add <= CFG_ARAM_ADD;
         cfg_wram_add <= CFG_WRAM_ADD;
         cfg_oram_add <= CFG_ORAM_ADD;
@@ -428,6 +462,34 @@ always @ ( posedge clk or negedge rst_n )begin
     end
 end
 
+//read xram
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        cal_aram_ena <= 'd0;
+        cal_wram_ena <= 'd0;
+        cal_oram_ena <= 'd0;
+    end else if( cfg_info_ena )begin
+        cal_aram_ena <= |CFG_ARAM_IDX && (CFG_INFO_CMD==MOVE_ATOW || CFG_INFO_CMD==MOVE_READ);
+        cal_wram_ena <= |CFG_WRAM_IDX && (CFG_INFO_CMD==MOVE_WTOA || CFG_INFO_CMD==MOVE_READ);
+        cal_oram_ena <= |CFG_ORAM_IDX && (CFG_INFO_CMD==MOVE_OTOA || CFG_INFO_CMD==MOVE_READ || CFG_INFO_CMD==MOVE_STAT);
+    end
+end
+
+always @ ( * )begin
+    cal_omux_num_tmp = 'd0;
+    for( i=0 ; i < OMUX_NUM_AW; i = i+1 )begin
+        if( CFG_OMUX_IDX[i] )
+            cal_omux_num_tmp = cal_omux_num_tmp +'d1;
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )
+        cal_omux_num <= 'd0;
+    else if( cfg_info_ena )
+        cal_omux_num <= cal_omux_num_tmp -'d1;
+end
+
 always @ ( * )begin
     cfg_info_rdy = move_idle;
 end
@@ -435,7 +497,7 @@ end
 //stat
 always @ ( * )begin
     mtos_dat_vld = topk_dat_vld && move_stat;
-    mtos_dat_lst = topk_dat_cnt==STAT_NUM_DW-1;
+    mtos_dat_lst = topk_dat_cnt==(STAT_NUM_DW-1);
     mtos_dat_add = topk_dat_cnt;
     mtos_dat_dat = topk_dat_dat[topk_och_cnt] +topk_wei_cnt;
 end
@@ -447,13 +509,20 @@ generate
                 cfg_from_idx[gen_i] <= 'd0;
             else if( cfg_info_ena )begin
                 case( CFG_INFO_CMD )
-                    MOVE_ATOW: cfg_from_idx[gen_i] <= &CFG_WRAM_IDX ? gen_i : cfg_wram_sel;
-                      default: cfg_from_idx[gen_i] <= &CFG_ARAM_IDX ? gen_i : cfg_aram_sel;
+                    MOVE_ATOW: cfg_from_idx[gen_i] <= &CFG_WRAM_IDX ? gen_i : cfg_wram_sel_tmp;
+                    MOVE_READ: cfg_from_idx[gen_i] <= |CFG_WRAM_IDX ? cfg_wram_sel_tmp : (|CFG_ARAM_IDX ? cfg_aram_sel_tmp : cfg_oram_sel_tmp);
+                      default: cfg_from_idx[gen_i] <= &CFG_ARAM_IDX ? gen_i : cfg_aram_sel_tmp;
                 endcase
             end
         end
     end
 endgenerate
+
+always @ ( * )begin
+    mtoc_dat_vld =~move_buf_empty[cfg_from_idx[0]] && move_read;
+    mtoc_dat_lst = move_buf_lst[cfg_from_idx[0]];;
+    mtoc_dat_dat = move_buf_dat[cfg_from_idx[0]];;
+end
 
 always @ ( * )begin
     case( move_cs )
@@ -512,24 +581,10 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < BANK_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            case( move_cs )
-                MOVE_OTOA: from_cnt_add_last[gen_i] = from_cnt_add[gen_i] == cfg_oram_len;
-                MOVE_ATOW: from_cnt_add_last[gen_i] = mtow_dat_ena[gen_i] == cfg_aram_len;
-                MOVE_WTOA: from_cnt_add_last[gen_i] = mtoa_dat_ena[gen_i] == cfg_wram_len;
-                MOVE_STAT: from_cnt_add_last[gen_i] = from_cnt_add[gen_i] == cfg_oram_len;
-                  default: from_cnt_add_last[gen_i] = 'd0;
-            endcase
-        end
-    end
-endgenerate
-
-generate
-    for( gen_i=0 ; gen_i < BANK_NUM_DW; gen_i = gen_i+1 )begin
-        always @ ( * )begin
-            mtoa_add_vld[gen_i] =~from_cnt_add_done[gen_i] && move_buf_cnt[gen_i]<2;
+            mtoa_add_vld[gen_i] = cal_aram_ena && ~from_cnt_add_done[gen_i] && move_buf_cnt[gen_i]<2;
             mtoa_add_lst[gen_i] = from_cnt_add_last[gen_i];
-            mtoa_add_dat[gen_i] = from_cnt_add[gen_i];
-            atom_dat_rdy[gen_i] = move_atow & ~move_buf_full[gen_i];
+            mtoa_add_add[gen_i] = from_cnt_add[gen_i];
+            atom_dat_rdy[gen_i] = cal_aram_ena && ~move_buf_full[gen_i];
         end
     end
 endgenerate
@@ -537,10 +592,10 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < BANK_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            mtow_add_vld[gen_i] =~from_cnt_add_done[gen_i] && move_buf_cnt[gen_i]<2;
+            mtow_add_vld[gen_i] = cal_wram_ena && ~from_cnt_add_done[gen_i] && move_buf_cnt[gen_i]<2;
             mtow_add_lst[gen_i] = from_cnt_add_last[gen_i];
-            mtow_add_dat[gen_i] = from_cnt_add[gen_i];
-            wtom_dat_rdy[gen_i] = move_wtoa && ~move_buf_full[gen_i];
+            mtow_add_add[gen_i] = from_cnt_add[gen_i];
+            wtom_dat_rdy[gen_i] = cal_wram_ena && ~move_buf_full[gen_i];
         end
     end
 endgenerate
@@ -548,10 +603,10 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < BANK_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            mtoo_add_vld[gen_i] =~from_cnt_add_done[gen_i] && move_buf_cnt[gen_i]<2;
+            mtoo_add_vld[gen_i] = cal_oram_ena && ~from_cnt_add_done[gen_i] && move_buf_cnt[gen_i]<2;
             mtoo_add_lst[gen_i] = from_cnt_add_last[gen_i];
-            mtoo_add_add[gen_i] = otom_add_cnt[gen_i];
-            otom_dat_rdy[gen_i] = move_otoa && ~move_buf_full[gen_i];
+            mtoo_add_add[gen_i] = move_otoa ? from_cnt_add[gen_i] +otom_mux_cnt[gen_i]*OMUX_ADD_DW : otom_add_cnt[gen_i];
+            otom_dat_rdy[gen_i] = cal_oram_ena && ~move_buf_full[gen_i];
         end
     end
 endgenerate
@@ -571,15 +626,17 @@ generate
                 MOVE_ATOW: from_cnt_add_done[gen_i] <= ~CFG_ARAM_IDX[gen_i];
                 MOVE_WTOA: from_cnt_add_done[gen_i] <= ~CFG_WRAM_IDX[gen_i];
                 MOVE_STAT: from_cnt_add_done[gen_i] <= ~CFG_ORAM_IDX[gen_i];
+                MOVE_READ: from_cnt_add_done[gen_i] <=~(CFG_ARAM_IDX[gen_i] || CFG_WRAM_IDX[gen_i] || CFG_ORAM_IDX[gen_i]);
                   default: from_cnt_add_done[gen_i] <= 'd1;
                 endcase
             end
-            else if( from_cnt_add_last[gen_i] )begin
+            else if( from_cnt_add_ena[gen_i] && from_cnt_add_last[gen_i] )begin
                 case( move_cs )
-                MOVE_OTOA: from_cnt_add_done[gen_i] <= mtoo_add_ena[gen_i];
-                MOVE_ATOW: from_cnt_add_done[gen_i] <= mtoa_add_ena[gen_i];
-                MOVE_WTOA: from_cnt_add_done[gen_i] <= mtow_add_ena[gen_i];
-                MOVE_STAT: from_cnt_add_done[gen_i] <= mtoo_add_ena[gen_i];
+                MOVE_OTOA: from_cnt_add_done[gen_i] <= 'd1;//mtoo_add_ena[gen_i];
+                MOVE_ATOW: from_cnt_add_done[gen_i] <= 'd1;//mtoa_add_ena[gen_i];
+                MOVE_WTOA: from_cnt_add_done[gen_i] <= 'd1;//mtow_add_ena[gen_i];
+                MOVE_STAT: from_cnt_add_done[gen_i] <= 'd1;//mtoo_add_ena[gen_i];
+                MOVE_READ: from_cnt_add_done[gen_i] <= 'd1;
                   default: from_cnt_add_done[gen_i] <= 'd1;
                 endcase
             end
@@ -625,6 +682,15 @@ generate
         end
     end
 endgenerate
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )
+        read_lst_done <= 'd1;
+    else if( cfg_info_ena && CFG_INFO_CMD==MOVE_READ )
+        read_lst_done <= 'd0;
+    else if( mtoc_dat_ena && mtoc_dat_lst )
+        read_lst_done <= 'd1;
+end
 //write
 generate
     for( gen_i=0 ; gen_i < BANK_NUM_DW; gen_i = gen_i+1 )begin
@@ -659,6 +725,7 @@ generate
                 MOVE_OTOA: move_buf_wen[gen_i] = otom_dat_ena[gen_i];
                 MOVE_ATOW: move_buf_wen[gen_i] = atom_dat_ena[gen_i];
                 MOVE_WTOA: move_buf_wen[gen_i] = wtom_dat_ena[gen_i];
+                MOVE_READ: move_buf_wen[gen_i] = cal_aram_ena ? atom_dat_ena[gen_i] : cal_wram_ena ? wtom_dat_ena[gen_i] : otom_dat_ena[gen_i];
                   default: move_buf_wen[gen_i] = 'd0;
             endcase
         end
@@ -667,6 +734,7 @@ generate
                 MOVE_OTOA: move_buf_din[gen_i] = {otom_dat_lst[gen_i], otom_dat_dat[gen_i]};
                 MOVE_ATOW: move_buf_din[gen_i] = {atom_dat_lst[gen_i], atom_dat_dat[gen_i]};
                 MOVE_WTOA: move_buf_din[gen_i] = {wtom_dat_lst[gen_i], wtom_dat_dat[gen_i]};
+                MOVE_READ: move_buf_din[gen_i] = cal_aram_ena ? {atom_dat_lst[gen_i], atom_dat_dat[gen_i]} : cal_wram_ena ?{wtom_dat_lst[gen_i], wtom_dat_dat[gen_i]} : {otom_dat_lst[gen_i], otom_dat_dat[gen_i]};
                   default: move_buf_din[gen_i] = 'd0;
             endcase
         end
@@ -675,6 +743,7 @@ generate
                 MOVE_OTOA: move_buf_ren[gen_i] = mtoa_dat_ena[gen_i];
                 MOVE_ATOW: move_buf_ren[gen_i] = mtow_dat_ena[gen_i];
                 MOVE_WTOA: move_buf_ren[gen_i] = mtoa_dat_ena[gen_i];
+                MOVE_READ: move_buf_ren[gen_i] = mtoc_dat_ena;
                   default: move_buf_ren[gen_i] = 'd0;
             endcase
         end
@@ -697,7 +766,23 @@ generate
                 MOVE_OTOA: from_cnt_add_ena[gen_i] = mtoo_add_ena[gen_i];
                 MOVE_ATOW: from_cnt_add_ena[gen_i] = mtoa_add_ena[gen_i];
                 MOVE_WTOA: from_cnt_add_ena[gen_i] = mtow_add_ena[gen_i];
+                MOVE_READ: from_cnt_add_ena[gen_i] = |cfg_aram_idx ? mtoa_add_ena[gen_i] : |cfg_wram_idx ? mtow_add_ena[gen_i] : mtoo_add_ena[gen_i];
                   default: from_cnt_add_ena[gen_i] = 'd0;
+            endcase
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < BANK_NUM_DW; gen_i = gen_i+1 )begin
+        always @ ( * )begin
+            case( move_cs )
+                MOVE_OTOA: from_cnt_add_last[gen_i] = from_cnt_add[gen_i]==cfg_oram_len && otom_mux_cnt[gen_i]==cal_omux_num;
+                MOVE_ATOW: from_cnt_add_last[gen_i] = mtow_dat_ena[gen_i]==cfg_aram_len;
+                MOVE_WTOA: from_cnt_add_last[gen_i] = mtoa_dat_ena[gen_i]==cfg_wram_len;
+                MOVE_STAT: from_cnt_add_last[gen_i] = from_cnt_add[gen_i]==cfg_oram_len;
+                MOVE_READ: from_cnt_add_last[gen_i] = |cfg_aram_idx ? from_cnt_add[gen_i]==cfg_aram_len : |cfg_wram_idx ? from_cnt_add[gen_i]==cfg_wram_len : from_cnt_add[gen_i]==cfg_oram_len;
+                  default: from_cnt_add_last[gen_i] = 'd0;
             endcase
         end
     end
@@ -723,8 +808,17 @@ generate
         always @ ( posedge clk or negedge rst_n )begin
             if( ~rst_n )
                 from_cnt_add[gen_i] <= 'd0;
-            else if( cfg_info_ena )
-                from_cnt_add[gen_i] <= CFG_INFO_CMD==MOVE_OTOA ? cfg_oram_add : CFG_INFO_CMD==MOVE_ATOW ? cfg_aram_add : cfg_wram_add;
+            else if( cfg_info_ena )begin
+                case( move_cs )
+                    MOVE_OTOA: from_cnt_add[gen_i] <= CFG_ORAM_ADD;
+                    MOVE_ATOW: from_cnt_add[gen_i] <= CFG_ARAM_ADD;
+                    MOVE_WTOA: from_cnt_add[gen_i] <= CFG_WRAM_ADD;
+                    MOVE_READ: from_cnt_add[gen_i] <=|CFG_ARAM_IDX ? CFG_ARAM_ADD : |CFG_WRAM_IDX ? CFG_WRAM_ADD : CFG_ORAM_ADD;
+                      default: from_cnt_add[gen_i] <= 'd0;
+                endcase
+            end
+            else if( from_cnt_add_ena && from_cnt_add[gen_i]==cfg_oram_len && move_otoa )
+                from_cnt_add[gen_i] <= 'd0;
             else if( from_cnt_add_ena )
                 from_cnt_add[gen_i] <= from_cnt_add[gen_i] +'d1;
         end
@@ -737,7 +831,7 @@ generate
             if( ~rst_n )
                 dest_cnt_add[gen_i] <= 'd0;
             else if( cfg_info_ena )
-                dest_cnt_add[gen_i] <= (CFG_INFO_CMD==MOVE_ATOW || CFG_INFO_CMD==MOVE_ITOW) ? cfg_wram_add : cfg_aram_add;
+                dest_cnt_add[gen_i] <= (CFG_INFO_CMD==MOVE_ATOW || CFG_INFO_CMD==MOVE_ITOW) ? CFG_WRAM_ADD : CFG_ARAM_ADD;
             else if( dest_cnt_add_ena )
                 dest_cnt_add[gen_i] <= dest_cnt_add[gen_i] +'d1;
         end
@@ -759,6 +853,19 @@ generate
 endgenerate
 
 //otom_flag
+generate
+    for( gen_i=0 ; gen_i < BANK_NUM_DW; gen_i = gen_i+1 )begin
+        always @ ( posedge clk or negedge rst_n )begin
+            if( ~rst_n )
+                otom_mux_cnt[gen_i] <= 'd0;
+            else if( cfg_info_ena )
+                otom_mux_cnt[gen_i] <= 'd0;
+            else if( move_otoa && mtoo_add_ena[gen_i] && from_cnt_add[gen_i]==cfg_oram_len )
+                otom_mux_cnt[gen_i] <= otom_mux_cnt[gen_i] +'d1;
+        end
+    end
+endgenerate
+
 generate
     for( gen_i=0 ; gen_i < BANK_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( posedge clk or negedge rst_n )begin
@@ -949,6 +1056,7 @@ always @ ( * )begin
         MOVE_ATOW: move_ns = move_atow_done ? MOVE_IDLE : move_cs;
         MOVE_WTOA: move_ns = move_wtoa_done ? MOVE_IDLE : move_cs;
         MOVE_STAT: move_ns = move_stat_done ? MOVE_IDLE : move_cs;
+        MOVE_READ: move_ns = move_read_done ? MOVE_IDLE : move_cs;
           default: move_ns = MOVE_IDLE;
     endcase
 end

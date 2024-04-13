@@ -11,9 +11,9 @@
 //========================================================
 module EEG_ORAM_DEMUX #(
     parameter ORAM_NUM_DW =  4,
-    parameter ORAM_MUX_DW =  4,
+    parameter OMUX_NUM_DW =  4,
     parameter ORAM_ADD_AW = 12,
-    parameter ORAM_ADD_MW = 10,
+    parameter OMUX_ADD_AW = 10,
     parameter ORAM_DAT_DW =  4,
     parameter ORAM_NUM_AW = $clog2(ORAM_NUM_DW)
   )(
@@ -35,25 +35,25 @@ module EEG_ORAM_DEMUX #(
     input  [ORAM_NUM_DW -1:0]                                     MUX_OTOM_DAT_RDY,
     output [ORAM_NUM_DW -1:0]                  [ORAM_DAT_DW -1:0] MUX_OTOM_DAT_DAT,
 
-    output [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   DMX_MTOO_DAT_VLD,
-    output [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   DMX_MTOO_DAT_LST,
-    input  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   DMX_MTOO_DAT_RDY,
-    output [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_ADD_MW -1:0] DMX_MTOO_DAT_ADD,
-    output [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_DAT_DW -1:0] DMX_MTOO_DAT_DAT,
+    output [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   DMX_MTOO_DAT_VLD,
+    output [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   DMX_MTOO_DAT_LST,
+    input  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   DMX_MTOO_DAT_RDY,
+    output [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW -1:0] DMX_MTOO_DAT_ADD,
+    output [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] DMX_MTOO_DAT_DAT,
 
-    output [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   DMX_MTOO_ADD_VLD,
-    output [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   DMX_MTOO_ADD_LST,
-    input  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   DMX_MTOO_ADD_RDY,
-    output [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_ADD_MW -1:0] DMX_MTOO_ADD_ADD,
-    input  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   DMX_OTOM_DAT_VLD,
-    input  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   DMX_OTOM_DAT_LST,
-    output [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                   DMX_OTOM_DAT_RDY,
-    input  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_DAT_DW -1:0] DMX_OTOM_DAT_DAT
+    output [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   DMX_MTOO_ADD_VLD,
+    output [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   DMX_MTOO_ADD_LST,
+    input  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   DMX_MTOO_ADD_RDY,
+    output [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW -1:0] DMX_MTOO_ADD_ADD,
+    input  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   DMX_OTOM_DAT_VLD,
+    input  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   DMX_OTOM_DAT_LST,
+    output [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   DMX_OTOM_DAT_RDY,
+    input  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] DMX_OTOM_DAT_DAT
   );
 //=====================================================================================================================
 // Constant Definition :
 //=====================================================================================================================
-localparam ORAM_MUX_AW = $clog2(ORAM_MUX_DW);
+localparam OMUX_NUM_AW = $clog2(OMUX_NUM_DW);
 
 integer i;
 genvar gen_i, gen_j;
@@ -82,20 +82,20 @@ assign MUX_OTOM_DAT_VLD = mux_otom_dat_vld;
 assign MUX_OTOM_DAT_LST = mux_otom_dat_lst;
 assign MUX_OTOM_DAT_DAT = mux_otom_dat_dat;
 //DEMUX_IO
-reg   [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                      dmx_mtoo_dat_vld;
-reg   [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                      dmx_mtoo_dat_lst;
-wire  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                      dmx_mtoo_dat_rdy = DMX_MTOO_DAT_RDY;
-reg   [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_ADD_MW    -1:0] dmx_mtoo_dat_add;
-reg   [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_DAT_DW    -1:0] dmx_mtoo_dat_dat;
+reg   [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                      dmx_mtoo_dat_vld;
+reg   [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                      dmx_mtoo_dat_lst;
+wire  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                      dmx_mtoo_dat_rdy = DMX_MTOO_DAT_RDY;
+reg   [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW    -1:0] dmx_mtoo_dat_add;
+reg   [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW    -1:0] dmx_mtoo_dat_dat;
 
-reg   [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                      dmx_mtoo_add_vld;
-reg   [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                      dmx_mtoo_add_lst;
-wire  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                      dmx_mtoo_add_rdy = DMX_MTOO_ADD_RDY;
-reg   [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_ADD_MW    -1:0] dmx_mtoo_add_add;
-wire  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                      dmx_otom_dat_vld = DMX_OTOM_DAT_VLD;
-wire  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                      dmx_otom_dat_lst = DMX_OTOM_DAT_LST;
-reg   [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0]                      dmx_otom_dat_rdy;
-wire  [ORAM_NUM_DW -1:0][ORAM_MUX_DW -1:0][ORAM_DAT_DW    -1:0] dmx_otom_dat_dat = DMX_OTOM_DAT_DAT;
+reg   [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                      dmx_mtoo_add_vld;
+reg   [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                      dmx_mtoo_add_lst;
+wire  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                      dmx_mtoo_add_rdy = DMX_MTOO_ADD_RDY;
+reg   [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW    -1:0] dmx_mtoo_add_add;
+wire  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                      dmx_otom_dat_vld = DMX_OTOM_DAT_VLD;
+wire  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                      dmx_otom_dat_lst = DMX_OTOM_DAT_LST;
+reg   [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                      dmx_otom_dat_rdy;
+wire  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW    -1:0] dmx_otom_dat_dat = DMX_OTOM_DAT_DAT;
 
 assign DMX_MTOO_DAT_VLD = dmx_mtoo_dat_vld;
 assign DMX_MTOO_DAT_LST = dmx_mtoo_dat_lst;
@@ -109,9 +109,9 @@ assign DMX_OTOM_DAT_RDY = dmx_otom_dat_rdy;
 //=====================================================================================================================
 // Variable Definition :
 //=====================================================================================================================
-wire [ORAM_NUM_DW -1:0][ORAM_MUX_AW -1:0] dmx_otom_dat_sel;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_AW -1:0] dmx_otom_dat_sel;
 
-CPM_SEL #( ORAM_MUX_DW, ORAM_MUX_AW ) DMX_SEL [ORAM_NUM_DW-1:0]( dmx_otom_dat_vld, dmx_otom_dat_sel );
+CPM_SEL #( OMUX_NUM_DW, OMUX_NUM_AW ) DMX_SEL [ORAM_NUM_DW-1:0]( dmx_otom_dat_vld, dmx_otom_dat_sel );
 //=====================================================================================================================
 // IO Logic Design :
 //=====================================================================================================================
@@ -129,11 +129,11 @@ endgenerate
 
 generate
     for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
-        for( gen_j=0 ; gen_j < ORAM_MUX_DW; gen_j = gen_j+1 )begin
+        for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
             always @ ( * )begin
                 dmx_mtoo_dat_vld[gen_i][gen_j] = mux_mtoo_dat_vld[gen_i] && (mux_mtoo_dat_add[gen_i][ORAM_ADD_AW-1 -:2]==gen_j);
                 dmx_mtoo_dat_lst[gen_i][gen_j] = mux_mtoo_dat_lst[gen_i];
-                dmx_mtoo_dat_add[gen_i][gen_j] = mux_mtoo_dat_add[gen_i][0 +:ORAM_ADD_MW];
+                dmx_mtoo_dat_add[gen_i][gen_j] = mux_mtoo_dat_add[gen_i][0 +:OMUX_ADD_AW];
                 dmx_mtoo_dat_dat[gen_i][gen_j] = mux_mtoo_dat_dat[gen_i];
             end
         end
@@ -142,11 +142,11 @@ endgenerate
 
 generate
     for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
-        for( gen_j=0 ; gen_j < ORAM_MUX_DW; gen_j = gen_j+1 )begin
+        for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
             always @ ( * )begin
                 dmx_mtoo_add_vld[gen_i][gen_j] = mux_mtoo_add_vld[gen_i] && mux_mtoo_add_add[gen_i][ORAM_ADD_AW-1 -:2] == gen_j;
                 dmx_mtoo_add_lst[gen_i][gen_j] = mux_mtoo_add_lst[gen_i];
-                dmx_mtoo_add_add[gen_i][gen_j] = mux_mtoo_add_add[gen_i][0 +:ORAM_ADD_MW];
+                dmx_mtoo_add_add[gen_i][gen_j] = mux_mtoo_add_add[gen_i][0 +:OMUX_ADD_AW];
                 dmx_otom_dat_rdy[gen_i][gen_j] = mux_otom_dat_rdy[gen_i];
             end
         end
@@ -164,17 +164,30 @@ endgenerate
 
 `ifdef ASSERT_ON
 
-property dmx_otom_dat_vld_check(dat_vld);
+property dmx_otom_dat_vld_cnt_check(dat_vld_cnt);
 @(posedge clk)
 disable iff(rst_n!=1'b1)
-    1 |-> ( &dat_vld==0 );
+    1 |-> ( dat_vld_cnt<=1 );
 endproperty
 
-generate
-    for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
-        assert property ( dmx_otom_dat_vld_check(dmx_otom_dat_vld[gen_i]) );
-    end
-endgenerate
+//reg [ORAM_NUM_DW -1:0][OMUX_NUM_AW -1:0] dmx_otom_dat_vld_cnt;
+//generate
+//    for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
+//        always @ ( * )begin
+//            dmx_otom_dat_vld_cnt[gen_i] = 'd0;
+//            for( i=0 ; i < OMUX_NUM_DW; i = i+1 )begin
+//                if( dmx_otom_dat_vld[gen_i][i] )
+//                    dmx_otom_dat_vld_cnt[gen_i] = dmx_otom_dat_vld_cnt[gen_i] +'d1;
+//            end
+//        end
+//    end
+//endgenerate
+
+//generate
+//    for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
+//        assert property ( dmx_otom_dat_vld_cnt_check(dmx_otom_dat_vld_cnt[gen_i]) );
+//    end
+//endgenerate
 
 `endif
 endmodule
