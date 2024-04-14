@@ -64,7 +64,7 @@ end
 
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
-        req_pri <= 'd0;
+        req_pri <= {2'd3,2'd2,2'd1,2'd0};
     else if( req_vld )
         req_pri <= gnt_pri;
 end
@@ -92,7 +92,7 @@ end
 
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
-        gen_pri <= 'd0;
+        gen_pri <= {2'd0,2'd1,2'd2,2'd3};
     else if( req_vld )
         gen_pri <= arb_pri;
 end
@@ -102,17 +102,17 @@ generate for( gen_i=0 ; gen_i < REQ_DW; gen_i = gen_i+1 ) begin : ARB_BLOCK
     always @ ( * )begin
         req_idx_equ[gen_i] = 0;
         for( i = 0; i < gen_i; i = i + 1 )begin
-            if( (req_idx[i]==req_idx[gen_i]) && (arb_pri[i]>arb_pri[gen_i]) && req_arb[i] )
+            if( (req_idx[i]==req_idx[gen_i]) && (gen_pri[i]>gen_pri[gen_i]) && req_arb[i] )
                 req_idx_equ[gen_i] = 1;
         end
     end
     
-    assign gnt_arb[gen_i] = req_arb[gen_i] & ~req_idx_equ[gen_i];
+    assign gnt_arb[gen_i] = req_arb[gen_i] && ~req_idx_equ[gen_i];
     
     always @ ( * )begin
         gnt_idx[gen_i] = 'd0;
         for( i = REQ_DW-1; i >= 0; i = i - 1 )begin
-            if( gen_i == req_idx[ req_pri[i] ] )
+            if( req_idx[ req_pri[i] ] == gen_i )
                 gnt_idx[gen_i] = req_pri[i];
         end
     end

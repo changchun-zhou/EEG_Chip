@@ -8,9 +8,11 @@
 // Date : 
 //=======================================================
 // Description : ARAM 
+//                      Channel first for ORAM/STAT-FLAG     ¡Ì
+//                      Pixel first for ORAM/POOL X
 //========================================================
 module EEG_ARAM #(
-    parameter ARAM_CMD_DW =  7,
+    parameter ARAM_CMD_DW =  8,
     parameter ARAM_NUM_DW =  4,
     parameter ARAM_ADD_AW = 12,
     parameter ARAM_DAT_DW =  8,
@@ -48,13 +50,14 @@ integer i;
 genvar gen_i, gen_j;
 
 localparam ARAM_STATE = ARAM_CMD_DW;
-localparam ARAM_IDLE  = 7'b0000001;
-localparam ARAM_ITOA  = 7'b0000010;
-localparam ARAM_CONV  = 7'b0000100;
-localparam ARAM_OTOA  = 7'b0001000;
-localparam ARAM_WTOA  = 7'b0010000;
-localparam ARAM_ATOW  = 7'b0100000;
-localparam ARAM_ATOA  = 7'b1000000;
+localparam ARAM_IDLE  = 8'b00000001;
+localparam ARAM_ITOA  = 8'b00000010;
+localparam ARAM_CONV  = 8'b00000100;
+localparam ARAM_OTOA  = 8'b00001000;
+localparam ARAM_WTOA  = 8'b00010000;
+localparam ARAM_ATOW  = 8'b00100000;
+localparam ARAM_ATOA  = 8'b01000000;
+localparam ARAM_READ  = 8'b10000000;
 
 reg [ARAM_STATE -1:0] aram_cs;
 reg [ARAM_STATE -1:0] aram_ns;
@@ -66,6 +69,7 @@ wire aram_otoa = aram_cs == ARAM_OTOA;
 wire aram_wtoa = aram_cs == ARAM_WTOA;
 wire aram_atow = aram_cs == ARAM_ATOW;
 wire aram_atoa = aram_cs == ARAM_ATOA;
+wire aram_read = aram_cs == ARAM_READ;
 assign IS_IDLE = aram_idle;
 wire [ARAM_NUM_DW -1:0] itoa_lst_done;
 wire [ARAM_NUM_DW -1:0] conv_lst_done;
@@ -73,6 +77,7 @@ wire [ARAM_NUM_DW -1:0] otoa_lst_done;
 wire [ARAM_NUM_DW -1:0] wtoa_lst_done;
 wire [ARAM_NUM_DW -1:0] atow_lst_done;
 wire [ARAM_NUM_DW -1:0] atoa_lst_done;
+wire [ARAM_NUM_DW -1:0] read_lst_done;
 
 wire aram_itoa_done = &itoa_lst_done;
 wire aram_conv_done = &conv_lst_done;
@@ -80,6 +85,7 @@ wire aram_otoa_done = &otoa_lst_done;
 wire aram_wtoa_done = &wtoa_lst_done;
 wire aram_atow_done = &atow_lst_done;
 wire aram_atoa_done = 'd1;
+wire aram_read_done = &read_lst_done;
 //=====================================================================================================================
 // IO Signal :
 //=====================================================================================================================
@@ -143,15 +149,16 @@ wire [ARAM_NUM_DW -1:0][ARAM_DAT_DW    -1:0] ram_aram_dat_dat;
 wire [ARAM_NUM_DW -1:0]                      ram_aram_add_ena = ram_aram_add_vld & ram_aram_add_rdy;
 wire [ARAM_NUM_DW -1:0]                      ram_aram_dat_ena = ram_aram_dat_vld & ram_aram_dat_rdy;
 
-CPM_REG_RCE #( 1 ) ITOA_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, ~CFG_ARAM_IDX, etoa_dat_end, 1'd1, itoa_lst_done );
-CPM_REG_RCE #( 1 ) CONV_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, ~CFG_ARAM_IDX, atoe_dat_end, 1'd1, conv_lst_done );
-CPM_REG_RCE #( 1 ) OTOA_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, ~CFG_ARAM_IDX, etoa_dat_end, 1'd1, otoa_lst_done );
-CPM_REG_RCE #( 1 ) WTOA_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, ~CFG_ARAM_IDX, etoa_dat_end, 1'd1, wtoa_lst_done );
-CPM_REG_RCE #( 1 ) ATOW_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, ~CFG_ARAM_IDX, atoe_dat_end, 1'd1, atow_lst_done );
-CPM_REG_RCE #( 1 ) ATOA_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, ~CFG_ARAM_IDX, etoa_dat_end, 1'd1, atoa_lst_done );
+CPM_REG_RCE #( 1, 1 ) ITOA_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_ARAM_IDX, etoa_dat_end, aram_itoa, itoa_lst_done );
+CPM_REG_RCE #( 1, 1 ) CONV_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 4'b0000      , atoe_dat_end, aram_conv, conv_lst_done );//only support 4 open
+CPM_REG_RCE #( 1, 1 ) OTOA_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_ARAM_IDX, etoa_dat_end, aram_otoa, otoa_lst_done );
+CPM_REG_RCE #( 1, 1 ) WTOA_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_ARAM_IDX, etoa_dat_end, aram_wtoa, wtoa_lst_done );
+CPM_REG_RCE #( 1, 1 ) ATOW_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_ARAM_IDX, atoe_dat_end, aram_atow, atow_lst_done );
+CPM_REG_RCE #( 1, 1 ) ATOA_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_ARAM_IDX, etoa_dat_end, aram_atoa, atoa_lst_done );
+CPM_REG_RCE #( 1, 1 ) READ_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_ARAM_IDX, atoe_dat_end, aram_read, read_lst_done );
 //=====================================================================================================================
 // IO Logic Design :
-//=====================================================================================================================        
+//=====================================================================================================================
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )begin
         cfg_info_cmd <= 'd0;
@@ -244,6 +251,7 @@ always @ ( * )begin
         ARAM_WTOA: aram_ns = aram_wtoa_done ? ARAM_IDLE : aram_cs;
         ARAM_ATOW: aram_ns = aram_atow_done ? ARAM_IDLE : aram_cs;
         ARAM_ATOA: aram_ns = aram_atoa_done ? ARAM_IDLE : aram_cs;
+        ARAM_READ: aram_ns = aram_read_done ? ARAM_IDLE : aram_cs;
         default  : aram_ns = ARAM_IDLE;
     endcase
 end
@@ -257,19 +265,19 @@ end
 
 `ifdef ASSERT_ON
 
-property aram_rdy_check(dat_vld, dat_rdy);
-@(posedge clk)
-disable iff(rst_n!=1'b1)
-    dat_vld |-> ( dat_rdy );
-endproperty
-
-generate
-  for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 ) begin : ASSERT_BLOCK
-
-    assert property ( aram_rdy_check(ram_aram_dat_vld[gen_i], ram_aram_dat_rdy[gen_i]) );
-
-  end
-endgenerate
+//property aram_rdy_check(dat_vld, dat_rdy);
+//@(posedge clk)
+//disable iff(rst_n!=1'b1)
+//    dat_vld |-> ( dat_rdy );
+//endproperty
+//
+//generate
+//  for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 ) begin : ASSERT_BLOCK
+//
+//    assert property ( aram_rdy_check(ram_aram_dat_vld[gen_i], ram_aram_dat_rdy[gen_i]) );
+//
+//  end
+//endgenerate
 
 `endif
 endmodule

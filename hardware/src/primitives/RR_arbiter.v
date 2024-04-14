@@ -69,7 +69,7 @@ always @(*) begin
     arb_port = 0;
     for(i=0; i<REQ_WIDTH; i=i+1) begin
         if(gnt[i]) begin
-            arb_port |= i;
+            arb_port = i;
         end
     end
 end

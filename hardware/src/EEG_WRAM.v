@@ -10,7 +10,7 @@
 // Description : WRAM 
 //========================================================
 module EEG_WRAM #(
-    parameter WRAM_CMD_DW =  5,
+    parameter WRAM_CMD_DW =  6,
     parameter WRAM_NUM_DW =  4,
     parameter WRAM_ADD_AW = 13,
     parameter WRAM_DAT_DW =  8,
@@ -47,12 +47,13 @@ module EEG_WRAM #(
 integer i;
 genvar gen_i, gen_j;
 
-localparam WRAM_STATE = 5;
-localparam WRAM_IDLE  = 5'b00001;
-localparam WRAM_ITOW  = 5'b00010;
-localparam WRAM_CONV  = 5'b00100;
-localparam WRAM_ATOW  = 5'b01000;
-localparam WRAM_WTOA  = 5'b10000;
+localparam WRAM_STATE = 6;
+localparam WRAM_IDLE  = 6'b000001;
+localparam WRAM_ITOW  = 6'b000010;
+localparam WRAM_CONV  = 6'b000100;
+localparam WRAM_ATOW  = 6'b001000;
+localparam WRAM_WTOA  = 6'b010000;
+localparam WRAM_READ  = 6'b100000;
 
 reg [WRAM_STATE -1:0] wram_cs;
 reg [WRAM_STATE -1:0] wram_ns;
@@ -62,24 +63,27 @@ wire wram_itow = wram_cs == WRAM_ITOW;
 wire wram_conv = wram_cs == WRAM_CONV;
 wire wram_atow = wram_cs == WRAM_ATOW;
 wire wram_wtoa = wram_cs == WRAM_WTOA;
+wire wram_read = wram_cs == WRAM_READ;
 assign IS_IDLE = wram_idle;
 wire [WRAM_NUM_DW -1:0] itow_lst_done;
 wire [WRAM_NUM_DW -1:0] conv_lst_done;
 wire [WRAM_NUM_DW -1:0] atow_lst_done;
 wire [WRAM_NUM_DW -1:0] wtoa_lst_done;
+wire [WRAM_NUM_DW -1:0] read_lst_done;
 
 wire wram_itow_done = &itow_lst_done;
 wire wram_conv_done = &conv_lst_done;
 wire wram_atow_done = &atow_lst_done;
 wire wram_wtoa_done = &wtoa_lst_done;
+wire wram_read_done = &read_lst_done;
 //=====================================================================================================================
 // IO Signal :
 //=====================================================================================================================
 //CFG_IO
 wire cfg_info_vld = CFG_INFO_VLD;
 wire cfg_info_rdy = wram_idle;
-reg  [WRAM_CMD_DW  -1:0] cfg_info_cmd;
-reg  [WRAM_CMD_DW  -1:0] cfg_wram_idx;
+//reg  [WRAM_CMD_DW  -1:0] cfg_info_cmd;
+reg  [WRAM_NUM_DW  -1:0] cfg_wram_idx;
 
 assign CFG_INFO_RDY = cfg_info_rdy;
 wire cfg_info_ena = cfg_info_vld & cfg_info_rdy;
@@ -133,20 +137,21 @@ wire [WRAM_NUM_DW -1:0][WRAM_DAT_DW    -1:0] ram_wram_dat_dat;
 wire [WRAM_NUM_DW -1:0]                      ram_wram_add_ena = ram_wram_add_vld & ram_wram_add_rdy;
 wire [WRAM_NUM_DW -1:0]                      ram_wram_dat_ena = ram_wram_dat_vld & ram_wram_dat_rdy;
 
-CPM_REG_RCE #( 1 ) ITOW_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, ~CFG_WRAM_IDX, etow_dat_end, 1'd1, itow_lst_done );
-CPM_REG_RCE #( 1 ) CONV_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, ~CFG_WRAM_IDX, wtoe_dat_end, 1'd1, conv_lst_done );
-CPM_REG_RCE #( 1 ) ATOW_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, ~CFG_WRAM_IDX, etow_dat_end, 1'd1, atow_lst_done );
-CPM_REG_RCE #( 1 ) WTOA_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, 1'd1, cfg_info_ena, ~CFG_WRAM_IDX, wtoe_dat_end, 1'd1, wtoa_lst_done );
+CPM_REG_RCE #( 1, 1 ) ITOW_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_WRAM_IDX, etow_dat_end, wram_itow, itow_lst_done );
+CPM_REG_RCE #( 1, 1 ) CONV_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_WRAM_IDX, wtoe_dat_end, wram_conv, conv_lst_done );
+CPM_REG_RCE #( 1, 1 ) ATOW_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_WRAM_IDX, etow_dat_end, wram_atow, atow_lst_done );
+CPM_REG_RCE #( 1, 1 ) WTOA_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_WRAM_IDX, wtoe_dat_end, wram_wtoa, wtoa_lst_done );
+CPM_REG_RCE #( 1, 1 ) READ_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_WRAM_IDX, wtoe_dat_end, wram_read, read_lst_done );
 //=====================================================================================================================
 // IO Logic Design :
-//=====================================================================================================================        
+//=====================================================================================================================
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )begin
-        cfg_info_cmd <= 'd0;
+        //cfg_info_cmd <= 'd0;
         cfg_wram_idx <= 'd0;
     end
     else if( cfg_info_ena )begin
-        cfg_info_cmd <= CFG_INFO_CMD;
+        //cfg_info_cmd <= CFG_INFO_CMD;
         cfg_wram_idx <= CFG_WRAM_IDX;
     end
 end
@@ -230,6 +235,7 @@ always @ ( * )begin
         WRAM_CONV: wram_ns = wram_conv_done ? WRAM_IDLE : wram_cs;
         WRAM_ATOW: wram_ns = wram_atow_done ? WRAM_IDLE : wram_cs;
         WRAM_WTOA: wram_ns = wram_wtoa_done ? WRAM_IDLE : wram_cs;
+        WRAM_READ: wram_ns = wram_read_done ? WRAM_IDLE : wram_cs;
         default  : wram_ns = WRAM_IDLE;
     endcase
 end

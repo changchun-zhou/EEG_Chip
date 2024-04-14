@@ -91,6 +91,7 @@ endgenerate
 
 always @ ( * )begin
     sort_max_vld = 'd0;
+    sort_max_idx = 'd0;
     for( i = SORT_AW-1; i > 0; i = i - 1 )begin
         if( sort_dat_dat>=topk_dat_dat[i] )begin
             sort_max_vld = 'd1;
