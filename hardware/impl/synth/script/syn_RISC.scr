@@ -19,8 +19,16 @@ set_attribute super_thread_servers [string repeat "localhost " 64]
 ##########################################################################
 #                     Libraries and technology files                     #
 ##########################################################################
-source ./script/${TECH_SETTING}
+source ./script/tech_settings.tcl
+set_attribute library $slow_HV_lib
+set_attribute library $slow_LV_lib
+set_attribute library $typical_HV_lib
+set_attribute library $typical_LV_lib
+set_attribute library $fast_HV_lib
+set_attribute library $fast_LV_lib
+source ./script/lef_settings.tcl
 set_attribute lef_library  ${tech_lef}
+read_power_intent -cpf -module $DESIGN ./$DESIGN.cpf
 
 ##########################################################################
 #                          Enable clock gating                           #
@@ -52,7 +60,7 @@ foreach VERILOG_FILE ${VERILOG_FILES} {
 ##########################################################################
 #                          Don't touch cells                             #
 ##########################################################################
-source ./script/DontUse.scr
+# source ./script/DontUse.scr
 
 ##########################################################################
 #                     Setup for power analysis                           #

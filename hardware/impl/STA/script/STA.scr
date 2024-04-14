@@ -2,7 +2,7 @@
 ## Static Timing Analysis ##
 ############################
 
-set reportDir ./timing/report
+set reportDir ./report
 
 set_global report_timing_format {instance cell pin arc fanout load slew delay arrival incr_delay edge }
 set_table_style -frame
@@ -13,31 +13,54 @@ set_design_mode -process 45
 ## Read Library Files ##
 ########################
 
-read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/timing/slow_vdd1v2_basicCells.lib
-read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/timing/slow_vdd1v2_extvdd1v0.lib
-read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/timing/slow_vdd1v2_extvdd1v2.lib
-read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/timing/slow_vdd1v2_multibitsDFF.lib
-read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/timing/slow_vdd1v0_basicCells.lib
-read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/timing/slow_vdd1v0_extvdd1v0.lib
-read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/timing/slow_vdd1v0_extvdd1v2.lib
-read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/timing/slow_vdd1v0_multibitsDFF.lib
+source ./script/tech_settings.tcl
 
-read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/celtic/fast.cdb
-read_lib /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/celtic/slow.cdb
+#############################################################################################
+##                                  Define worst-case library sets                         ## 
+#############################################################################################
+# HV Lib
+read_lib $slow_HV_lib
 
-read_verilog ../p+r_enc/data_out/LT_RISC_32p5_layout.v
-set_top_module LT_RISC_32p5
-read_power_domain -cpf /workspace/home/zhoucc/Proj_HW/EEG_Chip/hardware/impl/synth/EEG_ACC.cpf
+# LV Lib
+read_lib $slow_LV_lib
+
+#############################################################################################
+##                                  Define typical-case library sets                       ## 
+#############################################################################################
+read_lib $typical_HV_lib
+read_lib $typical_LV_lib
+
+#############################################################################################
+##                                  Define best-case library sets                          ## 
+#############################################################################################
+
+read_lib $fast_HV_lib
+read_lib $fast_LV_lib
+
+read_verilog ../../synth/EEG_ACC/Date240412_2013_Periodclk300_group_MaxDynPwr0_OptWgt0.5_Note_0p45wc_multicg/p+r_enc/EEG_ACC_synth.v
+set_top_module EEG_ACC
+read_power_domain -cpf ../../synth/EEG_ACC.cpf
 
 
 ######################
 ## Create RC Corner ##
 ######################
 
-create_rc_corner -name rctypical \
-	-cap_table {/home/sos/gpdk/45nm/gpdk045_v_4_0/soce/gpdk045.basic.CapTbl} \
-	-T 25 \
-	-qx_tech_file /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/qrc/qx/gpdk045.tch
+# create_rc_corner -name rctypical \
+# 	-cap_table {/home/sos/gpdk/45nm/gpdk045_v_4_0/soce/gpdk045.basic.CapTbl} \
+# 	-T 25 \
+# 	-qx_tech_file /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/qrc/qx/gpdk045.tch
+create_rc_corner \
+	-name rctypical\
+   	-preRoute_res 1\
+   	-postRoute_res 1\
+   	-preRoute_cap 1\
+   	-postRoute_cap 1\
+   	-postRoute_xcap 1\
+   	-preRoute_clkres 0\
+   	-preRoute_clkcap 0\
+   	-T 25\
+   	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a
 
 ##########################
 ## Update Delay Corners ##
@@ -70,8 +93,8 @@ set_delay_cal_mode -engine signalStorm -SIAware false
 ## Read SPEF Extracted with QRC ##
 ##################################
 
-read_spef -rc_corner rctypical ./qrc/data_out/qrcSignoffrc.spef.gz
-report_annotated_parasitics  -list_not_annotated > ${reportDir}/ReportAnnotatedParasitics.rpt
+# read_spef -rc_corner rctypical ./qrc/data_out/qrcSignoffrc.spef.gz
+# report_annotated_parasitics  -list_not_annotated > ${reportDir}/ReportAnnotatedParasitics.rpt
 
 set_propagated_clock [all_clocks]
 

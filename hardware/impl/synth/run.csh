@@ -7,13 +7,13 @@
 
 set DESIGN_NAME="EEG_ACC"
 ################################################################################
-set PERIOD_CLK="1000"
+set PERIOD_CLK="300"
 set UNGROUP="group"
 set MAXPOWER="0" # 100MHz -> 100mW
 set OPTWGT="0.5" # Larger optimization weight, lower leakage(1/20~1/10 of Total Synth Power)
 set SDC_FILE=./TOP.sdc
-set TECH_SETTING=tech_settings.tcl
-set NOTE="0p45wc"
+set TECH_SETTING="3PD"
+set NOTE=""
 
 ################################################################################
 if($PERIOD_CLK == "") then 
@@ -23,7 +23,7 @@ endif
 
 set DATE_VALUE = `date "+%y%m%d_%H%M" ` 
 set SYNTH_OUTDIR = ../../work/synth
-set SYNTH_PROJDIR = ${SYNTH_OUTDIR}/$DESIGN_NAME/Date${DATE_VALUE}_Periodclk${PERIOD_CLK}_${UNGROUP}_MaxDynPwr${MAXPOWER}_OptWgt${OPTWGT}_Note_${NOTE}
+set SYNTH_PROJDIR = ${SYNTH_OUTDIR}/$DESIGN_NAME/Date${DATE_VALUE}_${TECH_SETTING}_Periodclk${PERIOD_CLK}_${UNGROUP}_MaxDynPwr${MAXPOWER}_OptWgt${OPTWGT}_Note_${NOTE}
 rm -rf ${SYNTH_PROJDIR}
 mkdir -p ${SYNTH_OUTDIR}/$DESIGN_NAME ${SYNTH_PROJDIR}
 
