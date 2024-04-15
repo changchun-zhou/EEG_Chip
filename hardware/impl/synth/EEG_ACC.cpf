@@ -19,19 +19,19 @@ source ./script/tech_settings.tcl
 define_library_set -name wc_HV_lib -libraries $slow_HV_lib
 define_library_set -name wc_LV_lib -libraries $slow_LV_lib
 
-#############################################################################################
-##                                  Define typical-case library sets                       ## 
-#############################################################################################
+# #############################################################################################
+# ##                                  Define typical-case library sets                       ## 
+# #############################################################################################
 
-define_library_set -name tc_HV_lib -libraries $typical_HV_lib
-define_library_set -name tc_LV_lib -libraries $typical_LV_lib
+# define_library_set -name tc_HV_lib -libraries $typical_HV_lib
+# define_library_set -name tc_LV_lib -libraries $typical_LV_lib
 
-#############################################################################################
-##                                  Define best-case library sets                          ## 
-#############################################################################################
+# #############################################################################################
+# ##                                  Define best-case library sets                          ## 
+# #############################################################################################
 
-define_library_set -name bc_HV_lib -libraries $fast_HV_lib
-define_library_set -name bc_LV_lib -libraries $fast_LV_lib
+# define_library_set -name bc_HV_lib -libraries $fast_HV_lib
+# define_library_set -name bc_LV_lib -libraries $fast_LV_lib
 
 ############################
 ## Defining Power Domains ##
@@ -42,9 +42,9 @@ create_power_domain -name PD_CORE -default
 
 ## high voltage one:
 create_power_domain -name PD_SRAM -instances {
-    EEG_ACC.EEG_ARAM_U.EEG_ARAM_RAM_U.XRAM_U[*]   
-    EEG_ACC.EEG_FRAM_U.EEG_FRAM_RAM_U.XRAM_U[*]  
-    EEG_ACC.EEG_ORAM_U.EEG_ORAM_RAM_U.XRAM_U[*]}
+    EEG_ACC.EEG_ARAM_U.EEG_ARAM_RAM_U   
+    EEG_ACC.EEG_FRAM_U.EEG_FRAM_RAM_U  
+    EEG_ACC.EEG_ORAM_U.EEG_ORAM_RAM_U}
 
 ## high voltage one:
 create_power_domain -name PD_OBUF -instances {
@@ -53,21 +53,21 @@ create_power_domain -name PD_OBUF -instances {
 ################################
 ## Defining Power/Ground Nets ##
 ################################
-create_power_nets -nets VDD1 -voltage {0.5}
-create_power_nets -nets VDD2 -voltage {1.2}
-create_power_nets -nets VDD3 -voltage {1.2}
+create_power_nets -nets VDD_CORE -voltage {0.5}
+create_power_nets -nets VDD_SRAM -voltage {1.2}
+create_power_nets -nets VDD_OBUF -voltage {1.2}
 create_ground_nets -nets VSS
 
-update_power_domain -name PD_CORE   -primary_power_net VDD1 -primary_ground_net VSS
-update_power_domain -name PD_SRAM   -primary_power_net VDD2 -primary_ground_net VSS
-update_power_domain -name PD_OBUF   -primary_power_net VDD3 -primary_ground_net VSS
+update_power_domain -name PD_CORE   -primary_power_net VDD_CORE -primary_ground_net VSS
+update_power_domain -name PD_SRAM   -primary_power_net VDD_SRAM -primary_ground_net VSS
+update_power_domain -name PD_OBUF   -primary_power_net VDD_OBUF -primary_ground_net VSS
 
-create_global_connection -net VDD1 -pins VDD -domain PD_CORE
-create_global_connection -net VSS  -pins VSS -domain PD_CORE
-create_global_connection -net VDD2 -pins VDD -domain PD_SRAM
-create_global_connection -net VSS  -pins VSS -domain PD_SRAM
-create_global_connection -net VDD3 -pins VDD -domain PD_OBUF
-create_global_connection -net VSS  -pins VSS -domain PD_OBUF
+create_global_connection -net VDD_CORE  -pins VDD -domain PD_CORE
+create_global_connection -net VSS       -pins VSS -domain PD_CORE
+create_global_connection -net VDD_SRAM  -pins VDD -domain PD_SRAM
+create_global_connection -net VSS       -pins VSS -domain PD_SRAM
+create_global_connection -net VDD_OBUF  -pins VDD -domain PD_OBUF
+create_global_connection -net VSS       -pins VSS -domain PD_OBUF
 
 ##############################
 ## Define Nominal Condition ##
@@ -91,16 +91,16 @@ update_power_mode -name PM1 -sdc_files {/workspace/home/zhoucc/Proj_HW/EEG_Chip/
 #############################
 
 create_operating_corner -name slow_LV_rcworst -library_set wc_LV_lib -process 1 -voltage 0.45 -temperature 125
-create_operating_corner -name fast_LV_rcbest  -library_set bc_LV_lib -process 1 -voltage 0.55 -temperature 0
+# create_operating_corner -name fast_LV_rcbest  -library_set bc_LV_lib -process 1 -voltage 0.55 -temperature 0
 create_operating_corner -name slow_HV_rcworst -library_set wc_HV_lib -process 1 -voltage 1.08 -temperature 125
-create_operating_corner -name fast_HV_rcbest  -library_set bc_HV_lib -process 1 -voltage 1.32 -temperature 0
+# create_operating_corner -name fast_HV_rcbest  -library_set bc_HV_lib -process 1 -voltage 1.32 -temperature 0
 
 ##########################
 ## Define Analysis View ##
 ##########################
 
 create_analysis_view -name AV_slowHV_slowHV_rcworst_setup -mode PM1 -domain_corners {PD_CORE@slow_LV_rcworst PD_SRAM@slow_HV_rcworst PD_OBUF@slow_HV_rcworst}
-create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corners {PD_CORE@fast_LV_rcbest  PD_SRAM@fast_HV_rcbest  PD_OBUF@fast_HV_rcbest }
+# create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corners {PD_CORE@fast_LV_rcbest  PD_SRAM@fast_HV_rcbest  PD_OBUF@fast_HV_rcbest }
 
 ###############################
 ## Define Power Switch cells ##
@@ -113,7 +113,7 @@ create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corn
 ##########################
 
 define_level_shifter_cell \
-	-cells {LVLLHCD1BWP7T} \
+	-cells {LVLHLD1BWP7T} \
 	-input_voltage_range 0.9:1.1 \
 	-output_voltage_range 1.08:1.32 \
 	-input_power_pin VDD \
@@ -132,8 +132,8 @@ create_level_shifter_rule \
 	-to   {PD_OBUF} \
 	-from {PD_CORE}
 
-update_level_shifter_rules -names lsr1 -cells "LVLLHCD1BWP7T" -location from
-update_level_shifter_rules -names lsr2 -cells "LVLLHCD1BWP7T" -location from
+update_level_shifter_rules -names lsr1 -cells "LVLHLD1BWP7T" -location from
+update_level_shifter_rules -names lsr2 -cells "LVLHLD1BWP7T" -location from
 
 #define_level_shifter_cell \
 #	-cells {LSHLX1_FROM} \

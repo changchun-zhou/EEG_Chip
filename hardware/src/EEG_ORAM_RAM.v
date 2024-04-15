@@ -123,7 +123,7 @@ endgenerate
 CPM_REG_E #( 1 ) ORAM_DAT_VLD_REG [ORAM_NUM_DW*OMUX_NUM_DW -1:0]( clk, rst_n, oram_add_rdy, oram_add_vld, oram_dat_vld );
 CPM_REG_E #( 1 ) ORAM_DAT_LST_REG [ORAM_NUM_DW*OMUX_NUM_DW -1:0]( clk, rst_n, oram_add_rdy, oram_add_lst, oram_dat_lst );
 
-RAM #( .SRAM_WORD( OMUX_ADD_DW ), .SRAM_BIT( ORAM_DAT_DW ), .SRAM_BYTE(1) ) ORAM_U [ORAM_NUM_DW*OMUX_NUM_DW -1:0] ( clk, rst_n, oram_ram_radd, oram_ram_wadd, oram_ram_rena, oram_ram_wena, oram_ram_data, oram_ram_dout);
+RAM #( .SRAM_WORD( OMUX_ADD_DW ), .SRAM_BIT( ORAM_DAT_DW ), .SRAM_BYTE(1) ) XRAM_U [ORAM_NUM_DW*OMUX_NUM_DW -1:0] ( clk, rst_n, oram_ram_radd, oram_ram_wadd, oram_ram_rena, oram_ram_wena, oram_ram_data, oram_ram_dout);
 
 `ifdef ASSERT_ON
 

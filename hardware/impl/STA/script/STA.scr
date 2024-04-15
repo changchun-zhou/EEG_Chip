@@ -20,8 +20,6 @@ source ./script/tech_settings.tcl
 #############################################################################################
 # HV Lib
 read_lib $slow_HV_lib
-
-# LV Lib
 read_lib $slow_LV_lib
 
 #############################################################################################
@@ -33,7 +31,6 @@ read_lib $typical_LV_lib
 #############################################################################################
 ##                                  Define best-case library sets                          ## 
 #############################################################################################
-
 read_lib $fast_HV_lib
 read_lib $fast_LV_lib
 
@@ -51,7 +48,7 @@ read_power_domain -cpf ../../synth/EEG_ACC.cpf
 # 	-T 25 \
 # 	-qx_tech_file /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/qrc/qx/gpdk045.tch
 create_rc_corner \
-	-name rctypical\
+	-name rc_corner_cworst\
    	-preRoute_res 1\
    	-postRoute_res 1\
    	-preRoute_cap 1\
@@ -59,18 +56,18 @@ create_rc_corner \
    	-postRoute_xcap 1\
    	-preRoute_clkres 0\
    	-preRoute_clkcap 0\
-   	-T 25\
-   	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a
+   	-T 125\
+   	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cworst/qrcTechFile
 
 ##########################
 ## Update Delay Corners ##
 ##########################
 
 update_delay_corner -name AV_slowHV_slowHV_rcworst_setup_dc  \
- -rc_corner rctypical
+ -rc_corner rc_corner_cworst
 
 update_delay_corner -name AV_fastHV_fastHV_rcbest_hold_dc  \
- -rc_corner rctypical
+ -rc_corner rc_corner_cworst
 
 
 set_analysis_view -setup {AV_slowHV_slowHV_rcworst_setup} -hold {AV_fastHV_fastHV_rcbest_hold}
