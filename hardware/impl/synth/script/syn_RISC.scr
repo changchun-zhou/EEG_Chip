@@ -90,7 +90,7 @@ commit_power_intent
 #                              load sdc                                  #
 ##########################################################################
 # read_sdc ${SDC_FILE} # repeated with cpf
-write_sdc > ${SYNTH_PROJDIR}/write_sdc.sdc
+# write_sdc > ${SYNTH_PROJDIR}/write_sdc.sdc
 check_design -unresolved
 ##########################################################################
 #                          Setting constraints                           #
