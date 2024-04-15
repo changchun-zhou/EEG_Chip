@@ -9,7 +9,7 @@ set libdir_sram ../../src/sram
 ##                                  Define worst-case library sets                         ## 
 #############################################################################################
 set worst_1p08_125_memory_libs   [exec find $libdir_sram -name *ss*125c*.lib]
-set worst_ls_libs                $libdir_1p2/tcbn65lpbwp7twcl1d080d9_ecsm.lib
+set worst_ls_libs                $libdir_1p2/tcbn65lpbwp7twc0d91d08_ecsm.lib
 set worst_0p45_125_standard_libs $libdir_0p5/tcbn65lpbwp7t_editCKLHall_0.45c125_wc_ecsm.lib
 set worst_1p08_125_standard_libs $libdir_1p2/tcbn65lpbwp7twc_ecsm.lib
 
