@@ -2,7 +2,7 @@
 ## Read Library Files ##
 ########################
 
-set libdir_0p5 ../../project/lib/0p5
+set libdir_0p5 /workspace/home/songxy/Desktop/65nm_char/LIBRARY/ecsm/
 set libdir_1p2 /materials/technology/tsmc65/IP/StdCell/7t/tcbn65lpbwp7t_220a/tcbn65lpbwp7t_141a_ecsm/TSMCHOME/digital/Front_End/timing_power_noise/ECSM/tcbn65lpbwp7t_141a
 set libdir_sram ../../src/sram
 #############################################################################################
