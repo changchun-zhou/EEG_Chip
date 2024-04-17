@@ -1,19 +1,19 @@
 ############################
 ## Static Timing Analysis ##
 ############################
-
-set reportDir ./report
+source ./config_temp.tcl
+set reportDir ${STA_PROJDIR}
 
 set_global report_timing_format {instance cell pin arc fanout load slew delay arrival incr_delay edge }
 set_table_style -frame
 set_table_style -name report_timing -max_width {500}
-set_design_mode -process 45
+set_design_mode -process 65
 
 ########################
 ## Read Library Files ##
 ########################
 
-source ./script/tech_settings.tcl
+source ../synth/script/tech_settings.tcl
 
 #############################################################################################
 ##                                  Define worst-case library sets                         ## 
@@ -34,44 +34,19 @@ read_lib $typical_LV_lib
 read_lib $fast_HV_lib
 read_lib $fast_LV_lib
 
-read_verilog ../../synth/EEG_ACC/Date240412_2013_Periodclk300_group_MaxDynPwr0_OptWgt0.5_Note_0p45wc_multicg/p+r_enc/EEG_ACC_synth.v
+read_verilog ../../work/synth/EEG_ACC/Date240416_1850_3PD_ss_Periodclk300_group_MaxDynPwr0_OptWgt0.5_Note_0p5_tc/p+r_enc/EEG_ACC_synth.v
 set_top_module EEG_ACC
-read_power_domain -cpf ../../synth/EEG_ACC.cpf
+read_power_domain -cpf ../synth/EEG_ACC.cpf
 
-
-######################
-## Create RC Corner ##
-######################
-
-# create_rc_corner -name rctypical \
-# 	-cap_table {/home/sos/gpdk/45nm/gpdk045_v_4_0/soce/gpdk045.basic.CapTbl} \
-# 	-T 25 \
-# 	-qx_tech_file /workspace/technology/gpdk/gsclib045_svt_v4.4/gsclib045/qrc/qx/gpdk045.tch
-create_rc_corner \
-	-name rc_corner_cworst\
-   	-preRoute_res 1\
-   	-postRoute_res 1\
-   	-preRoute_cap 1\
-   	-postRoute_cap 1\
-   	-postRoute_xcap 1\
-   	-preRoute_clkres 0\
-   	-preRoute_clkcap 0\
-   	-T 125\
-   	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cworst/qrcTechFile
-
-##########################
-## Update Delay Corners ##
-##########################
-
-update_delay_corner -name AV_slowHV_slowHV_rcworst_setup_dc  \
- -rc_corner rc_corner_cworst
-
-update_delay_corner -name AV_fastHV_fastHV_rcbest_hold_dc  \
- -rc_corner rc_corner_cworst
-
+# ##########################
+# ## Define Analysis View ##
+# ##########################
 
 set_analysis_view -setup {AV_slowHV_slowHV_rcworst_setup} -hold {AV_fastHV_fastHV_rcbest_hold}
 set_default_view  -setup {AV_slowHV_slowHV_rcworst_setup} -hold {AV_fastHV_fastHV_rcbest_hold}
+
+################################################################################################################################################################
+
 set_interactive_constraint_modes [ all_constraint_modes -active ]
 
 set_analysis_mode -cppr both -analysisType onChipVariation -checkType setup
@@ -93,10 +68,10 @@ set_delay_cal_mode -engine signalStorm -SIAware false
 # read_spef -rc_corner rctypical ./qrc/data_out/qrcSignoffrc.spef.gz
 # report_annotated_parasitics  -list_not_annotated > ${reportDir}/ReportAnnotatedParasitics.rpt
 
-set_propagated_clock [all_clocks]
+# set_propagated_clock [all_clocks]
 
 # Set OCV parameters
-set_timing_derate -early 0.95 -late 1.0 -delay_corner [ get_analysis_view AV_slowHV_slowHV_rcworst_setup -delay_corner ]
+# set_timing_derate -early 0.95 -late 1.0 -delay_corner [ get_analysis_view AV_slowHV_slowHV_rcworst_setup -delay_corner ]
 
 
 check_design -all -noHtml -outfile ${reportDir}/checkDesign.rpt

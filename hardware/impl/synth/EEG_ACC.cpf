@@ -10,7 +10,7 @@ set_design EEG_ACC
 ##                                     Library settings                                    ## 
 #############################################################################################
 
-source ./script/tech_settings.tcl
+source ../synth/script/tech_settings.tcl
 
 #############################################################################################
 ##                                  Define worst-case library sets                         ## 
@@ -19,19 +19,19 @@ source ./script/tech_settings.tcl
 define_library_set -name wc_HV_lib -libraries $slow_HV_lib
 define_library_set -name wc_LV_lib -libraries $slow_LV_lib
 
-# #############################################################################################
-# ##                                  Define typical-case library sets                       ## 
-# #############################################################################################
+#############################################################################################
+##                                  Define typical-case library sets                       ## 
+#############################################################################################
 
-# define_library_set -name tc_HV_lib -libraries $typical_HV_lib
-# define_library_set -name tc_LV_lib -libraries $typical_LV_lib
+define_library_set -name tc_HV_lib -libraries $typical_HV_lib
+define_library_set -name tc_LV_lib -libraries $typical_LV_lib
 
-# #############################################################################################
-# ##                                  Define best-case library sets                          ## 
-# #############################################################################################
+#############################################################################################
+##                                  Define best-case library sets                          ## 
+#############################################################################################
 
-# define_library_set -name bc_HV_lib -libraries $fast_HV_lib
-# define_library_set -name bc_LV_lib -libraries $fast_LV_lib
+define_library_set -name bc_HV_lib -libraries $fast_HV_lib
+define_library_set -name bc_LV_lib -libraries $fast_LV_lib
 
 ############################
 ## Defining Power Domains ##
@@ -43,7 +43,7 @@ create_power_domain -name PD_CORE -default
 ## high voltage one:
 create_power_domain -name PD_SRAM -instances {\
     EEG_ARAM_U/EEG_ARAM_RAM_U/XRAM_U[*]\
-    EEG_FRAM_U/EEG_FRAM_RAM_U/XRAM_U[*]\  
+    EEG_FRAM_U/EEG_FRAM_RAM_U/XRAM_U[*]\
     EEG_ORAM_U/EEG_ORAM_RAM_U/XRAM_U[*]\
     EEG_WRAM_U/EEG_WRAM_RAM_U/XRAM_U[*]}
 
@@ -92,16 +92,72 @@ update_power_mode -name PM1 -sdc_files {/workspace/home/zhoucc/Proj_HW/EEG_Chip/
 #############################
 
 create_operating_corner -name slow_LV_rcworst -library_set wc_LV_lib -process 1 -voltage 0.45 -temperature 125
-# create_operating_corner -name fast_LV_rcbest  -library_set bc_LV_lib -process 1 -voltage 0.55 -temperature 0
+create_operating_corner -name fast_LV_rcbest  -library_set bc_LV_lib -process 1 -voltage 0.55 -temperature 0
 create_operating_corner -name slow_HV_rcworst -library_set wc_HV_lib -process 1 -voltage 1.08 -temperature 125
-# create_operating_corner -name fast_HV_rcbest  -library_set bc_HV_lib -process 1 -voltage 1.32 -temperature 0
+create_operating_corner -name fast_HV_rcbest  -library_set bc_HV_lib -process 1 -voltage 1.32 -temperature 0
+
 
 ##########################
 ## Define Analysis View ##
 ##########################
 
 create_analysis_view -name AV_slowHV_slowHV_rcworst_setup -mode PM1 -domain_corners {PD_CORE@slow_LV_rcworst PD_SRAM@slow_HV_rcworst PD_OBUF@slow_HV_rcworst}
-# create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corners {PD_CORE@fast_LV_rcbest  PD_SRAM@fast_HV_rcbest  PD_OBUF@fast_HV_rcbest }
+create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corners {PD_CORE@fast_LV_rcbest  PD_SRAM@fast_HV_rcbest  PD_OBUF@fast_HV_rcbest }
+# create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corners {PD_CORE@fast_LV_rcbest  PD_SRAM@fast_HV_rcbest  PD_OBUF@fast_HV_rcbest } -constraint_mode default_constraint_mode -delay_corner AV_slowHV_slowHV_rcworst_setup_dc
+
+
+# create_rc_corner \
+# 	-name rc_corner_cworst\
+#    	-preRoute_res 1\
+#    	-postRoute_res 1\
+#    	-preRoute_cap 1\
+#    	-postRoute_cap 1\
+#    	-postRoute_xcap 1\
+#    	-preRoute_clkres 0\
+#    	-preRoute_clkcap 0\
+#    	-T 125\
+#    	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cworst/qrcTechFile
+
+# create_rc_corner \
+# 	-name rc_corner_cbest\
+#    	-preRoute_res 1\
+#    	-postRoute_res 1\
+#    	-preRoute_cap 1\
+#    	-postRoute_cap 1\
+#    	-postRoute_xcap 1\
+#    	-preRoute_clkres 0\
+#    	-preRoute_clkcap 0\
+#    	-T 0\
+#    	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cbest/qrcTechFile
+
+# ##########################
+# ## Update Delay Corners ##
+# ##########################
+# create_library_set \
+# 	-name 	slow_0p45_library_set\
+#    	-timing $slow_LV_lib
+
+# create_delay_corner \
+# 	-name 		    AV_slowHV_slowHV_rcworst_setup_dc\
+#    	-library_set 	slow_0p45_library_set\
+#    	-rc_corner 	    rc_corner_cworst
+# # -opcond_library u055lsclpmvbdr\
+# # -opcond 	    PVT_0P35V_125C\
+
+# update_delay_corner -name AV_slowHV_slowHV_rcworst_setup_dc  \
+#  -rc_corner rc_corner_cworst
+
+# # update_delay_corner -name AV_fastHV_fastHV_rcbest_hold_dc  \
+# #  -rc_corner rc_corner_cbest
+
+# #####################################################
+# # SDC
+# #####################################################
+# create_constraint_mode \
+# 	-name 		default_constraint_mode \
+#    	-sdc_files  {/workspace/home/zhoucc/Proj_HW/EEG_Chip/hardware/impl/synth/TOP.sdc}
+
+
 
 ###############################
 ## Define Power Switch cells ##
@@ -115,7 +171,7 @@ create_analysis_view -name AV_slowHV_slowHV_rcworst_setup -mode PM1 -domain_corn
 
 define_level_shifter_cell \
 	-cells {LVLLHCD1BWP7T} \
-	-input_voltage_range 0.9:1.1 \
+	-input_voltage_range 0.45:0.55 \
 	-output_voltage_range 1.08:1.32 \
 	-input_power_pin VDD \
 	-output_power_pin ExtVDD \
