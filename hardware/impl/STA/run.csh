@@ -37,7 +37,7 @@ echo "set SDC_FILE      $SDC_FILE"      >> ./config_temp.tcl
 echo "set STA_PROJDIR   $STA_PROJDIR"   >> ./config_temp.tcl
 echo "              "                   >> ./define.vh # Create
 
-cp -r ../STA ${STA_PROJDIR}
+cp -r ../../impl ${STA_PROJDIR}
 
 if( $UNGROUP == "group") then 
   echo "set UNGROUP none" >> ./config_temp.tcl

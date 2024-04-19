@@ -13,9 +13,9 @@ set_false_path -from [list \
 ]
 
 # Margin Fixed Half Period
-set_input_delay  -clock clock_clk -clock_rise -add_delay [expr $period_clk/2] [all_inputs]
+set_input_delay  -clock clock_clk -rise -add_delay [expr $period_clk/2] [all_inputs]
 # Margin Fixed Half Period
-set_output_delay -clock clock_clk -clock_rise -add_delay [expr $period_clk/2] [all_inputs]
+set_output_delay -clock clock_clk -rise -add_delay [expr $period_clk/2] [all_outputs]
 
 set_input_transition -min 0.05 [all_inputs]
 set_input_transition -max 0.2  [all_inputs]

@@ -28,6 +28,10 @@ fv/
 *.gz
 hardware/impl/synth/config_temp.tcl
 hardware/impl/synth/define.vh
+hardware/impl/STA/config_temp.tcl
+hardware/impl/STA/define.vh
+*.logv
+*.ssv_emulate_*
 *.sdf.X
 
 .svn/
