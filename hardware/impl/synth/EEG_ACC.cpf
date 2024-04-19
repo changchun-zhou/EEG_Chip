@@ -42,14 +42,15 @@ create_power_domain -name PD_CORE -default
 
 ## high voltage one:
 create_power_domain -name PD_SRAM -instances {\
-    EEG_ARAM_U/EEG_ARAM_RAM_U/XRAM_U[*]\
-    EEG_FRAM_U/EEG_FRAM_RAM_U/XRAM_U[*]\
-    EEG_ORAM_U/EEG_ORAM_RAM_U/XRAM_U[*]\
-    EEG_WRAM_U/EEG_WRAM_RAM_U/XRAM_U[*]}
+    EEG_ARAM_U/EEG_ARAM_RAM_U\
+    EEG_FRAM_U/EEG_FRAM_RAM_U\
+    EEG_ORAM_U/EEG_ORAM_RAM_U\
+    EEG_ORAM_U/EEG_ORAM_RAM_U\
+    EEG_WRAM_U/EEG_WRAM_RAM_U}
 
 ## high voltage one:
 create_power_domain -name PD_OBUF -instances {\
-    OBF_U}
+    OBUF_U}
 
 ################################
 ## Defining Power/Ground Nets ##
