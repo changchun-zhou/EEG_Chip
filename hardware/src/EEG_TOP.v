@@ -61,18 +61,30 @@ assign CHIP_OUT_DAT_PAD = chip_out_dat_pad;
 wire clk;
 wire rst_n;
 //ACC_DAT_IO
+wire                      eacc_dat_vld;
+wire                      eacc_dat_lst;
+wire                      eacc_dat_rdy;
+wire [CHIP_DAT_DW   -1:0] eacc_dat_dat;
+wire                      eacc_dat_cmd;
+
+//ACC_OUT_IO
+wire                      eacc_out_vld;
+wire                      eacc_out_lst;
+wire                      eacc_out_rdy;
+wire [CHIP_OUT_DW   -1:0] eacc_out_dat;
+
+//BUF_DAT_IO
 wire                      chip_dat_vld;
 wire                      chip_dat_lst;
 wire                      chip_dat_rdy;
 wire [CHIP_DAT_DW   -1:0] chip_dat_dat;
 wire                      chip_dat_cmd;
 
-//ACC_OUT_IO
+//BUF_OUT_IO
 wire                      chip_out_vld;
 wire                      chip_out_lst;
 wire                      chip_out_rdy;
 wire [CHIP_OUT_DW   -1:0] chip_out_dat;
-
 //=====================================================================================================================
 // IO Logic Design :
 //=====================================================================================================================
@@ -104,7 +116,11 @@ endgenerate
 //=====================================================================================================================
 // Logic Design :
 //=====================================================================================================================
-
+assign eacc_dat_vld = chip_dat_vld;
+assign eacc_dat_lst = chip_dat_lst;
+assign eacc_dat_dat = chip_dat_dat;
+assign eacc_dat_cmd = chip_dat_cmd;
+assign eacc_out_rdy = chip_out_rdy;
 //=====================================================================================================================
 // Sub-Module :
 //=====================================================================================================================
@@ -115,16 +131,34 @@ EEG_ACC #(
     .clk                  ( clk              ),
     .rst_n                ( rst_n            ),
 
-    .CHIP_DAT_VLD         ( chip_dat_vld     ),
-    .CHIP_DAT_LST         ( chip_dat_lst     ),
-    .CHIP_DAT_RDY         ( chip_dat_rdy     ),
-    .CHIP_DAT_DAT         ( chip_dat_dat     ),
-    .CHIP_DAT_CMD         ( chip_dat_cmd     ),
+    .CHIP_DAT_VLD         ( eacc_dat_vld     ),
+    .CHIP_DAT_LST         ( eacc_dat_lst     ),
+    .CHIP_DAT_RDY         ( eacc_dat_rdy     ),
+    .CHIP_DAT_DAT         ( eacc_dat_dat     ),
+    .CHIP_DAT_CMD         ( eacc_dat_cmd     ),
                                              
-    .CHIP_OUT_VLD         ( chip_out_vld     ),
-    .CHIP_OUT_LST         ( chip_out_lst     ),
-    .CHIP_OUT_RDY         ( chip_out_rdy     ),
-    .CHIP_OUT_DAT         ( chip_out_dat     )
+    .CHIP_OUT_VLD         ( eacc_out_vld     ),
+    .CHIP_OUT_LST         ( eacc_out_lst     ),
+    .CHIP_OUT_RDY         ( eacc_out_rdy     ),
+    .CHIP_OUT_DAT         ( eacc_out_dat     )
+);
+
+EEG_OBUF #(
+    .CHIP_DAT_DW          ( CHIP_DAT_DW      ),
+    .CHIP_OUT_DW          ( CHIP_OUT_DW      )
+) OBUF_U(
+    .clk                  ( clk              ),
+    .rst_n                ( rst_n            ),
+
+    .ACC_DAT_RDY          ( eacc_dat_rdy     ),
+    .ACC_OUT_VLD          ( eacc_out_vld     ),
+    .ACC_OUT_LST          ( eacc_out_lst     ),
+    .ACC_OUT_DAT          ( eacc_out_dat     ),
+
+    .BUF_DAT_RDY          ( chip_dat_rdy     ),
+    .BUF_OUT_VLD          ( chip_out_vld     ),
+    .BUF_OUT_LST          ( chip_out_lst     ),
+    .BUF_OUT_DAT          ( chip_out_dat     )
 );
 //=====================================================================================================================
 // FSM :
