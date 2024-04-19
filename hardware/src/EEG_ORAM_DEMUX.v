@@ -121,7 +121,7 @@ generate
             mux_mtoo_dat_rdy[gen_i] = &dmx_mtoo_dat_rdy[gen_i];
             mux_mtoo_add_rdy[gen_i] = &dmx_mtoo_add_rdy[gen_i];
             mux_otom_dat_vld[gen_i] = |dmx_otom_dat_vld[gen_i];//no collision
-            mux_otom_dat_dat[gen_i] =  dmx_otom_dat_dat[dmx_otom_dat_sel[gen_i]];
+            mux_otom_dat_dat[gen_i] =  dmx_otom_dat_dat[gen_i][dmx_otom_dat_sel[gen_i]];
             mux_otom_dat_lst[gen_i] = |dmx_otom_dat_lst[gen_i];
         end
     end

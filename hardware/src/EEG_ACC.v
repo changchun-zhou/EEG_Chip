@@ -65,6 +65,7 @@ localparam CONV_OCH_DW =  8;//256
 localparam CONV_LEN_DW = 10;//1024
 localparam CONV_SUM_DW = 24;
 localparam CONV_MUL_DW = CONV_SUM_DW;
+localparam CONV_SFT_DW =  4;
 localparam CONV_ADD_DW = CONV_SUM_DW;
 localparam DILA_FAC_DW =  2;//1/2/4/8
 localparam STRD_FAC_DW =  2;//1/2/4/8
@@ -210,6 +211,7 @@ wire [CONV_ICH_DW    -1:0] cfg_conv_ich;
 wire [CONV_OCH_DW    -1:0] cfg_conv_och;
 wire [CONV_LEN_DW    -1:0] cfg_conv_len;
 wire [CONV_MUL_DW    -1:0] cfg_conv_mul;
+wire [CONV_SFT_DW    -1:0] cfg_conv_sft;
 wire [CONV_ADD_DW    -1:0] cfg_conv_add;
 wire [DILA_FAC_DW    -1:0] cfg_dila_fac;
 wire [STRD_FAC_DW    -1:0] cfg_strd_fac;
@@ -286,11 +288,11 @@ reg  [PE_ROW -1:0][PE_COL -1:0]                      peay_wram_dat_lst;
 wire [PE_ROW -1:0][PE_COL -1:0]                      peay_wram_dat_rdy;
 reg  [PE_ROW -1:0][PE_COL -1:0][WRAM_DAT_DW    -1:0] peay_wram_dat_dat;
 
-wire [PE_ROW -1:0][PE_COL -1:0]                      peay_oram_dat_vld;
-wire [PE_ROW -1:0][PE_COL -1:0]                      peay_oram_dat_lst;
-reg  [PE_ROW -1:0][PE_COL -1:0]                      peay_oram_dat_rdy;
-wire [PE_ROW -1:0][PE_COL -1:0][OMUX_ADD_AW    -1:0] peay_oram_dat_add;
-wire [PE_ROW -1:0][PE_COL -1:0][ORAM_DAT_DW    -1:0] peay_oram_dat_dat;
+wire [PE_COL -1:0][PE_ROW -1:0]                      peay_oram_dat_vld;
+wire [PE_COL -1:0][PE_ROW -1:0]                      peay_oram_dat_lst;
+reg  [PE_COL -1:0][PE_ROW -1:0]                      peay_oram_dat_rdy;
+wire [PE_COL -1:0][PE_ROW -1:0][OMUX_ADD_AW    -1:0] peay_oram_dat_add;
+wire [PE_COL -1:0][PE_ROW -1:0][ORAM_DAT_DW    -1:0] peay_oram_dat_dat;
 
 //WRAM_WBUF
 wire wbuf_cfg_info_change = cfg_acmd_dat[0 +:4]=='d5;
@@ -946,6 +948,7 @@ EEG_CMD #(
     .CONV_LEN_DW          ( CONV_LEN_DW      ),
     .CONV_SUM_DW          ( CONV_SUM_DW      ),
     .CONV_MUL_DW          ( CONV_MUL_DW      ),
+    .CONV_SFT_DW          ( CONV_SFT_DW      ),
     .CONV_ADD_DW          ( CONV_ADD_DW      ),
     .DILA_FAC_DW          ( DILA_FAC_DW      ),
     .STRD_FAC_DW          ( STRD_FAC_DW      ),
@@ -992,6 +995,7 @@ EEG_CMD #(
     .CFG_CONV_OCH         ( cfg_conv_och     ),
     .CFG_CONV_LEN         ( cfg_conv_len     ),
     .CFG_CONV_MUL         ( cfg_conv_mul     ),
+    .CFG_CONV_SFT         ( cfg_conv_sft     ),
     .CFG_CONV_ADD         ( cfg_conv_add     ),
     .CFG_DILA_FAC         ( cfg_dila_fac     ),
     .CFG_STRD_FAC         ( cfg_strd_fac     ),
@@ -1022,6 +1026,7 @@ EEG_PEA #(
     .CONV_LEN_DW          ( CONV_LEN_DW       ),
     .CONV_SUM_DW          ( CONV_SUM_DW       ),
     .CONV_MUL_DW          ( CONV_MUL_DW       ),
+    .CONV_SFT_DW          ( CONV_SFT_DW       ),
     .CONV_ADD_DW          ( CONV_ADD_DW       ),
     .DILA_FAC_DW          ( DILA_FAC_DW       ),
     .STRD_FAC_DW          ( STRD_FAC_DW       ),
@@ -1050,6 +1055,7 @@ EEG_PEA #(
     .CFG_CONV_OCH         ( cfg_conv_och      ),
     .CFG_CONV_LEN         ( cfg_conv_len      ),
     .CFG_CONV_MUL         ( cfg_conv_mul      ),
+    .CFG_CONV_SFT         ( cfg_conv_sft      ),
     .CFG_CONV_ADD         ( cfg_conv_add      ),
     .CFG_CONV_WEI         ( cfg_conv_wei      ),
     .CFG_FLAG_VLD         ( cfg_flag_vld      ),

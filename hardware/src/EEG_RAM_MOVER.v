@@ -476,18 +476,19 @@ always @ ( posedge clk or negedge rst_n )begin
 end
 
 always @ ( * )begin
-    cal_omux_num_tmp = 'd0;
-    for( i=0 ; i < OMUX_NUM_AW; i = i+1 )begin
-        if( CFG_OMUX_IDX[i] )
-            cal_omux_num_tmp = cal_omux_num_tmp +'d1;
-    end
+    //cal_omux_num_tmp = 'd0;
+    //for( i=1 ; i < OMUX_NUM_DW; i = i+1 )begin
+    //    if( CFG_OMUX_IDX[i] )
+    //        cal_omux_num_tmp = cal_omux_num_tmp +'d1;
+    //end
+    cal_omux_num_tmp = &CFG_OMUX_IDX ? 'd3 : 'd0;
 end
 
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
         cal_omux_num <= 'd0;
     else if( cfg_info_ena )
-        cal_omux_num <= cal_omux_num_tmp -'d1;
+        cal_omux_num <= cal_omux_num_tmp;
 end
 
 always @ ( * )begin
@@ -519,9 +520,9 @@ generate
 endgenerate
 
 always @ ( * )begin
-    mtoc_dat_vld =~move_buf_empty[cfg_from_idx[0]] && move_read;
-    mtoc_dat_lst = move_buf_lst[cfg_from_idx[0]];;
-    mtoc_dat_dat = move_buf_dat[cfg_from_idx[0]];;
+    mtoc_dat_vld = move_read && ~move_buf_empty[cfg_from_idx[0]];
+    mtoc_dat_lst = move_read && ~move_buf_empty[cfg_from_idx[0]] && move_buf_lst[cfg_from_idx[0]];
+    mtoc_dat_dat = move_buf_dat[cfg_from_idx[0]];
 end
 
 always @ ( * )begin
@@ -605,7 +606,7 @@ generate
         always @ ( * )begin
             mtoo_add_vld[gen_i] = cal_oram_ena && ~from_cnt_add_done[gen_i] && move_buf_cnt[gen_i]<2;
             mtoo_add_lst[gen_i] = from_cnt_add_last[gen_i];
-            mtoo_add_add[gen_i] = move_otoa ? from_cnt_add[gen_i] +otom_mux_cnt[gen_i]*OMUX_ADD_DW : otom_add_cnt[gen_i];
+            mtoo_add_add[gen_i] = move_otoa || (move_read && cal_oram_ena) ? from_cnt_add[gen_i] +otom_mux_cnt[gen_i]*OMUX_ADD_DW : otom_add_cnt[gen_i];
             otom_dat_rdy[gen_i] = cal_oram_ena && ~move_buf_full[gen_i];
         end
     end
@@ -903,9 +904,9 @@ generate
                 otom_add_cnt[gen_i] <= 'd0;
             else if( cfg_info_ena )
                 otom_add_cnt[gen_i] <= cfg_oram_add;
-            else if( mtoo_add_ena[gen_i] && otom_och_cnt[gen_i]==cfg_conv_och )
+            else if( mtoo_add_ena[gen_i] && otom_och_cnt[gen_i]==cfg_conv_och )//channel first: for flag/stat
                 otom_add_cnt[gen_i] <= cfg_oram_add +otom_pix_cnt[gen_i];
-            else if( mtoo_add_ena[gen_i] )
+            else if( mtoo_add_ena[gen_i] )//channel first: for flag/stat
                 otom_add_cnt[gen_i] <= otom_add_cnt[gen_i] +cfg_conv_len;
         end
     end

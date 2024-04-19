@@ -41,7 +41,7 @@ module EEG_ARAM_ROUTER #(
 // Constant Definition :
 //=====================================================================================================================
 localparam AARB_BUF_DW = 1+ARAM_NUM_AW;
-localparam AARB_BUF_AW = 2;
+localparam AARB_BUF_AW = 1;
 
 integer i;
 
@@ -131,7 +131,7 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 ) begin : BUF_DIN
         always @ ( * )begin
-            aarb_fifo_din[gen_i] = {aram_add_gnt_idx, aram_add_gnt_arb};
+            aarb_fifo_din[gen_i] ={aram_add_gnt_arb[gen_i], aram_add_gnt_idx[gen_i]};
             aarb_fifo_wen[gen_i] = aram_add_ena[gen_i];
             aarb_fifo_ren[gen_i] = aram_dat_ena[gen_i];
         end

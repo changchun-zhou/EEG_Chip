@@ -48,14 +48,14 @@ end
 
 always @ (posedge clk or negedge rst_n)
 begin : FIFO_COUNTER_EMPTY
-  if (!rst_n) begin
-      fifo_count_empty <= RAM_DEPTH;
-  end else if( Reset) begin
-      fifo_count_empty <= RAM_DEPTH;
-  end else if (push && (!pop||pop&&empty) && !full)
-    fifo_count_empty <= fifo_count - 1;
-  else if (pop && (!push||push&&full) && !empty)
-    fifo_count_empty <= fifo_count + 1;
+    if (!rst_n) begin
+        fifo_count_empty <= RAM_DEPTH;
+    end else if( Reset) begin
+        fifo_count_empty <= RAM_DEPTH;
+    end else if (push && (!pop||pop&&empty) && !full)
+        fifo_count_empty <= fifo_count_empty - 1;
+    else if (pop && (!push||push&&full) && !empty)
+        fifo_count_empty <= fifo_count_empty + 1;
 end
 
 always @ (posedge clk or negedge rst_n)

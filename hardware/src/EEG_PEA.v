@@ -17,6 +17,7 @@ module EEG_PEA #(
     parameter CONV_LEN_DW = 10,//1024
     parameter CONV_SUM_DW = 24,
     parameter CONV_MUL_DW = CONV_SUM_DW,
+    parameter CONV_SFT_DW =  4,
     parameter CONV_ADD_DW = CONV_SUM_DW,
     parameter DILA_FAC_DW =  2,//1/2/4/8
     parameter STRD_FAC_DW =  2,//1/2/4/8
@@ -50,6 +51,7 @@ module EEG_PEA #(
     input  [CONV_OCH_DW                              -1:0] CFG_CONV_OCH,
     input  [CONV_LEN_DW                              -1:0] CFG_CONV_LEN,
     input  [CONV_MUL_DW                              -1:0] CFG_CONV_MUL,
+    input  [CONV_SFT_DW                              -1:0] CFG_CONV_SFT,
     input  [CONV_ADD_DW                              -1:0] CFG_CONV_ADD,
     input  [CONV_WEI_DW                              -1:0] CFG_CONV_WEI,
     input                                                  CFG_FLAG_VLD,
@@ -86,21 +88,21 @@ module EEG_PEA #(
     output [PE_ROW -1:0][PE_COL -1:0]                      WRAM_DAT_RDY,
     input  [PE_ROW -1:0][PE_COL -1:0][WRAM_DAT_DW    -1:0] WRAM_DAT_DAT,
 
-    output [PE_ROW -1:0][PE_COL -1:0]                      ORAM_DAT_VLD,
-    output [PE_ROW -1:0][PE_COL -1:0]                      ORAM_DAT_LST,
-    input  [PE_ROW -1:0][PE_COL -1:0]                      ORAM_DAT_RDY,
-    output [PE_ROW -1:0][PE_COL -1:0][OMUX_ADD_AW    -1:0] ORAM_DAT_ADD,
-    output [PE_ROW -1:0][PE_COL -1:0][ORAM_DAT_DW    -1:0] ORAM_DAT_DAT
+    output [PE_COL -1:0][PE_ROW -1:0]                      ORAM_DAT_VLD,
+    output [PE_COL -1:0][PE_ROW -1:0]                      ORAM_DAT_LST,
+    input  [PE_COL -1:0][PE_ROW -1:0]                      ORAM_DAT_RDY,
+    output [PE_COL -1:0][PE_ROW -1:0][OMUX_ADD_AW    -1:0] ORAM_DAT_ADD,
+    output [PE_COL -1:0][PE_ROW -1:0][ORAM_DAT_DW    -1:0] ORAM_DAT_DAT
   );
 //=====================================================================================================================
 // Constant Definition :
 //=====================================================================================================================
 localparam CONV_RUN_DW = 4;
-localparam PE_ACT_IW = ARAM_ADD_AW;
-localparam PE_WEI_IW = CONV_WEI_DW;
-localparam PE_ACT_DW = ARAM_DAT_DW;
-localparam PE_WEI_DW = WRAM_DAT_DW;
-localparam PE_OUT_DW = ORAM_DAT_DW;
+localparam DATA_ACT_IW = ARAM_ADD_AW;
+localparam DATA_WEI_IW = CONV_WEI_DW;
+localparam DATA_ACT_DW = ARAM_DAT_DW;
+localparam DATA_WEI_DW = WRAM_DAT_DW;
+localparam DATA_OUT_DW = ORAM_DAT_DW;
 localparam ARAM_NUM_DW = BANK_NUM_DW;
 localparam ARAM_NUM_AW = $clog2(ARAM_NUM_DW);
 
@@ -137,6 +139,7 @@ reg  [CONV_ICH_DW -1:0] cfg_conv_ich;
 reg  [CONV_OCH_DW -1:0] cfg_conv_och;
 reg  [CONV_LEN_DW -1:0] cfg_conv_len;
 reg  [CONV_MUL_DW -1:0] cfg_conv_mul;
+reg  [CONV_SFT_DW -1:0] cfg_conv_sft;
 reg  [CONV_ADD_DW -1:0] cfg_conv_add;
 reg  [CONV_WEI_DW -1:0] cfg_conv_wei;
 reg                     cfg_flag_vld;
@@ -187,14 +190,14 @@ assign ARAM_ADD_ADD = aram_add_add;
 assign ARAM_DAT_RDY = aram_dat_rdy;
 
 //WRAM_IO
-wire [PE_ROW -1:0][PE_COL -1:0]                     wram_add_vld;
-wire [PE_ROW -1:0][PE_COL -1:0]                     wram_add_lst;
+reg  [PE_ROW -1:0][PE_COL -1:0]                     wram_add_vld;
+reg  [PE_ROW -1:0][PE_COL -1:0]                     wram_add_lst;
 wire [PE_ROW -1:0][PE_COL -1:0]                     wram_add_rdy= WRAM_ADD_RDY;
-wire [PE_ROW -1:0][PE_COL -1:0][WRAM_ADD_AW   -1:0] wram_add_add;
-wire [PE_ROW -1:0][PE_COL -1:0][STAT_DAT_DW   -1:0] wram_add_buf;
+reg  [PE_ROW -1:0][PE_COL -1:0][WRAM_ADD_AW   -1:0] wram_add_add;
+reg  [PE_ROW -1:0][PE_COL -1:0][STAT_DAT_DW   -1:0] wram_add_buf;
 wire [PE_ROW -1:0][PE_COL -1:0]                     wram_dat_vld= WRAM_DAT_VLD;
 wire [PE_ROW -1:0][PE_COL -1:0]                     wram_dat_lst= WRAM_DAT_LST;
-wire [PE_ROW -1:0][PE_COL -1:0]                     wram_dat_rdy;
+reg  [PE_ROW -1:0][PE_COL -1:0]                     wram_dat_rdy;
 wire [PE_ROW -1:0][PE_COL -1:0][WRAM_DAT_DW   -1:0] wram_dat_dat= WRAM_DAT_DAT;
 
 assign WRAM_ADD_VLD = wram_add_vld;
@@ -204,11 +207,11 @@ assign WRAM_ADD_BUF = wram_add_buf;
 assign WRAM_DAT_RDY = wram_dat_vld;
 
 //ORAM_IO
-reg  [PE_ROW -1:0][PE_COL -1:0]                     oram_dat_vld;
-reg  [PE_ROW -1:0][PE_COL -1:0]                     oram_dat_lst;
-wire [PE_ROW -1:0][PE_COL -1:0]                     oram_dat_rdy= ORAM_DAT_RDY;
-reg  [PE_ROW -1:0][PE_COL -1:0][OMUX_ADD_AW   -1:0] oram_dat_add;
-reg  [PE_ROW -1:0][PE_COL -1:0][ORAM_DAT_DW   -1:0] oram_dat_dat;
+reg  [PE_COL -1:0][PE_ROW -1:0]                     oram_dat_vld;
+reg  [PE_COL -1:0][PE_ROW -1:0]                     oram_dat_lst;
+wire [PE_COL -1:0][PE_ROW -1:0]                     oram_dat_rdy= ORAM_DAT_RDY;
+reg  [PE_COL -1:0][PE_ROW -1:0][OMUX_ADD_AW   -1:0] oram_dat_add;
+reg  [PE_COL -1:0][PE_ROW -1:0][ORAM_DAT_DW   -1:0] oram_dat_dat;
 
 assign ORAM_DAT_VLD = oram_dat_vld;
 assign ORAM_DAT_LST = oram_dat_lst;
@@ -222,23 +225,34 @@ wire pea_eng_idle;
 wire [PE_COL -1:0] pea_gen_idle;
 reg  [PE_ROW -1:0][PE_COL -1:0] pea_run_done;
 
+//WRAM
+wire [PE_COL -1:0][PE_ROW -1:0]                     gen_wram_add_vld;
+wire [PE_COL -1:0][PE_ROW -1:0]                     gen_wram_add_lst;
+reg  [PE_COL -1:0][PE_ROW -1:0]                     gen_wram_add_rdy;
+wire [PE_COL -1:0][PE_ROW -1:0][WRAM_ADD_AW   -1:0] gen_wram_add_add;
+wire [PE_COL -1:0][PE_ROW -1:0][STAT_DAT_DW   -1:0] gen_wram_add_buf;
+reg  [PE_COL -1:0][PE_ROW -1:0]                     gen_wram_dat_vld;
+reg  [PE_COL -1:0][PE_ROW -1:0]                     gen_wram_dat_lst;
+wire [PE_COL -1:0][PE_ROW -1:0]                     gen_wram_dat_rdy;
+reg  [PE_COL -1:0][PE_ROW -1:0][WRAM_DAT_DW   -1:0] gen_wram_dat_dat;
+
 //DATA
 wire [PE_COL -1:0]                               act_vld;
 wire [PE_COL -1:0]                               act_lst;
 wire [PE_COL -1:0]                               act_rdy;
-wire [PE_COL -1:0]             [PE_ACT_DW  -1:0] act_dat;
-wire [PE_COL -1:0]             [PE_ACT_IW  -1:0] act_inf;
+wire [PE_COL -1:0]             [DATA_ACT_DW-1:0] act_dat;
+wire [PE_COL -1:0]             [DATA_ACT_IW-1:0] act_inf;
                                            
 wire [PE_COL -1:0][PE_ROW -1:0]                  wei_vld;
 wire [PE_COL -1:0][PE_ROW -1:0]                  wei_lst;
 wire [PE_COL -1:0][PE_ROW -1:0]                  wei_rdy;
-wire [PE_COL -1:0][PE_ROW -1:0][PE_WEI_DW  -1:0] wei_dat;
-wire [PE_COL -1:0][PE_ROW -1:0][PE_WEI_IW  -1:0] wei_inf;
+wire [PE_COL -1:0][PE_ROW -1:0][DATA_WEI_DW-1:0] wei_dat;
+wire [PE_COL -1:0][PE_ROW -1:0][DATA_WEI_IW-1:0] wei_inf;
                                            
 wire [PE_ROW -1:0][PE_COL -1:0]                  out_vld;
 wire [PE_ROW -1:0][PE_COL -1:0]                  out_lst;
 wire [PE_ROW -1:0][PE_COL -1:0]                  out_rdy = oram_dat_rdy;
-wire [PE_ROW -1:0][PE_COL -1:0][PE_WEI_DW  -1:0] out_dat;
+wire [PE_ROW -1:0][PE_COL -1:0][DATA_OUT_DW-1:0] out_dat;
 wire [PE_ROW -1:0][PE_COL -1:0][OMUX_ADD_AW-1:0] out_add;
 //=====================================================================================================================
 // IO Logic Design :
@@ -252,6 +266,7 @@ always @ ( posedge clk or negedge rst_n )begin
         cfg_conv_och <= 'd0;
         cfg_conv_len <= 'd0;
         cfg_conv_mul <= 'd0;
+        cfg_conv_sft <= 'd0;
         cfg_conv_add <= 'd0;
         cfg_conv_wei <= 'd0;
         cfg_flag_vld <= 'd0;
@@ -268,6 +283,7 @@ always @ ( posedge clk or negedge rst_n )begin
         cfg_conv_och <= CFG_CONV_OCH;
         cfg_conv_len <= CFG_CONV_LEN;
         cfg_conv_mul <= CFG_CONV_MUL;
+        cfg_conv_sft <= CFG_CONV_SFT;
         cfg_conv_add <= CFG_CONV_ADD;
         cfg_conv_wei <= CFG_CONV_WEI;
         cfg_flag_vld <= CFG_FLAG_VLD;
@@ -313,6 +329,33 @@ generate
         end
     end
 endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
+        for( gen_j=0 ; gen_j < PE_COL; gen_j = gen_j+1 )begin
+            always @ ( * )begin
+                wram_add_vld[gen_i][gen_j] = gen_wram_add_vld[gen_j][gen_i];
+                wram_add_lst[gen_i][gen_j] = gen_wram_add_lst[gen_j][gen_i];
+                wram_add_add[gen_i][gen_j] = gen_wram_add_add[gen_j][gen_i];
+                wram_add_buf[gen_i][gen_j] = gen_wram_add_buf[gen_j][gen_i];
+                wram_dat_rdy[gen_i][gen_j] = gen_wram_dat_rdy[gen_j][gen_i];
+            end
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
+        for( gen_j=0 ; gen_j < PE_COL; gen_j = gen_j+1 )begin
+            always @ ( * )begin
+                gen_wram_add_rdy[gen_i][gen_j] = wram_add_rdy[gen_j][gen_i];
+                gen_wram_dat_vld[gen_i][gen_j] = wram_dat_vld[gen_j][gen_i];
+                gen_wram_dat_lst[gen_i][gen_j] = wram_dat_lst[gen_j][gen_i];
+                gen_wram_dat_dat[gen_i][gen_j] = wram_dat_dat[gen_j][gen_i];
+            end
+        end
+    end
+endgenerate
 //=====================================================================================================================
 // Sub-Module :
 //=====================================================================================================================
@@ -323,10 +366,10 @@ wire [PE_COL -1:0] pea_gen_rpad = 4'b0111;
 EEG_PEA_DAT_GEN #(
     .PE_COL          ( PE_COL         ),
     .PE_ROW          ( PE_ROW         ),
-    .PE_ACT_DW       ( PE_ACT_DW      ),
-    .PE_WEI_DW       ( PE_WEI_DW      ),
-    .PE_ACT_IW       ( PE_ACT_IW      ),
-    .PE_WEI_IW       ( PE_WEI_IW      ),
+    .DATA_ACT_DW     ( DATA_ACT_DW    ),
+    .DATA_WEI_DW     ( DATA_WEI_DW    ),
+    .DATA_ACT_IW     ( DATA_ACT_IW    ),
+    .DATA_WEI_IW     ( DATA_WEI_IW    ),
     .CONV_ICH_DW     ( CONV_ICH_DW    ),
     .CONV_OCH_DW     ( CONV_OCH_DW    ),
     .CONV_LEN_DW     ( CONV_LEN_DW    ),
@@ -385,15 +428,15 @@ EEG_PEA_DAT_GEN #(
     .ARAM_DAT_RDY    ( aram_dat_rdy      ),
     .ARAM_DAT_DAT    ( aram_dat_dat      ),
 
-    .WRAM_ADD_VLD    ( wram_add_vld      ),
-    .WRAM_ADD_LST    ( wram_add_lst      ),
-    .WRAM_ADD_RDY    ( wram_add_rdy      ),
-    .WRAM_ADD_ADD    ( wram_add_add      ),
-    .WRAM_ADD_BUF    ( wram_add_buf      ),
-    .WRAM_DAT_VLD    ( wram_dat_vld      ),
-    .WRAM_DAT_LST    ( wram_dat_lst      ),
-    .WRAM_DAT_RDY    ( wram_dat_rdy      ),
-    .WRAM_DAT_DAT    ( wram_dat_dat      ),
+    .WRAM_ADD_VLD    ( gen_wram_add_vld  ),//transposition
+    .WRAM_ADD_LST    ( gen_wram_add_lst  ),
+    .WRAM_ADD_RDY    ( gen_wram_add_rdy  ),
+    .WRAM_ADD_ADD    ( gen_wram_add_add  ),
+    .WRAM_ADD_BUF    ( gen_wram_add_buf  ),
+    .WRAM_DAT_VLD    ( gen_wram_dat_vld  ),
+    .WRAM_DAT_LST    ( gen_wram_dat_lst  ),
+    .WRAM_DAT_RDY    ( gen_wram_dat_rdy  ),
+    .WRAM_DAT_DAT    ( gen_wram_dat_dat  ),
 
     .ACT_VLD         ( act_vld           ),
     .ACT_LST         ( act_lst           ),
@@ -411,15 +454,16 @@ EEG_PEA_DAT_GEN #(
 EEG_PEA_ENG #(
     .PE_COL          ( PE_COL         ),
     .PE_ROW          ( PE_ROW         ),
-    .PE_ACT_DW       ( PE_ACT_DW      ),
-    .PE_WEI_DW       ( PE_WEI_DW      ),
-    .PE_OUT_DW       ( PE_OUT_DW      ),
+    .DATA_ACT_DW     ( DATA_ACT_DW    ),
+    .DATA_WEI_DW     ( DATA_WEI_DW    ),
+    .DATA_OUT_DW     ( DATA_OUT_DW    ),
     .ARAM_ADD_AW     ( ARAM_ADD_AW    ),
     .ORAM_ADD_AW     ( ORAM_ADD_AW    ),
     .OMUX_ADD_AW     ( OMUX_ADD_AW    ),
     .CONV_WEI_DW     ( CONV_WEI_DW    ),
     .CONV_RUN_DW     ( CONV_RUN_DW    ),
     .CONV_MUL_DW     ( CONV_MUL_DW    ),
+    .CONV_SFT_DW     ( CONV_SFT_DW    ),
     .CONV_ADD_DW     ( CONV_ADD_DW    )
 ) EEG_PEA_ENG_U (
     .clk             ( clk            ),
@@ -431,6 +475,7 @@ EEG_PEA_ENG #(
     .CFG_CONV_WEI    ( cfg_conv_wei   ),
     .CFG_CONV_PAD    ( cfg_conv_pad   ),
     .CFG_CONV_MUL    ( cfg_conv_mul   ),
+    .CFG_CONV_SFT    ( cfg_conv_sft   ),
     .CFG_CONV_ADD    ( cfg_conv_add   ),
     .CFG_CONV_LST    ( cfg_conv_lst   ),
 

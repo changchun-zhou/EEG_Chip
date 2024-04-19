@@ -10,17 +10,18 @@
 // Description :
 //========================================================
 module EEG_PEA_ENG_PE #(
-    parameter ACT_DW      =  8,
-    parameter WEI_DW      =  8,
-    parameter OUT_DW      =  8,
-    parameter SUM_DW      = 24,
-    parameter SUM_NW      =  8,
+    parameter DATA_ACT_DW =  8,
+    parameter DATA_WEI_DW =  8,
+    parameter DATA_OUT_DW =  8,
+    parameter DATA_SUM_DW = 24,
+    parameter DATA_SUM_NW =  8,
     parameter ARAM_ADD_AW = 10,
     parameter ORAM_ADD_AW = 10,
     parameter OMUX_ADD_AW =  8,
     parameter CONV_WEI_DW =  3,
     parameter CONV_RUN_DW =  3,
     parameter CONV_MUL_DW = 24,
+    parameter CONV_SFT_DW =  4,
     parameter CONV_ADD_DW = 24
   )(
     input                             clk,
@@ -32,6 +33,7 @@ module EEG_PEA_ENG_PE #(
     input  [CONV_WEI_DW         -1:0] CFG_CONV_WEI,//WEI_LEN
     input  [CONV_WEI_DW         -1:0] CFG_CONV_PAD,//WEI_LEN/2
     input  [CONV_MUL_DW         -1:0] CFG_CONV_MUL,
+    input  [CONV_SFT_DW         -1:0] CFG_CONV_SFT,
     input  [CONV_ADD_DW         -1:0] CFG_CONV_ADD,
     input  [ORAM_ADD_AW         -1:0] CFG_CONV_LST,
 
@@ -39,21 +41,22 @@ module EEG_PEA_ENG_PE #(
     input                             ACT_LST,
     input                             WEI_LST,
     output                            DIN_RDY,
-    input  [ACT_DW              -1:0] ACT_DAT,
+    input  [DATA_ACT_DW         -1:0] ACT_DAT,
     input  [ARAM_ADD_AW         -1:0] ACT_ADD,
-    input  [WEI_DW              -1:0] WEI_DAT,
+    input  [DATA_WEI_DW         -1:0] WEI_DAT,
     input  [CONV_WEI_DW         -1:0] WEI_IDX,
 
     output                            OUT_VLD,
     output                            OUT_LST,
     output [OMUX_ADD_AW         -1:0] OUT_ADD,
     input                             OUT_RDY,
-    output [OUT_DW              -1:0] OUT_DAT
+    output [DATA_OUT_DW         -1:0] OUT_DAT
   );
 //=====================================================================================================================
 // Constant Definition :
 //=====================================================================================================================
-localparam SUM_AW = $clog2(SUM_NW);
+localparam CONV_SUM_AW = $clog2(DATA_SUM_NW);
+localparam CONV_CAL_DW = DATA_SUM_DW +CONV_MUL_DW +1;
 
 localparam PE_STATE = 3;
 localparam PE_IDLE  = 3'b001;
@@ -67,13 +70,15 @@ wire pe_idle = pe_cs == PE_IDLE;
 wire pe_flow = pe_cs == PE_FLOW;
 wire pe_psum = pe_cs == PE_PSUM;
 
+genvar gen_i, gen_j;
 //=====================================================================================================================
 // IO Signal :
 //=====================================================================================================================
-wire                    cfg_conv_run = CFG_CONV_RUN;
+wire [CONV_RUN_DW -1:0] cfg_conv_run = CFG_CONV_RUN;
 wire [CONV_WEI_DW -1:0] cfg_conv_wei = CFG_CONV_WEI;
 wire [CONV_WEI_DW -1:0] cfg_conv_pad = CFG_CONV_PAD;
 wire [CONV_MUL_DW -1:0] cfg_conv_mul = CFG_CONV_MUL;
+wire [CONV_SFT_DW -1:0] cfg_conv_sft = CFG_CONV_SFT;
 wire [CONV_ADD_DW -1:0] cfg_conv_add = CFG_CONV_ADD;
 wire [ORAM_ADD_AW -1:0] cfg_conv_lst = CFG_CONV_LST;
 assign IS_IDLE = pe_idle;
@@ -82,9 +87,9 @@ wire                    din_vld = DIN_VLD;
 reg                     din_rdy;
 wire                    act_lst = ACT_LST;
 wire                    wei_lst = WEI_LST;
-wire [ACT_DW      -1:0] act_dat = ACT_DAT;
+wire [DATA_ACT_DW -1:0] act_dat = ACT_DAT;
 wire [ARAM_ADD_AW -1:0] act_add = ACT_ADD;
-wire [WEI_DW      -1:0] wei_dat = WEI_DAT;
+wire [DATA_WEI_DW -1:0] wei_dat = WEI_DAT;
 wire [CONV_WEI_DW -1:0] wei_idx = WEI_IDX;
 assign DIN_RDY = din_rdy; 
 
@@ -94,7 +99,7 @@ reg                     out_vld;
 reg                     out_lst;
 reg  [OMUX_ADD_AW -1:0] out_add;
 wire                    out_rdy = OUT_RDY;
-reg  [OUT_DW      -1:0] out_dat;
+reg  [DATA_OUT_DW -1:0] out_dat;
 
 assign OUT_DAT = out_dat;
 assign OUT_VLD = out_vld;
@@ -113,15 +118,15 @@ reg psum_out_vld;
 reg [ARAM_ADD_AW   :0] aram_add_reg;
 reg [ARAM_ADD_AW   :0] psum_add_reg;
 
-reg [SUM_NW      -1:0][SUM_DW -1:0] psum_cal_reg;
-reg [SUM_DW      -1:0] psum_cal_tmp;
-reg [OUT_DW      -1:0] psum_out_reg; 
+reg [DATA_SUM_NW -1:0][DATA_SUM_DW -1:0] psum_cal_reg;
+reg [DATA_SUM_DW -1:0] psum_cal_tmp;
+reg [DATA_OUT_DW -1:0] psum_out_reg; 
 
-wire is_addr_out_range = act_add>(aram_add_reg+cfg_conv_pad);
+wire is_addr_out_range = act_add>(aram_add_reg+cfg_conv_pad*cfg_conv_run);
 
 wire pe_data_ena = din_ena;
 wire pe_last_din = din_ena&&act_lst&&wei_lst;
-wire pe_psum_rst = out_ena&&out_idx_cnt==cfg_conv_pad;//is_addr_out_range make sure aram_add_reg within (cfg_conv_pad) bit act_add
+wire pe_psum_rst = out_ena&&out_idx_cnt==cfg_conv_pad&&pe_psum;//is_addr_out_range make sure aram_add_reg within (cfg_conv_pad) bit act_add
 
 wire psum_out_lst = psum_add_reg==cfg_conv_lst;
 //=====================================================================================================================   
@@ -140,9 +145,8 @@ end
 //=====================================================================================================================
 // Logic Design :
 //=====================================================================================================================
-genvar gen_i;
 generate
-    for( gen_i=0 ; gen_i < SUM_NW; gen_i = gen_i+1 ) begin : PSUM_BLOCK
+    for( gen_i=0 ; gen_i < DATA_SUM_NW; gen_i = gen_i+1 ) begin : PSUM_BLOCK
         always @ ( posedge clk or negedge rst_n )begin
             if( ~rst_n )
                 psum_cal_reg[gen_i] <= 'd0;
@@ -152,9 +156,9 @@ generate
                 psum_cal_reg[gen_i] <= psum_cal_tmp;
             else if( pe_flow && din_ena )begin
                 if(  is_addr_out_range )begin
-                    if( gen_i==SUM_NW-1 )
+                    if( gen_i==DATA_SUM_NW-1 )
                         psum_cal_reg[gen_i] <= 'd0;
-                    else if(  (gen_i+1)==wei_idx_cnt )
+                    else if(  gen_i==0 )//when is_addr_out_range->wei_idx==0, for wei no zero value
                         psum_cal_reg[gen_i] <= psum_cal_tmp;
                     else
                         psum_cal_reg[gen_i] <= psum_cal_reg[gen_i+1];
@@ -165,7 +169,7 @@ generate
                 end
             end
             else if( pe_psum && out_rdy )begin
-                if( gen_i==SUM_NW-1 )
+                if( gen_i==DATA_SUM_NW-1 )
                     psum_cal_reg[gen_i] <= 'd0;
                 else
                     psum_cal_reg[gen_i] <= psum_cal_reg[gen_i+1];
@@ -175,6 +179,7 @@ generate
   
 endgenerate
 
+//when is_addr_out_range->wei_idx==0, for wei no zero value
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
         wei_idx_cnt <= 'd0;
@@ -195,13 +200,20 @@ always @ ( posedge clk or negedge rst_n )begin
         out_idx_cnt <= out_idx_cnt +'d1;
 end
 
+wire signed [CONV_CAL_DW -1:0] psum_out_mul = $signed(psum_cal_reg[0])*$signed(cfg_conv_mul) +$signed(cfg_conv_add);
+wire signed [CONV_CAL_DW -1:0] psum_out_sft = $signed(psum_out_mul)>>>cfg_conv_sft;
+wire signed [CONV_CAL_DW -1:0] psum_out_min = {{(CONV_CAL_DW-DATA_OUT_DW+1){1'd1}}, {(DATA_OUT_DW-1){1'd0}}};
+wire signed [CONV_CAL_DW -1:0] psum_out_max = {{(CONV_CAL_DW-DATA_OUT_DW+1){1'd0}}, {(DATA_OUT_DW-1){1'd1}}};
+wire signed [DATA_OUT_DW -1:0] psum_out_clp = psum_out_sft<psum_out_min ? {1'd1, {(DATA_OUT_DW-1){1'd0}}} : (psum_out_sft>psum_out_max ? {1'd0, {(DATA_OUT_DW-1){1'd1}}} : psum_out_sft[0 +:DATA_OUT_DW]);
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
         psum_out_reg <= 'd0;
     else if( pe_psum_rst )
         psum_out_reg <= 'd0;
     else if( is_addr_out_range && din_ena )
-        psum_out_reg <= $signed(psum_cal_reg[0])*$signed(cfg_conv_mul) +$signed(cfg_conv_add);
+        psum_out_reg <= psum_out_clp;
+    else if( pe_psum && (~psum_out_vld || out_rdy) )
+        psum_out_reg <= psum_out_clp;
 end
 
 always @ ( posedge clk or negedge rst_n )begin
@@ -225,9 +237,9 @@ always @ ( posedge clk or negedge rst_n )begin
     else if( pe_idle && din_ena )
         aram_add_reg <= ACT_ADD;
     else if( pe_flow && din_ena && is_addr_out_range && (~psum_out_vld || out_rdy) )
-        aram_add_reg <= aram_add_reg+CFG_CONV_RUN;
+        aram_add_reg <= aram_add_reg+cfg_conv_run;
     else if( pe_psum && out_rdy )
-        aram_add_reg <= aram_add_reg+CFG_CONV_RUN;
+        aram_add_reg <= aram_add_reg+cfg_conv_run;
 end
 
 always @ ( posedge clk or negedge rst_n )begin
@@ -242,8 +254,9 @@ always @ ( posedge clk or negedge rst_n )begin
 end
 
 //MAC
+wire [CONV_WEI_DW -1:0] wei_idx_cnt_fix = is_addr_out_range ? 'd1 : wei_idx_cnt;
 always @ ( * )begin
-    psum_cal_tmp = $signed(ACT_DAT)*$signed(WEI_DAT) +$signed(psum_cal_reg[wei_idx_cnt]);
+    psum_cal_tmp = $signed(ACT_DAT)*$signed(WEI_DAT) +$signed(psum_cal_reg[wei_idx_cnt_fix]);
 end
 //=====================================================================================================================
 // Sub-Module :
@@ -270,6 +283,18 @@ end
 
 
 `ifdef ASSERT_ON
+
+reg [DATA_SUM_DW -1:0] ass_psum_out_reg;
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )
+        ass_psum_out_reg <= 'd0;
+    else if( pe_psum_rst )
+        ass_psum_out_reg <= 'd0;
+    else if( is_addr_out_range && din_ena )
+        ass_psum_out_reg <= psum_cal_reg[0];
+    else if( pe_psum && (~psum_out_vld || out_rdy) )
+        ass_psum_out_reg <= psum_cal_reg[0];
+end
 
 
 `endif

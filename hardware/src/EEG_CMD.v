@@ -18,6 +18,7 @@ module EEG_CMD #(
     parameter CONV_LEN_DW = 10,//1024
     parameter CONV_SUM_DW = 24,
     parameter CONV_MUL_DW = CONV_SUM_DW,
+    parameter CONV_SFT_DW =  4,
     parameter CONV_ADD_DW = CONV_SUM_DW,
     parameter DILA_FAC_DW =  2,//1/2/4/8
     parameter STRD_FAC_DW =  2,//1/2/4/8
@@ -76,6 +77,7 @@ module EEG_CMD #(
     output [CONV_OCH_DW    -1:0] CFG_CONV_OCH,
     output [CONV_LEN_DW    -1:0] CFG_CONV_LEN,
     output [CONV_MUL_DW    -1:0] CFG_CONV_MUL,
+    output [CONV_SFT_DW    -1:0] CFG_CONV_SFT,
     output [CONV_ADD_DW    -1:0] CFG_CONV_ADD,
     output [DILA_FAC_DW    -1:0] CFG_DILA_FAC,
     output [STRD_FAC_DW    -1:0] CFG_STRD_FAC,
@@ -151,6 +153,7 @@ reg [CONV_ICH_DW  -1:0] cfg_conv_ich;
 reg [CONV_OCH_DW  -1:0] cfg_conv_och;
 reg [CONV_LEN_DW  -1:0] cfg_conv_len;
 reg [CONV_MUL_DW  -1:0] cfg_conv_mul;
+reg [CONV_SFT_DW  -1:0] cfg_conv_sft;
 reg [CONV_ADD_DW  -1:0] cfg_conv_add;
 reg [DILA_FAC_DW  -1:0] cfg_dila_fac;
 reg [STRD_FAC_DW  -1:0] cfg_strd_fac;
@@ -160,6 +163,7 @@ assign CFG_CONV_ICH = cfg_conv_ich;
 assign CFG_CONV_OCH = cfg_conv_och;
 assign CFG_CONV_LEN = cfg_conv_len;
 assign CFG_CONV_MUL = cfg_conv_mul;
+assign CFG_CONV_SFT = cfg_conv_sft;
 assign CFG_CONV_ADD = cfg_conv_add;
 assign CFG_DILA_FAC = cfg_dila_fac;
 assign CFG_STRD_FAC = cfg_strd_fac;
@@ -340,7 +344,7 @@ always @ ( posedge clk or negedge rst_n )begin
     end else if( cfg_acmd_vld )begin
         case( cfg_mode_cmd )
             CMD_OTOA: cfg_omux_idx <= cfg_acmd_dat[12+:4];
-             default: cfg_omux_idx <= cfg_oram_idx;
+             default: cfg_omux_idx <= cfg_omux_idx;
         endcase
     end
 end
@@ -458,6 +462,17 @@ always @ ( posedge clk or negedge rst_n )begin
         case( cfg_mode_cmd )
             INF_MULT: cfg_conv_mul <= cfg_acmd_dat[4 +:24];
              default: cfg_conv_mul <= cfg_conv_mul;
+        endcase
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        cfg_conv_sft <= 'd0;
+    end else if( cfg_acmd_vld )begin
+        case( cfg_mode_cmd )
+            INF_MULT: cfg_conv_sft <= cfg_acmd_dat[28 +:4];
+             default: cfg_conv_sft <= cfg_conv_sft;
         endcase
     end
 end

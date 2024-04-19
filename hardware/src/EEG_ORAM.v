@@ -60,7 +60,7 @@ module EEG_ORAM #(
 //=====================================================================================================================
 localparam OMUX_ADD_DW = 1<<OMUX_ADD_AW;
 localparam ORAM_BUF_DW = OMUX_ADD_AW+ORAM_DAT_DW+1;
-localparam ORAM_BUF_AW = 2;
+localparam ORAM_BUF_AW = 1;
 localparam POOL_FAC_LW = 4;
 
 localparam ORAM_STATE = ORAM_CMD_DW;
