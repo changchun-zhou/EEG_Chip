@@ -7,12 +7,12 @@
 
 set DESIGN_NAME="EEG_ACC"
 ################################################################################
-set PERIOD_CLK="300"
+set PERIOD_CLK="10"
 set UNGROUP="group"
 set MAXPOWER="0" # 100MHz -> 100mW
 set OPTWGT="0.5" # Larger optimization weight, lower leakage(1/20~1/10 of Total Synth Power)
 set SDC_FILE=./TOP.sdc
-set TECH_SETTING="3PD_ss"
+set TECH_SETTING="3PD_HV"
 set NOTE=""
 
 ################################################################################

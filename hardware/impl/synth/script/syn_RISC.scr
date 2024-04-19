@@ -19,8 +19,10 @@ set_attribute super_thread_servers [string repeat "localhost " 64]
 ##########################################################################
 #                     Libraries and technology files                     #
 ##########################################################################
-source ./script/tech_settings.tcl
-read_power_intent -cpf -module $DESIGN ./$DESIGN.cpf
+read_power_intent -cpf -module $DESIGN ./${DESIGN}_HV.cpf
+# source ./script/tech_settings.tcl
+# set_attribute library $slow_LV_lib
+
 source ./script/lef_settings.tcl
 set_attribute lef_library  ${tech_lef}
 
@@ -89,8 +91,9 @@ commit_power_intent
 ##########################################################################
 #                              load sdc                                  #
 ##########################################################################
-# read_sdc ${SDC_FILE} # repeated with cpf
+# read_sdc ${SDC_FILE}
 # write_sdc > ${SYNTH_PROJDIR}/write_sdc.sdc
+
 check_design -unresolved
 ##########################################################################
 #                          Setting constraints                           #

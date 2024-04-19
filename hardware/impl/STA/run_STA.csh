@@ -8,11 +8,11 @@
 
 set DESIGN_NAME="EEG_ACC"
 ################################################################################
-set PERIOD_CLK="300"
+set PERIOD_CLK="500"
 set UNGROUP="group"
 set SDC_FILE=../synth/TOP.sdc
-set TECH_SETTING="3PD_ss"
-set NOTE=""
+set TECH_SETTING="3PD_LV_HV_HV"
+set NOTE="syn10"
 
 ################################################################################
 if($PERIOD_CLK == "") then 
