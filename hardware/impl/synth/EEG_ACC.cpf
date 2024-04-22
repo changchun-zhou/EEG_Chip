@@ -118,7 +118,7 @@ create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corn
 ##########################
 
 define_level_shifter_cell \
-	-cells {LVLLHCD1BWP7T} \
+	-cells {LVLHLD1BWP7T} \
 	-input_voltage_range 0.45:0.55 \
 	-output_voltage_range 1.08:1.32 \
 	-input_power_pin VDD \
@@ -137,8 +137,8 @@ create_level_shifter_rule \
 	-to   {PD_OBUF} \
 	-from {PD_CORE}
 
-update_level_shifter_rules -names lsr1 -cells "LVLLHCD1BWP7T" -location any -within_hierarchy /
-update_level_shifter_rules -names lsr2 -cells "LVLLHCD1BWP7T" -location any -within_hierarchy /
+update_level_shifter_rules -names lsr1 -cells "LVLHLD1BWP7T" -location any -within_hierarchy /
+update_level_shifter_rules -names lsr2 -cells "LVLHLD1BWP7T" -location any -within_hierarchy /
 
 #define_level_shifter_cell \
 #	-cells {LSHLX1_FROM} \
