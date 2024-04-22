@@ -46,7 +46,7 @@ module EEG_PEA #(
     
     input  [ARAM_ADD_AW                              -1:0] CFG_ARAM_ADD,
     input  [WRAM_ADD_AW                              -1:0] CFG_WRAM_ADD,
-    input                                                  CFG_SPLT_ENA,
+    input                                                  CFG_CPAD_ENA,
     input  [CONV_ICH_DW                              -1:0] CFG_CONV_ICH,
     input  [CONV_OCH_DW                              -1:0] CFG_CONV_OCH,
     input  [CONV_LEN_DW                              -1:0] CFG_CONV_LEN,
@@ -134,7 +134,7 @@ reg  cfg_info_rdy;
 wire [PEAY_CMD_DW -1:0] cfg_info_cmd = CFG_INFO_CMD;
 reg  [ARAM_ADD_AW -1:0] cfg_aram_add;
 reg  [WRAM_ADD_AW -1:0] cfg_wram_add;
-reg                     cfg_splt_ena;
+reg                     cfg_cpad_ena;
 reg  [CONV_ICH_DW -1:0] cfg_conv_ich;
 reg  [CONV_OCH_DW -1:0] cfg_conv_och;
 reg  [CONV_LEN_DW -1:0] cfg_conv_len;
@@ -261,7 +261,7 @@ always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )begin
         cfg_aram_add <= 'd0;
         cfg_wram_add <= 'd0;
-        cfg_splt_ena <= 'd0;
+        cfg_cpad_ena <= 'd0;
         cfg_conv_ich <= 'd0;
         cfg_conv_och <= 'd0;
         cfg_conv_len <= 'd0;
@@ -278,7 +278,7 @@ always @ ( posedge clk or negedge rst_n )begin
     else if( cfg_info_ena )begin
         cfg_aram_add <= CFG_ARAM_ADD;
         cfg_wram_add <= CFG_WRAM_ADD;
-        cfg_splt_ena <= CFG_SPLT_ENA;
+        cfg_cpad_ena <= CFG_CPAD_ENA;
         cfg_conv_ich <= CFG_CONV_ICH;
         cfg_conv_och <= CFG_CONV_OCH;
         cfg_conv_len <= CFG_CONV_LEN;
@@ -399,7 +399,7 @@ EEG_PEA_DAT_GEN #(
     .CFG_INFO_RDY    (    ),
     .CFG_ARAM_ADD    ( cfg_aram_add      ),
     .CFG_WRAM_ADD    ( cfg_wram_add      ),
-    .CFG_SPLT_ENA    ( cfg_splt_ena      ),
+    .CFG_CPAD_ENA    ( cfg_cpad_ena      ),
     .CFG_CONV_ICH    ( cfg_conv_ich      ),
     .CFG_CONV_OCH    ( cfg_conv_och      ),
     .CFG_CONV_LEN    ( cfg_conv_len      ),

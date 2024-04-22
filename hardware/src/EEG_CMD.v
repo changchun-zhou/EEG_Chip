@@ -61,6 +61,7 @@ module EEG_CMD #(
     output                       CFG_FLAG_VLD,
     output                       CFG_STAT_VLD,
     output                       CFG_WBUF_ENA,
+    output                       CFG_CPAD_ENA,
     //RAM
     output [ARAM_NUM_DW    -1:0] CFG_ARAM_IDX,
     output [WRAM_NUM_DW    -1:0] CFG_WRAM_IDX,
@@ -191,6 +192,7 @@ wire cfg_resn_ena;
 wire cfg_flag_vld;
 wire cfg_stat_vld;
 wire cfg_wbuf_ena;
+wire cfg_cpad_ena;
 
 assign CFG_RELU_ENA = cfg_relu_ena;
 assign CFG_SPLT_ENA = cfg_splt_ena;
@@ -202,6 +204,7 @@ assign CFG_RESN_ENA = cfg_resn_ena;
 assign CFG_FLAG_VLD = cfg_flag_vld;
 assign CFG_STAT_VLD = cfg_stat_vld;
 assign CFG_WBUF_ENA = cfg_wbuf_ena;
+assign CFG_CPAD_ENA = cfg_cpad_ena;
 //CMD
 wire cmd_itoa_ena;
 wire cmd_itow_ena;
@@ -237,6 +240,7 @@ wire cfg_resn_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
 wire cfg_flag_vld_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
 wire cfg_stat_vld_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
 wire cfg_wbuf_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
+wire cfg_cpad_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
 CPM_REG_E #( 1 ) CFG_RELU_ENA_REG( clk, rst_n, cfg_relu_ena_ena, cfg_acmd_dat[20], cfg_relu_ena );
 CPM_REG_E #( 1 ) CFG_SPLT_ENA_REG( clk, rst_n, cfg_splt_ena_ena, cfg_acmd_dat[21], cfg_splt_ena );
 CPM_REG_E #( 1 ) CFG_COMB_ENA_REG( clk, rst_n, cfg_comb_ena_ena, cfg_acmd_dat[22], cfg_comb_ena );
@@ -244,9 +248,10 @@ CPM_REG_E #( 1 ) CFG_FLAG_ENA_REG( clk, rst_n, cfg_flag_ena_ena, cfg_acmd_dat[23
 CPM_REG_E #( 1 ) CFG_MAXP_ENA_REG( clk, rst_n, cfg_maxp_ena_ena, cfg_acmd_dat[16], cfg_maxp_ena );
 CPM_REG_E #( 1 ) CFG_AVGP_ENA_REG( clk, rst_n, cfg_avgp_ena_ena, cfg_acmd_dat[17], cfg_avgp_ena );
 CPM_REG_E #( 1 ) CFG_RESN_ENA_REG( clk, rst_n, cfg_resn_ena_ena, cfg_acmd_dat[11], cfg_resn_ena );
-CPM_REG_E #( 1 ) CFG_FLAG_VLD_REG( clk, rst_n, cfg_flag_vld_ena, cfg_acmd_dat[11], cfg_flag_vld );
-CPM_REG_E #( 1 ) CFG_STAT_VLD_REG( clk, rst_n, cfg_stat_vld_ena, cfg_acmd_dat[11], cfg_stat_vld );
-CPM_REG_E #( 1 ) CFG_WBUF_ENA_REG( clk, rst_n, cfg_wbuf_ena_ena, cfg_acmd_dat[11], cfg_wbuf_ena );
+CPM_REG_E #( 1 ) CFG_FLAG_VLD_REG( clk, rst_n, cfg_flag_vld_ena, cfg_acmd_dat[12], cfg_flag_vld );
+CPM_REG_E #( 1 ) CFG_STAT_VLD_REG( clk, rst_n, cfg_stat_vld_ena, cfg_acmd_dat[13], cfg_stat_vld );
+CPM_REG_E #( 1 ) CFG_WBUF_ENA_REG( clk, rst_n, cfg_wbuf_ena_ena, cfg_acmd_dat[14], cfg_wbuf_ena );
+CPM_REG_E #( 1 ) CFG_CPAD_ENA_REG( clk, rst_n, cfg_wbuf_ena_ena, cfg_acmd_dat[15], cfg_cpad_ena );
 //=====================================================================================================================
 // IO Logic Design :
 //=====================================================================================================================

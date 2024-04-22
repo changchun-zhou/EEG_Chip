@@ -40,14 +40,14 @@ module EEG_PEA_DAT_GEN #(
     input  [2                           -1:0] PEA_GEN_CIDX,
     input                                     PEA_GEN_LPAD,
     input                                     PEA_GEN_RPAD,
-                                        
+
     input                                     CFG_INFO_VLD,
     output                                    CFG_INFO_RDY,
     input  [ARAM_ADD_AW                 -1:0] CFG_ARAM_ADD,
     input  [WRAM_ADD_AW                 -1:0] CFG_WRAM_ADD,
     
     input                                     CFG_FLAG_VLD,
-    input                                     CFG_SPLT_ENA,
+    input                                     CFG_CPAD_ENA,
     input  [CONV_ICH_DW                 -1:0] CFG_CONV_ICH,
     input  [CONV_OCH_DW                 -1:0] CFG_CONV_OCH,
     input  [CONV_LEN_DW                 -1:0] CFG_CONV_LEN,
@@ -273,7 +273,7 @@ wire [CONV_LEN_DW             -1:0] ff_pcnt_d1;
 reg  [ARAM_ADD_AW -1:0] cfg_aram_add;
 reg  [WRAM_ADD_AW -1:0] cfg_wram_add;
 reg                     cfg_flag_vld;
-reg                     cfg_splt_ena;
+reg                     cfg_cpad_ena;
 reg  [CONV_ICH_DW -1:0] cfg_conv_ich;
 reg  [CONV_OCH_DW -1:0] cfg_conv_och;
 reg  [CONV_LEN_DW -1:0] cfg_conv_len;
@@ -308,7 +308,7 @@ wire ff_lpad_last = fram_add_ena&&ff_last_ich&&ff_cntr_pix==(cal_lpad_len-'d1);
 wire ff_tile_last = fram_add_ena&&ff_last_ich&&ff_last_pix;
 wire ff_rpad_last = fram_add_ena&&ff_last_ich&&ff_cntr_pix==(cal_rpad_len-'d1);
 wire ff_loop_last = ff_last_didx&&ff_last_oidx;
-wire ff_conv_last = |cal_rpad_len ? ff_rpad_last : ff_tile_last;
+wire ff_conv_last = |cal_rpad_len ? ff_rpad&&ff_rpad_last : ff_tile_last;
 
 wire act_last_vld;
 CPM_REG_RCE #( 1, 1 ) ACT_DONE_REG ( clk, rst_n, ff_load, 1'd0, act_end, 1'd1, act_last_vld );
@@ -524,7 +524,7 @@ end
 
 always @( * )begin
     fram_add_vld = ff_conv && (fadd_fifo_cnt+ff_fifo_cnt)<(FRAM_BUF_NUM-1) && ~fram_add_done;
-    fram_add_lst = |cal_rpad_len ? ff_last_ich&&ff_cntr_pix==(cal_rpad_len-'d1) : ff_last_ich&&ff_last_pix&&ff_last_didx;
+    fram_add_lst = |cal_rpad_len ? ff_rpad&&ff_last_ich&&(ff_cntr_pix==(cal_rpad_len-'d1))&&ff_loop_last : ff_last_ich&&ff_last_pix&&ff_loop_last;
     fram_add_add = ff_addr;
     fram_add_rid = ff_ridx;
     fram_dat_rdy = 'd1;//~ff_fifo_full
@@ -548,7 +548,7 @@ generate
         wadd_end_din = fwei_fifo_lst;
         wadd_fid_din = fwei_fifo_fid;
         wadd_buf_din = wadd_add_ich;
-        wadd_add_din = wadd_add_ich +fnch_fifo_och*cfg_conv_ich*(cfg_conv_wei+'d1) +cfg_wram_add;
+        wadd_add_din = wadd_add_ich +fnch_fifo_och*(cfg_conv_ich+'d1)*(cfg_conv_wei+'d1) +cfg_wram_add;
     end
 endgenerate
 
@@ -571,7 +571,7 @@ always @ ( * )begin
     cfg_aram_add = CFG_ARAM_ADD;
     cfg_wram_add = CFG_WRAM_ADD;
     cfg_flag_vld = CFG_FLAG_VLD;
-    cfg_splt_ena = CFG_SPLT_ENA;
+    cfg_cpad_ena = CFG_CPAD_ENA;
     cfg_conv_ich = CFG_CONV_ICH;
     cfg_conv_och = CFG_CONV_OCH;
     cfg_conv_len = CFG_CONV_LEN;
@@ -591,8 +591,8 @@ always @ ( posedge clk or negedge rst_n )begin
         cal_last_pix <= 'd0;
     end
     else if( cfg_info_ena )begin
-        cal_lpad_len <= CFG_SPLT_ENA && PEA_GEN_LPAD ? CFG_CONV_WEI[CONV_WEI_DW -1:1] : 'd0;
-        cal_rpad_len <= CFG_SPLT_ENA && PEA_GEN_RPAD ? CFG_CONV_WEI[CONV_WEI_DW -1:1] : 'd0;
+        cal_lpad_len <= CFG_CPAD_ENA && PEA_GEN_LPAD ? CFG_CONV_WEI[CONV_WEI_DW -1:1] : 'd0;
+        cal_rpad_len <= CFG_CPAD_ENA && PEA_GEN_RPAD ? CFG_CONV_WEI[CONV_WEI_DW -1:1] : 'd0;
         cal_step_ich <= &CFG_CONV_ICH[0 +:2] ? 'd4 : 'd1;
         cal_step_pix <= CFG_STEP_LEN == 'd3 ? 'd8 : CFG_STEP_LEN == 'd2 ? 'd4 : CFG_STEP_LEN == 'd1 ? 'd2 : 'd1;
         cal_last_ich <= CFG_CONV_ICH[CONV_ICH_DW -1:2];
@@ -732,7 +732,7 @@ always @ ( posedge clk or negedge rst_n )begin
         ff_iidx <= 'd0;
     else if( fram_add_ena && ff_last_ich )
         ff_iidx <= 'd0;
-    else if( ff_tile && fram_add_ena )
+    else if( ff_conv && fram_add_ena )
         ff_iidx <= ff_iidx +cal_step_ich;
 end
 
@@ -743,7 +743,7 @@ always @ ( posedge clk or negedge rst_n )begin
         ff_cntr_ich <= 'd0;
     else if( fram_add_ena && ff_last_ich )
         ff_cntr_ich <= 'd0;
-    else if( ff_tile && fram_add_ena )
+    else if( ff_conv && fram_add_ena )//ff_tile && fram_add_ena
         ff_cntr_ich <= ff_cntr_ich+'d1;
 end
 
@@ -752,9 +752,9 @@ always @ ( posedge clk or negedge rst_n )begin
         ff_ridx <= 'd0;
     else if( ff_load )
         ff_ridx <= |cal_lpad_len ? PEA_GEN_CIDX-1 : PEA_GEN_CIDX;
-    else if( ff_lpad_done )
+    else if( ff_lpad && ff_lpad_done )
         ff_ridx <= PEA_GEN_CIDX;
-    else if( ff_tile_done )
+    else if( ff_tile && ff_tile_done )
         ff_ridx <= |cal_rpad_len ? PEA_GEN_CIDX+1 : PEA_GEN_CIDX;
 end
 
@@ -763,9 +763,11 @@ always @ ( posedge clk or negedge rst_n )begin
         ff_pidx <= 'd0;
     else if( ff_load )
         ff_pidx <= |cal_lpad_len ? CFG_CONV_LEN-{{(DILA_FAC_DW){1'd0}}, cal_lpad_len}<<cfg_dila_fac +ff_didx : ff_didx;
-    else if( ff_lpad_done )
+    else if( ff_lpad && ff_lpad_done )
         ff_pidx <= |cfg_step_len ? ff_didx+'d1 : 'd0;
-    else if( ff_tile_done )
+    else if( ff_tile && ff_tile_done )
+        ff_pidx <= |cfg_step_len ? ff_didx+'d1 : 'd0;
+    else if( ff_rpad && ff_rpad_done )
         ff_pidx <= |cfg_step_len ? ff_didx+'d1 : 'd0;
     else if( ff_conv && fram_add_ena && ff_last_ich )
         ff_pidx <= ff_pidx +cal_step_pix;
@@ -776,11 +778,13 @@ always @ ( posedge clk or negedge rst_n )begin
         ff_addr <= 'd0;
     else if( ff_load )
         ff_addr <= |cal_lpad_len ? CFG_CONV_LEN-{{(DILA_FAC_DW){1'd0}}, cal_lpad_len}<<cfg_dila_fac +ff_didx : ff_didx;
-    else if( ff_lpad_done )
+    else if( ff_lpad && ff_lpad_done )
         ff_addr <= ff_didx;
-    else if( ff_tile_done )
+    else if( ff_tile && ff_tile_done )
         ff_addr <= ff_didx;
-    else if( ff_tile && fram_add_ena )
+    else if( ff_rpad && ff_rpad_done )
+        ff_addr <= ff_didx;
+    else if( ff_conv && fram_add_ena )
         ff_addr <= ff_addr+cal_step_ich;
     else if( ff_conv && fram_add_ena && ff_last_ich )
         ff_addr <= ff_pidx +cal_step_pix;
@@ -791,7 +795,11 @@ always @ ( posedge clk or negedge rst_n )begin
         ff_cntr_pix <= 'd0;
     else if( ff_load )
         ff_cntr_pix <= 'd0;
-    else if( ff_lpad_done || ff_tile_done )
+    else if( ff_lpad && ff_lpad_done )
+        ff_cntr_pix <= 'd0;
+    else if( ff_tile && ff_tile_done )
+        ff_cntr_pix <= 'd0;
+    else if( ff_rpad && ff_rpad_done )
         ff_cntr_pix <= 'd0;
     else if( ff_conv && fram_add_ena && ff_last_ich )
         ff_cntr_pix <= ff_cntr_pix+'d1;
@@ -805,7 +813,7 @@ always @ ( posedge clk or negedge rst_n )begin
     else if( fram_add_ena && ff_conv_last && ff_last_oidx )
         ff_oidx <= 'd0;
     else if( ff_conv_last && ff_last_didx )
-        ff_oidx <= ff_oidx +'d4;
+        ff_oidx <= ff_oidx +'d1;//och//4
 end
 
 always @ ( posedge clk or negedge rst_n )begin

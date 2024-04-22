@@ -221,7 +221,7 @@ always @ ( posedge clk or negedge rst_n )begin
         psum_out_vld <= 'd0;
     else if( pe_psum_rst )
         psum_out_vld <= 'd0;
-    else if( is_addr_out_range && din_ena )
+    else if( ~pe_idle && is_addr_out_range && din_ena )
         psum_out_vld <= 'd1;
     else if( pe_psum )
         psum_out_vld <= 'd1;

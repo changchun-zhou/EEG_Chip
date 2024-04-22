@@ -228,6 +228,7 @@ wire                       cfg_stat_ena;
 wire                       cfg_maxp_ena;
 wire                       cfg_avgp_ena;
 wire                       cfg_resn_ena;
+wire                       cfg_cpad_ena;
 
 
 
@@ -1011,6 +1012,7 @@ EEG_CMD #(
     .CFG_FLAG_VLD         ( cfg_flag_vld     ),
     .CFG_STAT_VLD         ( cfg_stat_vld     ),
     .CFG_WBUF_ENA         ( cfg_wbuf_ena     ),
+    .CFG_CPAD_ENA         ( cfg_cpad_ena     ),
 
     .CFG_SPLT_LEN         ( cfg_splt_len     ),
 
@@ -1050,7 +1052,7 @@ EEG_PEA #(
     .CFG_INFO_CMD         ( peay_cfg_info_cmd ),
     .CFG_ARAM_ADD         ( cfg_aram_add      ),
     .CFG_WRAM_ADD         ( cfg_wram_add      ),
-    .CFG_SPLT_ENA         ( cfg_splt_ena      ),
+    .CFG_CPAD_ENA         ( cfg_cpad_ena      ),
     .CFG_CONV_ICH         ( cfg_conv_ich      ),
     .CFG_CONV_OCH         ( cfg_conv_och      ),
     .CFG_CONV_LEN         ( cfg_conv_len      ),

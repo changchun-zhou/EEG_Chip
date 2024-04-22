@@ -51,7 +51,7 @@ integer i;
 //RAM_IO
 wire [ARAM_NUM_DW -1:0]                      aram_add_vld= ARAM_ADD_VLD;
 wire [ARAM_NUM_DW -1:0]                      aram_add_lst= ARAM_ADD_LST;
-wire [ARAM_NUM_DW -1:0]                      aram_add_rdy= AARB_ADD_RDY;
+reg  [ARAM_NUM_DW -1:0]                      aram_add_rdy;
 wire [ARAM_NUM_DW -1:0][ARAM_NUM_AW    -1:0] aram_add_rid= ARAM_ADD_RID;
 wire [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] aram_add_add= ARAM_ADD_ADD;
 reg  [ARAM_NUM_DW -1:0]                      aram_dat_vld;
@@ -107,20 +107,28 @@ CPM_FIFO #( .DATA_WIDTH( AARB_BUF_DW ), .ADDR_WIDTH( AARB_BUF_AW ) ) AARB_FIFO_U
 //=====================================================================================================================
 genvar gen_i, gen_j;
 generate
-    for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 ) begin : RAM_DAT
+    for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
             aram_dat_vld[gen_i] = abuf_add_gnt_arb[gen_i] && ~aarb_fifo_empty[gen_i];
-            aram_dat_lst[gen_i] = aarb_dat_lst[ abuf_add_gnt_idx[gen_i] ];
+            aram_dat_lst[gen_i] = aarb_dat_lst[gen_i];//aarb_dat_lst[ abuf_add_gnt_idx[gen_i] ]; //last represents corresponding col_ram
             aram_dat_dat[gen_i] = aarb_dat_dat[ abuf_add_gnt_idx[gen_i] ];
         end
     end
 endgenerate
 
 generate
-    for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 ) begin : ARB_DAT
+    for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 )begin
+        always @ ( * )begin
+            aram_add_rdy[gen_i] = aarb_add_rdy[gen_i] && aarb_add_vld[gen_i];
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
             aarb_add_vld[gen_i] = aram_add_gnt_arb[gen_i];
-            aarb_add_lst[gen_i] = aram_add_lst[ aram_add_gnt_idx[gen_i] ];
+            aarb_add_lst[gen_i] = aram_add_lst[gen_i];//aram_add_lst[ aram_add_gnt_idx[gen_i] ]; //last represents corresponding col_ram
             aarb_add_add[gen_i] = aram_add_add[ aram_add_gnt_idx[gen_i] ];
         end
     end
@@ -129,7 +137,7 @@ endgenerate
 // Logic Design :
 //=====================================================================================================================
 generate
-    for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 ) begin : BUF_DIN
+    for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
             aarb_fifo_din[gen_i] ={aram_add_gnt_arb[gen_i], aram_add_gnt_idx[gen_i]};
             aarb_fifo_wen[gen_i] = aram_add_ena[gen_i];
@@ -139,7 +147,7 @@ generate
 endgenerate
 
 generate
-    for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 ) begin : BUF_OUT
+    for( gen_i=0 ; gen_i < ARAM_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
             abuf_add_gnt_arb[gen_i] = aarb_fifo_out[gen_i][AARB_BUF_DW  -1];
             abuf_add_gnt_idx[gen_i] = aarb_fifo_out[gen_i][0 +:ARAM_NUM_AW];

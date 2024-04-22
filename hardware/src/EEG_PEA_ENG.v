@@ -203,7 +203,7 @@ generate
     for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
         for( gen_j=0 ; gen_j < PE_COL; gen_j = gen_j+1 )begin
             always @ ( * )begin
-                pe_wei_rdy[gen_i][gen_j] = ~pe_fifo_full[gen_i][gen_j] && act_vld[gen_i] && &wei_vld[gen_i] && (&wei_lst[gen_i] || ~|wei_lst);
+                pe_wei_rdy[gen_i][gen_j] = ~pe_fifo_full[gen_i][gen_j] && act_vld[gen_i] && &wei_vld[gen_i] && (&wei_lst[gen_i] || ~|wei_lst[gen_i]);
             end
         end
     end
