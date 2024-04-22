@@ -49,4 +49,4 @@ set_attribute avoid true [find / -libcell NR4D3BWP7T    ]
 set_attribute avoid true [find / -libcell NR4D4BWP7T    ]
 set_attribute avoid true [find / -libcell GAOI21D2BWP7T ]
 set_attribute avoid true [find / -libcell GND3D2BWP7T   ]
-
+set_attribute avoid true [find / -libcell LVLLHCD*      ]
