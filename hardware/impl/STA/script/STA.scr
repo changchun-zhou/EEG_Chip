@@ -34,13 +34,120 @@ read_lib $typical_LV_lib
 read_lib $fast_HV_lib
 read_lib $fast_LV_lib
 
-read_verilog ../../work/synth/EEG_ACC/Date240416_1850_3PD_ss_Periodclk300_group_MaxDynPwr0_OptWgt0.5_Note_0p5_tc/p+r_enc/EEG_ACC_synth.v
+read_verilog ../../work/synth/EEG_ACC/Date240419_2330_3PD_HV_Periodclk10_group_MaxDynPwr0_OptWgt0.5_Note_/p+r_enc/EEG_ACC_synth.v
 set_top_module EEG_ACC
 read_power_domain -cpf ../synth/EEG_ACC.cpf
+
+##########################
+## Define Analysis View ##
+##########################
+
+create_rc_corner \
+	-name rc_corner_cworst\
+   	-preRoute_res 1\
+   	-postRoute_res 1\
+   	-preRoute_cap 1\
+   	-postRoute_cap 1\
+   	-postRoute_xcap 1\
+   	-preRoute_clkres 0\
+   	-preRoute_clkcap 0\
+   	-T 125\
+   	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cworst/qrcTechFile
+
+create_rc_corner \
+	-name rc_corner_cbest\
+   	-preRoute_res 1\
+   	-postRoute_res 1\
+   	-preRoute_cap 1\
+   	-postRoute_cap 1\
+   	-postRoute_xcap 1\
+   	-preRoute_clkres 0\
+   	-preRoute_clkcap 0\
+   	-T 0\
+   	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cbest/qrcTechFile
+
+#################################
+## Define Delay Corners: Setup ##
+#################################
+# LV
+create_library_set \
+	-name 	slow_0p45_library_set\
+   	-timing $slow_LV_lib
+
+create_delay_corner \
+	-name 		    DC_slowLV_rcworst_setup\
+   	-library_set 	slow_0p45_library_set\
+   	-rc_corner 	    rc_corner_cworst
+    # -opcond_library u055lsclpmvbdr\
+    # -opcond 	    PVT_0P45V_125C\
+update_delay_corner \
+	-name 		    DC_slowLV_rcworst_setup\
+    -power_domain   PD_CORE
+
+# HV
+create_library_set \
+	-name 	slow_1p08_library_set\
+   	-timing $slow_HV_lib
+
+create_delay_corner \
+	-name 		    DC_slowHV_rcworst_setup\
+   	-library_set 	slow_1p08_library_set\
+   	-rc_corner 	    rc_corner_cworst
+    # -opcond_library u055lsclpmvbdr\
+    # -opcond 	    PVT_1P08V_125C\
+
+update_delay_corner \
+	-name 		    DC_slowHV_rcworst_setup\
+    -power_domain   PD_SRAM
+update_delay_corner \
+	-name 		    DC_slowHV_rcworst_setup\
+    -power_domain   PD_OBUF
+ 
+#################################
+## Define Delay Corners: Hold  ##
+#################################
+# LV
+create_library_set \
+	-name 	fast_0p55_library_set\
+   	-timing $fast_LV_lib
+
+create_delay_corner \
+	-name 		    DC_fastLV_rcbest_hold\
+   	-library_set 	fast_0p55_library_set\
+   	-rc_corner 	    rc_corner_cbest
+    # -opcond_library u055lsclpmvbdr\
+    # -opcond 	    PVT_0P45V_125C\
+update_delay_corner \
+	-name 		    DC_fastLV_rcbest_hold\
+    -power_domain   PD_CORE
+
+# HV
+ create_library_set \
+	-name 	fast_1p32_library_set\
+   	-timing $fast_HV_lib
+
+create_delay_corner \
+	-name 		    DC_fastHV_rcbest_hold\
+   	-library_set 	fast_1p32_library_set\
+   	-rc_corner 	    rc_corner_cbest
+    # -opcond_library u055lsclpmvbdr\
+    # -opcond 	    PVT_1P08V_125C\
+
+update_delay_corner \
+	-name 		    DC_fastHV_rcbest_hold\
+    -power_domain   PD_SRAM
+update_delay_corner \
+	-name 		    DC_fastHV_rcbest_hold\
+    -power_domain   PD_OBUF
 
 # ##########################
 # ## Define Analysis View ##
 # ##########################
+update_analysis_view -name AV_slowHV_slowHV_rcworst_setup -delay_corner DC_slowLV_rcworst_setup
+update_analysis_view -name AV_slowHV_slowHV_rcworst_setup -delay_corner DC_slowHV_rcworst_setup
+
+update_analysis_view -name AV_fastHV_fastHV_rcbest_hold -delay_corner DC_fastLV_rcbest_hold
+update_analysis_view -name AV_fastHV_fastHV_rcbest_hold -delay_corner DC_fastHV_rcbest_hold
 
 set_analysis_view -setup {AV_slowHV_slowHV_rcworst_setup} -hold {AV_fastHV_fastHV_rcbest_hold}
 set_default_view  -setup {AV_slowHV_slowHV_rcworst_setup} -hold {AV_fastHV_fastHV_rcbest_hold}
@@ -103,5 +210,5 @@ report_constraint       -all_violators -drv_violation_type max_fanout       > ${
 report_min_pulse_width  -violation_only                                     > ${reportDir}/minPulseWidth.rpt
 report_analysis_coverage                                                    > ${reportDir}/analysisCoverage.rpt
 
-exit
+# exit
 
