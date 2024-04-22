@@ -102,62 +102,9 @@ create_operating_corner -name fast_HV_rcbest  -library_set bc_HV_lib -process 1 
 ## Define Analysis View ##
 ##########################
 
+
 create_analysis_view -name AV_slowHV_slowHV_rcworst_setup -mode PM1 -domain_corners {PD_CORE@slow_LV_rcworst PD_SRAM@slow_HV_rcworst PD_OBUF@slow_HV_rcworst}
 create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corners {PD_CORE@fast_LV_rcbest  PD_SRAM@fast_HV_rcbest  PD_OBUF@fast_HV_rcbest }
-# create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corners {PD_CORE@fast_LV_rcbest  PD_SRAM@fast_HV_rcbest  PD_OBUF@fast_HV_rcbest } -constraint_mode default_constraint_mode -delay_corner AV_slowHV_slowHV_rcworst_setup_dc
-
-
-# create_rc_corner \
-# 	-name rc_corner_cworst\
-#    	-preRoute_res 1\
-#    	-postRoute_res 1\
-#    	-preRoute_cap 1\
-#    	-postRoute_cap 1\
-#    	-postRoute_xcap 1\
-#    	-preRoute_clkres 0\
-#    	-preRoute_clkcap 0\
-#    	-T 125\
-#    	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cworst/qrcTechFile
-
-# create_rc_corner \
-# 	-name rc_corner_cbest\
-#    	-preRoute_res 1\
-#    	-postRoute_res 1\
-#    	-preRoute_cap 1\
-#    	-postRoute_cap 1\
-#    	-postRoute_xcap 1\
-#    	-preRoute_clkres 0\
-#    	-preRoute_clkcap 0\
-#    	-T 0\
-#    	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cbest/qrcTechFile
-
-# ##########################
-# ## Update Delay Corners ##
-# ##########################
-# create_library_set \
-# 	-name 	slow_0p45_library_set\
-#    	-timing $slow_LV_lib
-
-# create_delay_corner \
-# 	-name 		    AV_slowHV_slowHV_rcworst_setup_dc\
-#    	-library_set 	slow_0p45_library_set\
-#    	-rc_corner 	    rc_corner_cworst
-# # -opcond_library u055lsclpmvbdr\
-# # -opcond 	    PVT_0P35V_125C\
-
-# update_delay_corner -name AV_slowHV_slowHV_rcworst_setup_dc  \
-#  -rc_corner rc_corner_cworst
-
-# # update_delay_corner -name AV_fastHV_fastHV_rcbest_hold_dc  \
-# #  -rc_corner rc_corner_cbest
-
-# #####################################################
-# # SDC
-# #####################################################
-# create_constraint_mode \
-# 	-name 		default_constraint_mode \
-#    	-sdc_files  {/workspace/home/zhoucc/Proj_HW/EEG_Chip/hardware/impl/synth/TOP.sdc}
-
 
 
 ###############################
