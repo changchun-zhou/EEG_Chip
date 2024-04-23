@@ -172,9 +172,9 @@ create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corn
 ##########################
 
 define_level_shifter_cell \
-	-cells {LVLHLD1BWP7T} \
-	-input_voltage_range  1.08:1.19 \
-	-output_voltage_range 1.20:1.32 \
+	-cells {C3MLS} \
+	-input_voltage_range  0.45:1.32 \
+	-output_voltage_range 0.45:1.32 \
 	-input_power_pin VDD \
 	-output_power_pin ExtVDD \
 	-ground VSS \
