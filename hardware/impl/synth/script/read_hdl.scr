@@ -1,5 +1,7 @@
 set VERILOG_FILES { \
+../../src/EEG_TOP.v\
 ../../src/EEG_ACC.v\
+../../src/EEG_OBUF.v\
 ../../src/EEG_ARAM.v\
 ../../src/EEG_ARAM_ROUTER.v\
 ../../src/EEG_CMD.v\

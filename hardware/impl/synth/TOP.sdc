@@ -1,19 +1,19 @@
 set period_clk $PERIOD_CLK
 set DESIGN     $DESIGN_NAME
 
-create_clock -period $period_clk -add -name clock_clk -waveform [list 0 [expr $period_clk*0.5]] [get_ports clk]
+create_clock -period $period_clk -add -name clock_clk -waveform [list 0 [expr $period_clk*0.5]] [get_pins CHIP_CLK_PAD_U/C]
 
 set clock_list clock_clk
 
-set_clock_uncertainty -setup 0.2    [get_ports clk]
-set_clock_uncertainty -hold  0.1    [get_ports clk]
+set_clock_uncertainty -setup 0.2    [get_pins CHIP_CLK_PAD_U/C]
+set_clock_uncertainty -hold  0.1    [get_pins CHIP_CLK_PAD_U/C]
 
 set_false_path -from [list \
-    [get_ports rst_n]\
+    [get_ports RST_N_PAD]\
 ]
 
 # Margin Fixed Half Period
-set_input_delay  -clock clock_clk -rise -add_delay [expr $period_clk/2] [filter_collection [all_inputs] "full_name !~clk && full_name !~rst_n"]
+set_input_delay  -clock clock_clk -rise -add_delay [expr $period_clk/2] [filter_collection [all_inputs] "full_name !~CLK_PAD && full_name !~RST_N_PAD"]
 # Margin Fixed Half Period
 set_output_delay -clock clock_clk -rise -add_delay [expr $period_clk/2] [all_outputs]
 

@@ -5,7 +5,7 @@
 #    RTSEL: 00 tapeout, 10: Only synth for Simulation
 # 3. PERIOD_CLK
 
-set DESIGN_NAME="EEG_ACC"
+set DESIGN_NAME="EEG_TOP"
 ################################################################################
 set PERIOD_CLK="10"
 set UNGROUP="group"
