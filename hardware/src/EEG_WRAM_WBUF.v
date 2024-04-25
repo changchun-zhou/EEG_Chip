@@ -75,7 +75,7 @@ reg[HIT_ARRAY_LEN   -1 : 0] [STAT_DAT_DW    -1 : 0] hit_idx_array;
 reg[HIT_ARRAY_LEN   -1 : 0] [WRAM_DAT_DW    -1 : 0] hit_data_array;
 reg[HIT_ARRAY_LEN   -1 : 0]                         hit_data_vld;
 reg                         [HIT_ADDR_WIDTH -1 : 0] addr_idx;
-reg                                                 vld_upd_hit_data;
+reg                                                 addr_match_hit_s2;
 wire[WBUF_NUM_DW    -1 : 0] [HIT_ADDR_WIDTH -1 : 0] addr_hit_array;
 wire[$clog2(WBUF_NUM_DW)                    -1 : 0] ArbIdx;
 wire[$clog2(WBUF_NUM_DW)                    -1 : 0] ArbIdx_d;
@@ -142,17 +142,17 @@ assign MTOW_DAT_RDY = state == WORK;
 wire                        upd_hit_array_mtow;
 wire                        upd_hit_array_wram;
 wire [HIT_ARRAY_LEN -1 : 0] compare_vector_Addr_s2;
-wire                        Adr_s2_match_idx;
+wire                        Adr_s2_match_exist_idx;
 
 assign upd_hit_array_mtow = !byp & !byp_hit & MTOW_DAT_VLD & MTOW_DAT_RDY;
-assign upd_hit_array_wram = !byp & (byp_hit | vld_upd_hit_data & !hit_data_vld[addr_upd_hit_data_wram]) & WRAM_DAT_VLD & WRAM_DAT_RDY & !Adr_s2_match_idx;
+assign upd_hit_array_wram = !byp & (byp_hit | addr_match_hit_s2 & !hit_data_vld[addr_upd_hit_data_wram]) & WRAM_DAT_VLD & WRAM_DAT_RDY & !Adr_s2_match_exist_idx;
 
 generate
     for(gv_ele=0; gv_ele<HIT_ARRAY_LEN; gv_ele=gv_ele + 1) begin
         assign compare_vector_Addr_s2[gv_ele] = WCAWBF_Adr_s2 == hit_idx_array[gv_ele];
     end
 endgenerate
-assign Adr_s2_match_idx = state == WORK & |compare_vector_Addr_s2;
+assign Adr_s2_match_exist_idx = state == WORK & |compare_vector_Addr_s2;
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
@@ -182,21 +182,44 @@ always @(posedge clk or negedge rst_n) begin
         addr_idx                                <= addr_idx + 1;
     end
 end
+
+
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
-        vld_upd_hit_data        <= 1'b0;
-        addr_upd_hit_data_wram   <= 0;
+        addr_upd_hit   <= 0;
     end else if(state == IDLE) begin
-        vld_upd_hit_data        <= 1'b0;
-        addr_upd_hit_data_wram   <= 0;
+        addr_upd_hit   <= 0;
+    end else if(!byp_hit & upd_hit_array_mtow) begin
+
+    end else if(byp_hit & upd_hit_array_wram) begin
+            addr_upd_hit   <= addr_upd_hit + 1;
+            
     end else if(WRAM_ADD_VLD & WRAM_ADD_RDY) begin
-        vld_upd_hit_data        <= addr_match_hit   [ArbIdx];
-        addr_upd_hit_data_wram   <= addr_hit_array[ArbIdx];
+        addr_match_hit_s2        <= addr_match_hit   [ArbIdx];
+        addr_upd_hit   <= addr_hit_array[ArbIdx];
     end else if(WRAM_DAT_VLD & WRAM_DAT_RDY) begin
-        vld_upd_hit_data        <= 1'b0;
-        addr_upd_hit_data_wram   <= addr_hit_array[ArbIdx];
+        addr_match_hit_s2        <= 1'b0;
+        addr_upd_hit   <= addr_hit_array[ArbIdx];
     end
 end
+
+
+// always @(posedge clk or negedge rst_n) begin
+//     if(!rst_n) begin
+//         addr_match_hit_s2        <= 1'b0;
+//         addr_upd_hit_data_wram   <= 0;
+//     end else if(state == IDLE) begin
+//         addr_match_hit_s2        <= 1'b0;
+//         addr_upd_hit_data_wram   <= 0;
+//     end else if(WRAM_ADD_VLD & WRAM_ADD_RDY) begin
+//         addr_match_hit_s2        <= addr_match_hit   [ArbIdx];
+//         addr_upd_hit_data_wram   <= addr_hit_array[ArbIdx];
+//     end else if(WRAM_DAT_VLD & WRAM_DAT_RDY) begin
+//         addr_match_hit_s2        <= 1'b0;
+//         addr_upd_hit_data_wram   <= addr_hit_array[ArbIdx];
+//     end
+// end
+
 
 //=====================================================================================================================
 // Last Access
