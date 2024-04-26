@@ -75,32 +75,28 @@ create_library_set \
    	-timing $slow_LV_lib
 
 create_delay_corner \
-	-name 		    DC_slowLV_rcworst_setup\
+	-name 		    DC_rcworst_setup\
    	-library_set 	slow_0p45_library_set\
    	-rc_corner 	    rc_corner_cworst
     # -opcond_library u055lsclpmvbdr\
     # -opcond 	    PVT_0P45V_125C\
 update_delay_corner \
-	-name 		    DC_slowLV_rcworst_setup\
+	-name 		    DC_rcworst_setup\
+   	-library_set 	slow_0p45_library_set\
     -power_domain   PD_CORE
 
 # HV
 create_library_set \
 	-name 	slow_1p08_library_set\
    	-timing $slow_HV_lib
-
-create_delay_corner \
-	-name 		    DC_slowHV_rcworst_setup\
+update_delay_corner \
+	-name 		    DC_rcworst_setup\
    	-library_set 	slow_1p08_library_set\
-   	-rc_corner 	    rc_corner_cworst
-    # -opcond_library u055lsclpmvbdr\
-    # -opcond 	    PVT_1P08V_125C\
+    -power_domain   PD_SRAM
 
 update_delay_corner \
-	-name 		    DC_slowHV_rcworst_setup\
-    -power_domain   PD_SRAM
-update_delay_corner \
-	-name 		    DC_slowHV_rcworst_setup\
+	-name 		    DC_rcworst_setup\
+   	-library_set 	slow_1p08_library_set\
     -power_domain   PD_OBUF
  
 #################################
@@ -112,42 +108,35 @@ create_library_set \
    	-timing $fast_LV_lib
 
 create_delay_corner \
-	-name 		    DC_fastLV_rcbest_hold\
+	-name 		    DC_rcbest_hold\
    	-library_set 	fast_0p55_library_set\
    	-rc_corner 	    rc_corner_cbest
     # -opcond_library u055lsclpmvbdr\
     # -opcond 	    PVT_0P45V_125C\
 update_delay_corner \
-	-name 		    DC_fastLV_rcbest_hold\
+	-name 		    DC_rcbest_hold\
+   	-library_set 	fast_0p55_library_set\
     -power_domain   PD_CORE
 
 # HV
  create_library_set \
 	-name 	fast_1p32_library_set\
    	-timing $fast_HV_lib
-
-create_delay_corner \
-	-name 		    DC_fastHV_rcbest_hold\
+update_delay_corner \
+	-name 		    DC_rcbest_hold\
    	-library_set 	fast_1p32_library_set\
-   	-rc_corner 	    rc_corner_cbest
-    # -opcond_library u055lsclpmvbdr\
-    # -opcond 	    PVT_1P08V_125C\
+    -power_domain   PD_SRAM
 
 update_delay_corner \
-	-name 		    DC_fastHV_rcbest_hold\
-    -power_domain   PD_SRAM
-update_delay_corner \
-	-name 		    DC_fastHV_rcbest_hold\
+	-name 		    DC_rcbest_hold\
+   	-library_set 	fast_1p32_library_set\
     -power_domain   PD_OBUF
 
 # ##########################
 # ## Define Analysis View ##
 # ##########################
-update_analysis_view -name AV_slowHV_slowHV_rcworst_setup -delay_corner DC_slowLV_rcworst_setup
-update_analysis_view -name AV_slowHV_slowHV_rcworst_setup -delay_corner DC_slowHV_rcworst_setup
-
-update_analysis_view -name AV_fastHV_fastHV_rcbest_hold -delay_corner DC_fastLV_rcbest_hold
-update_analysis_view -name AV_fastHV_fastHV_rcbest_hold -delay_corner DC_fastHV_rcbest_hold
+update_analysis_view -name AV_slowHV_slowHV_rcworst_setup -delay_corner DC_rcworst_setup
+update_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -delay_corner DC_rcbest_hold
 
 set_analysis_view -setup {AV_slowHV_slowHV_rcworst_setup} -hold {AV_fastHV_fastHV_rcbest_hold}
 set_default_view  -setup {AV_slowHV_slowHV_rcworst_setup} -hold {AV_fastHV_fastHV_rcbest_hold}
