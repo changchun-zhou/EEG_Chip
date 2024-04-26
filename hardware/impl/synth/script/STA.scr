@@ -187,7 +187,7 @@ foreach_in_collection group [ get_path_groups -quiet ] {
 
 
 set_analysis_mode -cppr both -analysisType onChipVariation -checkType setup
-report_timing -late -net -path_type full_clock -nworst 5 -max_points 250 > ${reportDir}/report_timing_setup.rpt
+report_timing -late -net -path_type full_clock -nworst 5 -max_points 250 > ${reportDir}/report_timing_setup_250.rpt
 
 report_critical_instance -max_slack 0.0 -cost_type worst_slack -max_insts 600 > ${reportDir}/criticalInstance.rpt
 

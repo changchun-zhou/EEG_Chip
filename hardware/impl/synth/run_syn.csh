@@ -5,26 +5,36 @@
 #    RTSEL: 00 tapeout, 10: Only synth for Simulation
 # 3. PERIOD_CLK
 
-set WORK="synth"
-# set WORK="STA"
+# set WORK="synth"
+set WORK="STA"
 set DESIGN_NAME="EEG_TOP"
 ################################################################################
-set PERIOD_CLK="10"
+set PERIOD_CLK="600"
 set UNGROUP="group"
 set MAXPOWER="0" # 100MHz -> 100mW
 set OPTWGT="0.5" # Larger optimization weight, lower leakage(1/20~1/10 of Total Synth Power)
-set SDC_FILE=../synth/TOP.sdc
+set SDC_FILE="../synth/TOP.sdc"
 set TECH_SETTING="3PD_HV_C3MLS"
+set TECH=../synth/script/tech_settings.tcl
+set LEF=./script/lef_settings.tcl
+set IODELAY="500"
+
+# synth
+set HDL=./script/read_hdl.scr
+set DONTUSE=./script/DontUse.scr
+# set LV_SS="1.08"
+# set LV_TT="1.2"
+# set LV_FF="1.32"
+
+# STA
+set NETLIST=../../work/synth/EEG_TOP/Date240426_0123_3PD_HV_C3MLS_Periodclk10_group_MaxDynPwr0_OptWgt0.5_Note_/p+r_enc/EEG_TOP_synth.v
+set rc_corner_cworst_QRC=/materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cworst/qrcTechFile
+set rc_corner_cbest_QRC=/materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cbest/qrcTechFile
 set LV_SS="0.45"
 set LV_TT="0.5"
 set LV_FF="0.55"
-set TECH=../synth/script/tech_settings.tcl
-set LEF=./script/lef_settings.tcl
-set HDL=./script/read_hdl.scr
-set DONTUSE=./script/DontUse.scr
-set IODELAY="500"
-set rc_corner_cworst_QRC=/materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cworst/qrcTechFile
-set rc_corner_cbest_QRC=/materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cbest/qrcTechFile
+
+
 set NOTE=""
 
 ################################################################################
@@ -58,7 +68,8 @@ echo "set LEF           $LEF"           >> ./config_temp.tcl
 echo "set HDL           $HDL"           >> ./config_temp.tcl
 echo "set DONTUSE       $DONTUSE"       >> ./config_temp.tcl
 echo "set IODELAY       $IODELAY"       >> ./config_temp.tcl
-echo "set rc_corner_cworst_QRC $rc_corner_cworst_QRC"       >> ./config_temp.tcl
+echo "set NETLIST       $NETLIST"       >> ./config_temp.tcl
+echo "set rc_corner_cworst_QRC $rc_corner_cworst_QRC"      >> ./config_temp.tcl
 echo "set rc_corner_cbest_QRC  $rc_corner_cbest_QRC"       >> ./config_temp.tcl
 echo "              "                   >> ./define.vh # Create
 
@@ -77,7 +88,7 @@ endif
 if($WORK == "synth") then
     genus -legacy_ui -no_gui -overwrite -f ../synth/script/syn_RISC.scr -log ${SYNTH_PROJDIR}/$DESIGN_NAME.log
 else if($WORK == "STA") then
-    tempus -64 -nowin -overwrite -init ../STA/script/STA.scr -log ${SYNTH_PROJDIR}/logs/STA.log -cmd ${SYNTH_PROJDIR}/logs/STA.cmd
+    tempus -64 -overwrite -init ../synth/script/STA.scr -log ${SYNTH_PROJDIR}/logs/STA.log -cmd ${SYNTH_PROJDIR}/logs/STA.cmd
 else
     echo "<<<<<<<<<<<<<<<<<<<error WORK>>>>>>>>>>>>>>>>>>>>>>"
     exit  
