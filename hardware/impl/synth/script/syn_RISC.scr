@@ -19,11 +19,11 @@ set_attribute super_thread_servers [string repeat "localhost " 64]
 ##########################################################################
 #                     Libraries and technology files                     #
 ##########################################################################
-read_power_intent -cpf -module $DESIGN ./${DESIGN}_HV.cpf
+read_power_intent -cpf -module $DESIGN ./${DESIGN}.cpf
 # source ./script/tech_settings.tcl
 # set_attribute library $slow_LV_lib
 
-source ./script/lef_settings.tcl
+source $LEF
 set_attribute lef_library  ${tech_lef}
 
 ##########################################################################
@@ -43,7 +43,7 @@ set_attribute lp_operand_isolation_prefix "PREFIX_lp_operand_isolation"
 ##########################################################################
 #                            Read HDL files                              #
 ##########################################################################
-include ./script/read_hdl.scr
+include $HDL
 foreach VERILOG_FILE ${VERILOG_FILES} {
   read_hdl -sv ${VERILOG_FILE}
 }
@@ -56,7 +56,7 @@ foreach VERILOG_FILE ${VERILOG_FILES} {
 ##########################################################################
 #                          Don't touch cells                             #
 ##########################################################################
-source ./script/DontUse.scr
+source $DONTUSE
 
 ##########################################################################
 #                     Setup for power analysis                           #

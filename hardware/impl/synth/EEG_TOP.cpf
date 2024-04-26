@@ -1,10 +1,11 @@
+source ./config_temp.tcl
+
 #############################################################
 # CPF for EEG_ACC
 #############################################################
-
 set_cpf_version 2.0
 set_hierarchy_separator /
-set_design EEG_ACC
+set_design $DESIGN_NAME
 
 #############################################################################################
 ##                                     Library settings                                    ## 
@@ -17,21 +18,33 @@ source ../synth/script/tech_settings.tcl
 #############################################################################################
 
 define_library_set -name wc_HV_lib -libraries $slow_HV_lib
-define_library_set -name wc_LV_lib -libraries $slow_LV_lib
+if($LV_TT == "1.2") then 
+    define_library_set -name wc_LV_lib -libraries $slow_HV_lib
+else
+    define_library_set -name wc_LV_lib -libraries $slow_LV_lib
+endif
 
 #############################################################################################
 ##                                  Define typical-case library sets                       ## 
 #############################################################################################
 
 define_library_set -name tc_HV_lib -libraries $typical_HV_lib
-define_library_set -name tc_LV_lib -libraries $typical_LV_lib
+if($LV_TT == "1.2") then 
+    define_library_set -name tc_LV_lib -libraries $typical_HV_lib
+else
+    define_library_set -name tc_LV_lib -libraries $typical_LV_lib
+endif
 
 #############################################################################################
 ##                                  Define best-case library sets                          ## 
 #############################################################################################
 
 define_library_set -name bc_HV_lib -libraries $fast_HV_lib
-define_library_set -name bc_LV_lib -libraries $fast_LV_lib
+if($LV_TT == "1.2") then 
+    define_library_set -name bc_LV_lib -libraries $fast_HV_lib
+else
+    define_library_set -name bc_LV_lib -libraries $fast_LV_lib
+endif
 
 ############################
 ## Defining Power Domains ##
@@ -50,13 +63,13 @@ create_power_domain -name PD_SRAM -instances {\
 
 ## high voltage one:
 create_power_domain -name PD_OBUF -instances {\
-    OBF_U\
+    OBUF_U\
     *PAD_U}
 
 ################################
 ## Defining Power/Ground Nets ##
 ################################
-create_power_nets -nets VDD_CORE -voltage {0.5}
+create_power_nets -nets VDD_CORE -voltage {$LV_TT}
 create_power_nets -nets VDD_SRAM -voltage {1.2}
 create_power_nets -nets VDD_OBUF -voltage {1.2}
 create_ground_nets -nets VSS
@@ -77,7 +90,7 @@ create_global_connection -net VSS       -pins VSS -domain PD_OBUF
 ##############################
 
 create_nominal_condition -name high -voltage 1.2
-create_nominal_condition -name low  -voltage 0.5
+create_nominal_condition -name low  -voltage $LV_TT
 
 update_nominal_condition -name high -library_set wc_HV_lib
 update_nominal_condition -name low  -library_set wc_LV_lib
@@ -87,14 +100,14 @@ update_nominal_condition -name low  -library_set wc_LV_lib
 #######################
 
 create_power_mode -name PM1 -domain_conditions {PD_CORE@low PD_SRAM@high PD_OBUF@high} -default 
-update_power_mode -name PM1 -sdc_files {/workspace/home/zhoucc/Proj_HW/EEG_Chip/hardware/impl/synth/TOP.sdc}
+update_power_mode -name PM1 -sdc_files {$SDC_FILE}
 
 #############################
 ## Define Operation Corner ##
 #############################
 
-create_operating_corner -name slow_LV_rcworst -library_set wc_LV_lib -process 1 -voltage 0.45 -temperature 125
-create_operating_corner -name fast_LV_rcbest  -library_set bc_LV_lib -process 1 -voltage 0.55 -temperature 0
+create_operating_corner -name slow_LV_rcworst -library_set wc_LV_lib -process 1 -voltage $LV_SS -temperature 125
+create_operating_corner -name fast_LV_rcbest  -library_set bc_LV_lib -process 1 -voltage $LV_FF -temperature 0
 create_operating_corner -name slow_HV_rcworst -library_set wc_HV_lib -process 1 -voltage 1.08 -temperature 125
 create_operating_corner -name fast_HV_rcbest  -library_set bc_HV_lib -process 1 -voltage 1.32 -temperature 0
 
@@ -119,9 +132,9 @@ create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corn
 ##########################
 
 define_level_shifter_cell \
-	-cells {LVLHLD1BWP7T} \
-	-input_voltage_range 0.45:0.55 \
-	-output_voltage_range 1.08:1.32 \
+	-cells {C3MLS} \
+	-input_voltage_range  0.45:1.32 \
+	-output_voltage_range 0.45:1.32 \
 	-input_power_pin VDD \
 	-output_power_pin ExtVDD \
 	-ground VSS \
@@ -138,8 +151,8 @@ create_level_shifter_rule \
 	-to   {PD_OBUF} \
 	-from {PD_CORE}
 
-update_level_shifter_rules -names lsr1 -cells "LVLHLD1BWP7T" -location any -within_hierarchy /
-update_level_shifter_rules -names lsr2 -cells "LVLHLD1BWP7T" -location any -within_hierarchy /
+update_level_shifter_rules -names lsr1 -cells "C3MLS" -location any -within_hierarchy /
+update_level_shifter_rules -names lsr2 -cells "C3MLS" -location any -within_hierarchy /
 
 #define_level_shifter_cell \
 #	-cells {LSHLX1_FROM} \

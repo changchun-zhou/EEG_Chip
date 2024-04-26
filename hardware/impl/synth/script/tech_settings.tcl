@@ -2,16 +2,16 @@
 ## Read Library Files ##
 ########################
 
-set libdir_0p5 /workspace/home/songxy/Desktop/65nm_char/LIBRARY/ecsm/
-set libdir_1p2 /materials/technology/tsmc65/IP/StdCell/7t/tcbn65lpbwp7t_220a/tcbn65lpbwp7t_141a_ecsm/TSMCHOME/digital/Front_End/timing_power_noise/ECSM/tcbn65lpbwp7t_141a
-set libdir_ls /workspace/home/songxy/EEG_Chip/Liberate/LIB_LS/LIBRARY/ecsm
+set libdir_0p5  /workspace/home/songxy/Desktop/65nm_char/LIBRARY/ecsm/
+set libdir_1p2  /materials/technology/tsmc65/IP/StdCell/7t/tcbn65lpbwp7t_220a/tcbn65lpbwp7t_141a_ecsm/TSMCHOME/digital/Front_End/timing_power_noise/ECSM/tcbn65lpbwp7t_141a
+set libdir_ls   /workspace/home/songxy/EEG_Chip/Liberate/LIB_LS/LIBRARY/ecsm
 set libdir_sram ../../src/sram
-set libdir_pad /materials/technology/tsmc65/IP/IO/IO/tpdn65lpnv2od3_200a/tpdn65lpnv2od3_200a_nldm/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpdn65lpnv2od3_200a/
+set libdir_pad  /materials/technology/tsmc65/IP/IO/IO/tpdn65lpnv2od3_200a/tpdn65lpnv2od3_200a_nldm/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tpdn65lpnv2od3_200a/
 #############################################################################################
 ##                                  Define worst-case library sets                         ## 
 #############################################################################################
 set worst_1p08_125_memory_libs   [exec find $libdir_sram -name *ss*125c*.lib]
-set worst_ls_libs                $libdir_lsC3MLS_0p451p08c125_wc_ecsm.lib
+set worst_ls_libs                $libdir_ls/C3MLS_0p451p08c125_wc_ecsm.lib
 set worst_0p45_125_standard_libs $libdir_0p5/tcbn65lpbwp7t_0p45c125_wc_ecsm.lib
 set worst_1p08_125_standard_libs $libdir_1p2/tcbn65lpbwp7twc_ecsm.lib
 set worst_pad_lib                $libdir_pad/tpdn65lpnv2od3wc.lib

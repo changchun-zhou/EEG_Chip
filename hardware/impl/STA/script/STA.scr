@@ -2,7 +2,7 @@
 ## Static Timing Analysis ##
 ############################
 source ./config_temp.tcl
-set reportDir ${STA_PROJDIR}
+set reportDir ${SYNTH_PROJDIR}
 
 set_global report_timing_format {instance cell pin arc fanout load slew delay arrival incr_delay edge }
 set_table_style -frame
@@ -13,7 +13,7 @@ set_design_mode -process 65
 ## Read Library Files ##
 ########################
 
-source ../synth/script/tech_settings.tcl
+source $TECH
 
 #############################################################################################
 ##                                  Define worst-case library sets                         ## 
@@ -34,9 +34,9 @@ read_lib $typical_LV_lib
 read_lib $fast_HV_lib
 read_lib $fast_LV_lib
 
-read_verilog ../../work/synth/EEG_ACC/Date240419_2330_3PD_HV_Periodclk10_group_MaxDynPwr0_OptWgt0.5_Note_/p+r_enc/EEG_ACC_synth.v
-set_top_module EEG_ACC
-read_power_domain -cpf ../synth/EEG_ACC.cpf
+read_verilog $NETLIST
+set_top_module $DESIGN_NAME
+read_power_domain -cpf ../synth/$DESIGN_NAME.cpf
 
 ##########################
 ## Define Analysis View ##
@@ -52,7 +52,7 @@ create_rc_corner \
    	-preRoute_clkres 0\
    	-preRoute_clkcap 0\
    	-T 125\
-   	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cworst/qrcTechFile
+   	-qx_tech_file $rc_corner_cworst_QRC
 
 create_rc_corner \
 	-name rc_corner_cbest\
@@ -64,7 +64,7 @@ create_rc_corner \
    	-preRoute_clkres 0\
    	-preRoute_clkcap 0\
    	-T 0\
-   	-qx_tech_file /materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cbest/qrcTechFile
+   	-qx_tech_file $rc_corner_cbest_QRC
 
 #################################
 ## Define Delay Corners: Setup ##

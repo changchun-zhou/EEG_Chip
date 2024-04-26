@@ -12,10 +12,8 @@ set_false_path -from [list \
     [get_ports RST_N_PAD]\
 ]
 
-# Margin Fixed Half Period
-set_input_delay  -clock clock_clk -rise -add_delay [expr $period_clk/2] [filter_collection [all_inputs] "full_name !~CLK_PAD && full_name !~RST_N_PAD"]
-# Margin Fixed Half Period
-set_output_delay -clock clock_clk -rise -add_delay [expr $period_clk/2] [all_outputs]
+set_input_delay  -clock clock_clk -rise -add_delay [expr $period_clk-$IODELAY] [filter_collection [all_inputs] "full_name !~CLK_PAD && full_name !~RST_N_PAD"]
+set_output_delay -clock clock_clk -rise -add_delay [expr $period_clk-$IODELAY] [all_outputs]
 
 set_input_transition -min 0.05 [all_inputs]
 set_input_transition -max 0.2  [all_inputs]
