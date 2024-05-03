@@ -74,7 +74,7 @@ wire                                                byp_hit;
 reg[HIT_ARRAY_LEN   -1 : 0] [STAT_DAT_DW    -1 : 0] hit_idx_array;
 reg[HIT_ARRAY_LEN   -1 : 0] [WRAM_DAT_DW    -1 : 0] hit_data_array;
 reg[HIT_ARRAY_LEN   -1 : 0]                         hit_data_vld;
-reg                         [HIT_ADDR_WIDTH -1 : 0] addr_idx;
+reg                         [HIT_ADDR_WIDTH -1 : 0] addr_upd_idx;
 reg                                                 addr_match_hit_s2;
 wire[WBUF_NUM_DW    -1 : 0] [HIT_ADDR_WIDTH -1 : 0] addr_hit_array;
 wire[$clog2(WBUF_NUM_DW)                    -1 : 0] ArbIdx;
@@ -144,7 +144,7 @@ wire                        upd_hit_array_wram;
 wire [HIT_ARRAY_LEN -1 : 0] compare_vector_Addr_s2;
 wire                        Adr_s2_match_exist_idx;
 
-assign upd_hit_array_mtow = !byp & !byp_hit & MTOW_DAT_VLD & MTOW_DAT_RDY;
+assign upd_hit_array_mtow = !byp & !byp_hit & MTOW_DAT_VLD & MTOW_DAT_RDY; // Hit
 assign upd_hit_array_wram = !byp & (byp_hit | addr_match_hit_s2 & !hit_data_vld[addr_upd_hit_data_wram]) & WRAM_DAT_VLD & WRAM_DAT_RDY & !Adr_s2_match_exist_idx;
 
 generate
@@ -157,32 +157,63 @@ assign Adr_s2_match_exist_idx = state == WORK & |compare_vector_Addr_s2;
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
-            hit_data_array[i]<= 0;
-            hit_data_vld     <= 1'b0;
             hit_idx_array[i] <= 0;
         end
-        addr_idx            <= 0;
+    end else if(state == IDLE) begin
+        for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
+            hit_idx_array[i] <= 0;
+        end
+    end else if(upd_hit_array_mtow) begin // Over Write -> Set 0
+        hit_idx_array [addr_upd_idx] <= MTOW_DAT_DAT;
+    end else if ( upd_hit_array_wram) begin
+        hit_idx_array [addr_upd_idx] <= WCAWBF_Adr_s2;
+    end
+end
+
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        addr_upd_idx            <= 0;
+    end else if(state == IDLE) begin
+        addr_upd_idx            <= 0;
+    end else if(upd_hit_array_mtow) begin // Over Write -> Set 0
+        addr_upd_idx            <= addr_upd_idx + 1;
+    end else if (upd_hit_array_wram) begin
+        addr_upd_idx            <= addr_upd_idx + 1;
+    end
+end
+
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        addr_upd_dat            <= 0;
+    end else if(state == IDLE) begin
+        addr_upd_dat            <= 0;
+    end else if(upd_hit_array_mtow) begin 
+        addr_upd_dat            <= ;
+    end else if (upd_hit_array_wram) begin
+        addr_upd_dat            <= addr_upd_dat + 1;
+    end
+end
+
+
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
+            hit_data_array[i]<= 0;
+            hit_data_vld     <= 1'b0;
+        end
     end else if(state == IDLE) begin
         for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
             hit_data_array[i]<= 0;
             hit_data_vld     <= 1'b0;
-            hit_idx_array[i] <= 0;
         end
-        addr_idx            <= 0;
-
     end else if(upd_hit_array_mtow) begin // Over Write -> Set 0
-        hit_data_array [addr_idx] <= 0;
-        hit_data_vld   [addr_idx] <= 1'b0;
-        hit_idx_array  [addr_idx] <= MTOW_DAT_DAT;
-        addr_idx                  <= addr_idx + 1;
+        hit_data_array [addr_upd_idx] <= 0;
+        hit_data_vld   [addr_upd_idx] <= 1'b0;
     end else if ( upd_hit_array_wram) begin
         hit_data_array[addr_upd_hit_data_wram]  <= WRAM_DAT_DAT;
         hit_data_vld  [addr_upd_hit_data_wram]  <= 1'b1;
-        hit_idx_array [addr_idx]                <= WCAWBF_Adr_s2;
-        addr_idx                                <= addr_idx + 1;
     end
 end
-
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
