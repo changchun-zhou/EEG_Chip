@@ -14,8 +14,8 @@ set_attribute hdl_error_on_blackbox true
 set_attribute hdl_max_loop_limit    8192
 set_attribute hdl_track_filename_row_col true /
 
-set_attribute max_cpus_per_server 32
-set_attribute super_thread_servers [string repeat "localhost " 64]
+set_attribute max_cpus_per_server 16
+set_attribute super_thread_servers [string repeat "localhost " 32]
 ##########################################################################
 #                     Libraries and technology files                     #
 ##########################################################################
@@ -108,9 +108,21 @@ set_attribute lp_clock_gating_max_flops 16 /designs/*
 ##########################################################################
 #                         Power optimization                             #
 ##########################################################################
-set_attribute max_dynamic_power $MAXPOWER $DESIGN
-set_attribute lp_power_optimization_weight $OPTWGT /des*/*
+# 1
+set_attribute max_leakage_power $MAXLEAKAGE $DESIGN
 
+# 2. leakage power 
+set_attribute lp_multi_vt_optimization_effort medium /
+
+# 3
+set_attribute max_dynamic_power $MAXDYNAMIC $DESIGN
+
+# 4
+# set_attribute lp_optimize_dynamic_power_first true $DESIGN
+set_attribute lp_power_optimization_weight $OPTWGT $DESIGN
+
+# 5
+set_attribute lp_power_analysis_effort medium /
 
 
 ##########################################################################
@@ -162,7 +174,12 @@ foreach clock_name $clock_list {
 	path_group -from $clock_name -to $clock_name -group ${clock_name}_reg2reg
 	report timing -encounter -full_pin_names -num_paths 100 -cost_group ${clock_name}_reg2reg > ${SYNTH_PROJDIR}/rpt/path_group/${clock_name}_reg2reg.rpt
 }
-
+report summary          > ${SYNTH_PROJDIR}/rpt/${DESIGN}.summary.rpt
+report gates            > ${SYNTH_PROJDIR}/rpt/${DESIGN}.gates.rpt
+report design_rules     > ${SYNTH_PROJDIR}/rpt/${DESIGN}.rules.rpt
+report clock_gating     > ${SYNTH_PROJDIR}/rpt/${DESIGN}.clkgating.rpt
+report timing -num_paths 100     > ${SYNTH_PROJDIR}/rpt/${DESIGN}.timing_100.rpt
+report timing -num_paths 1000     > ${SYNTH_PROJDIR}/rpt/${DESIGN}.timing_1000.rpt
 report power            > ${SYNTH_PROJDIR}/rpt/power/${DESIGN}.power.rpt
 report power -depth 1   > ${SYNTH_PROJDIR}/rpt/power/${DESIGN}.power_depth1.rpt
 report power -depth 2   > ${SYNTH_PROJDIR}/rpt/power/${DESIGN}.power_depth2.rpt
@@ -178,12 +195,6 @@ report area -depth 4    > ${SYNTH_PROJDIR}/rpt/area/${DESIGN}.area_depth4.rpt
 report area -depth 5    > ${SYNTH_PROJDIR}/rpt/area/${DESIGN}.area_depth5.rpt
 report area -depth 6    > ${SYNTH_PROJDIR}/rpt/area/${DESIGN}.area_depth6.rpt
 report area -depth 7    > ${SYNTH_PROJDIR}/rpt/area/${DESIGN}.area_depth7.rpt
-report gates            > ${SYNTH_PROJDIR}/rpt/${DESIGN}.gates.rpt
-report design_rules     > ${SYNTH_PROJDIR}/rpt/${DESIGN}.rules.rpt
-report clock_gating     > ${SYNTH_PROJDIR}/rpt/${DESIGN}.clkgating.rpt
-report summary          > ${SYNTH_PROJDIR}/rpt/${DESIGN}.summary.rpt
-report timing -num_paths 100     > ${SYNTH_PROJDIR}/rpt/${DESIGN}.timing_100.rpt
-report timing -num_paths 1000     > ${SYNTH_PROJDIR}/rpt/${DESIGN}.timing_1000.rpt
 
 #### check design after synth
 check_design -all > ${SYNTH_PROJDIR}/rpt/${DESIGN}.design_post_synth.rpt
