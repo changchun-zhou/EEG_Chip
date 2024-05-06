@@ -18,24 +18,24 @@ source $TECH
 #############################################################################################
 
 define_library_set -name wc_HV_lib -libraries $slow_HV_lib
-# define_library_set -name wc_LV_lib -libraries $slow_HV_lib
-define_library_set -name wc_LV_lib -libraries $slow_LV_lib
+define_library_set -name wc_LV_lib -libraries $slow_HV_lib
+# define_library_set -name wc_LV_lib -libraries $slow_LV_lib
 
 #############################################################################################
 ##                                  Define typical-case library sets                       ## 
 #############################################################################################
 
 define_library_set -name tc_HV_lib -libraries $typical_HV_lib
-# define_library_set -name tc_LV_lib -libraries $typical_HV_lib
-define_library_set -name tc_LV_lib -libraries $typical_LV_lib
+define_library_set -name tc_LV_lib -libraries $typical_HV_lib
+# define_library_set -name tc_LV_lib -libraries $typical_LV_lib
 
 #############################################################################################
 ##                                  Define best-case library sets                          ## 
 #############################################################################################
 
 define_library_set -name bc_HV_lib -libraries $fast_HV_lib
-# define_library_set -name bc_LV_lib -libraries $fast_HV_lib
-define_library_set -name bc_LV_lib -libraries $fast_LV_lib
+define_library_set -name bc_LV_lib -libraries $fast_HV_lib
+# define_library_set -name bc_LV_lib -libraries $fast_LV_lib
 
 
 ############################
@@ -64,18 +64,20 @@ create_power_domain -name PD_OBUF -instances {\
 create_power_nets -nets VDD_CORE -voltage $LV_TT
 create_power_nets -nets VDD_SRAM -voltage {1.2}
 create_power_nets -nets VDD_OBUF -voltage {1.2}
-create_ground_nets -nets VSS
+create_ground_nets -nets VSS_CORE
+create_ground_nets -nets VSS_SRAM
+create_ground_nets -nets VSS_OBUF
 
-update_power_domain -name PD_CORE   -primary_power_net VDD_CORE -primary_ground_net VSS
-update_power_domain -name PD_SRAM   -primary_power_net VDD_SRAM -primary_ground_net VSS
-update_power_domain -name PD_OBUF   -primary_power_net VDD_OBUF -primary_ground_net VSS
+update_power_domain -name PD_CORE   -primary_power_net VDD_CORE -primary_ground_net VSS_CORE
+update_power_domain -name PD_SRAM   -primary_power_net VDD_SRAM -primary_ground_net VSS_SRAM
+update_power_domain -name PD_OBUF   -primary_power_net VDD_OBUF -primary_ground_net VSS_OBUF
 
 create_global_connection -net VDD_CORE  -pins VDD -domain PD_CORE
-create_global_connection -net VSS       -pins VSS -domain PD_CORE
+create_global_connection -net VSS_CORE  -pins VSS -domain PD_CORE
 create_global_connection -net VDD_SRAM  -pins VDD -domain PD_SRAM
-create_global_connection -net VSS       -pins VSS -domain PD_SRAM
+create_global_connection -net VSS_SRAM  -pins VSS -domain PD_SRAM
 create_global_connection -net VDD_OBUF  -pins VDD -domain PD_OBUF
-create_global_connection -net VSS       -pins VSS -domain PD_OBUF
+create_global_connection -net VSS_OBUF  -pins VSS -domain PD_OBUF
 
 ##############################
 ## Define Nominal Condition ##
