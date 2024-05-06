@@ -174,6 +174,10 @@ foreach clock_name $clock_list {
 	path_group -from $clock_name -to $clock_name -group ${clock_name}_reg2reg
 	report timing -encounter -full_pin_names -num_paths 100 -cost_group ${clock_name}_reg2reg > ${SYNTH_PROJDIR}/rpt/path_group/${clock_name}_reg2reg.rpt
 }
+
+##########################################################################
+#                              Write Reports                             #
+##########################################################################
 report summary          > ${SYNTH_PROJDIR}/rpt/${DESIGN}.summary.rpt
 report gates            > ${SYNTH_PROJDIR}/rpt/${DESIGN}.gates.rpt
 report design_rules     > ${SYNTH_PROJDIR}/rpt/${DESIGN}.rules.rpt
@@ -199,7 +203,6 @@ report area -depth 7    > ${SYNTH_PROJDIR}/rpt/area/${DESIGN}.area_depth7.rpt
 #### check design after synth
 check_design -all > ${SYNTH_PROJDIR}/rpt/${DESIGN}.design_post_synth.rpt
 report timing -verbose -lint > ${SYNTH_PROJDIR}/rpt/${DESIGN}.timing_check_post_synth.rpt
-
 
 
 puts "The RUNTIME is [get_attr runtime /] seconds"

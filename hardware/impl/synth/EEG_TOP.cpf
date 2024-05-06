@@ -1,8 +1,8 @@
 source ./config_temp.tcl
 
-#############################################################
-# CPF for EEG_ACC
-#############################################################
+#############################################################################################
+##                                     Pre-Settings                                       ## 
+#############################################################################################
 set_cpf_version 2.0
 set_hierarchy_separator /
 set_design $DESIGN_NAME
@@ -37,10 +37,9 @@ define_library_set -name bc_HV_lib -libraries $fast_HV_lib
 define_library_set -name bc_LV_lib -libraries $fast_HV_lib
 # define_library_set -name bc_LV_lib -libraries $fast_LV_lib
 
-
-############################
-## Defining Power Domains ##
-############################
+#############################################################################################
+##                                  Defining Power Domains                                 ## 
+#############################################################################################
 
 ## default one:
 create_power_domain -name PD_CORE -default
@@ -58,9 +57,9 @@ create_power_domain -name PD_OBUF -instances {\
     OBUF_U\
     *PAD_U}
 
-################################
-## Defining Power/Ground Nets ##
-################################
+#############################################################################################
+##                                  Defining Power/Ground Nets                             ## 
+#############################################################################################
 create_power_nets -nets VDD_CORE -voltage $LV_TT
 create_power_nets -nets VDD_SRAM -voltage {1.2}
 create_power_nets -nets VDD_OBUF -voltage {1.2}
@@ -79,51 +78,46 @@ create_global_connection -net VSS_SRAM  -pins VSS -domain PD_SRAM
 create_global_connection -net VDD_OBUF  -pins VDD -domain PD_OBUF
 create_global_connection -net VSS_OBUF  -pins VSS -domain PD_OBUF
 
-##############################
-## Define Nominal Condition ##
-##############################
-
+#############################################################################################
+##                                  Define Nominal Condition                               ## 
+#############################################################################################
 create_nominal_condition -name high -voltage 1.2
 create_nominal_condition -name low  -voltage $LV_TT
 
 update_nominal_condition -name high -library_set wc_HV_lib
 update_nominal_condition -name low  -library_set wc_LV_lib
 
-#######################
-## Define Power Mode ##
-#######################
+#############################################################################################
+##                                  Define Power Mode                                      ## 
+#############################################################################################
 
 create_power_mode -name PM1 -domain_conditions {PD_CORE@low PD_SRAM@high PD_OBUF@high} -default 
 update_power_mode -name PM1 -sdc_files ${SDC_FILE}
 
-#############################
-## Define Operation Corner ##
-#############################
+#############################################################################################
+##                                  Define Operation Corner                                ## 
+#############################################################################################
 
 create_operating_corner -name slow_LV_rcworst -library_set wc_LV_lib -process 1 -voltage $LV_SS -temperature 125
 create_operating_corner -name fast_LV_rcbest  -library_set bc_LV_lib -process 1 -voltage $LV_FF -temperature 0
 create_operating_corner -name slow_HV_rcworst -library_set wc_HV_lib -process 1 -voltage 1.08 -temperature 125
 create_operating_corner -name fast_HV_rcbest  -library_set bc_HV_lib -process 1 -voltage 1.32 -temperature 0
 
-
-##########################
-## Define Analysis View ##
-##########################
-
+#############################################################################################
+##                                  Define Analysis View                                   ## 
+#############################################################################################
 
 create_analysis_view -name AV_slowHV_slowHV_rcworst_setup -mode PM1 -domain_corners {PD_CORE@slow_LV_rcworst PD_SRAM@slow_HV_rcworst PD_OBUF@slow_HV_rcworst}
 create_analysis_view -name AV_fastHV_fastHV_rcbest_hold   -mode PM1 -domain_corners {PD_CORE@fast_LV_rcbest  PD_SRAM@fast_HV_rcbest  PD_OBUF@fast_HV_rcbest }
 
-
-###############################
-## Define Power Switch cells ##
-###############################
-
+#############################################################################################
+##                                  Define Power Switch cells                              ## 
+#############################################################################################
 
 
-##########################
-## Define Level Shifter ##
-##########################
+#############################################################################################
+##                                  Define Level Shifter                                   ## 
+#############################################################################################
 
 define_level_shifter_cell \
 	-cells {C3MLS} \
@@ -164,23 +158,6 @@ update_level_shifter_rules -names lsr2 -cells "C3MLS" -location any -within_hier
 #	-from {PD_CORE}
 	
 #update_level_shifter_rules -names lsr2 -cells "LSHLX1_FROM" -location from
-
-############################
-## Define Isolation cells ##
-############################
-
-
-
-#########################
-## Define Retention FF ##
-#########################
-
-
-
-#############################
-## Define AON Buffer cells ##
-#############################
-
 
 
 end_design
