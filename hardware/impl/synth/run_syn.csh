@@ -1,16 +1,24 @@
-# Check List:
+# CHECK LIST:
 # 1. PERIOD_CLK
-# 2. CPF lib #
+# 2. Tech.tcl lib
 
+#############################################################################################
+##                                  Need to Adjust                                         ## 
+#############################################################################################
 set WORK="synth"
 # set WORK="STA"
+
 set DESIGN_NAME="EEG_TOP"
-################################################################################
-set PERIOD_CLK="20"
-set UNGROUP="group"
-set MAXLEAKAGE="0" # 100MHz -> 0.16mW
+set PERIOD_CLK="15"
+set MAXLEAKAGE="0"   # 0.16mW
 set MAXDYNAMIC="1.5" # 100MHz -> 14mW
-set OPTWGT="0.8" # Larger optimization weight, lower leakage(1/20~1/10 of Total Synth Power)
+set OPTWGT="0.9" # Larger optimization weight, lower leakage
+set NOTE="3vt_leakage0"
+
+#############################################################################################
+##                                  Read Files                                             ## 
+#############################################################################################
+set UNGROUP="group"
 set SDC_FILE="../synth/TOP.sdc"
 set TECH_SETTING="3PD_HV_C3MLS_3VSS"
 set TECH=../synth/script/tech_settings.tcl
@@ -27,23 +35,24 @@ set DONTUSE=./script/DontUse.scr
 
 # STA
 set NETLIST=../../work/synth/EEG_TOP/Date240426_0123_3PD_HV_C3MLS_Periodclk10_group_MaxDynPwr0_OptWgt0.5_Note_/p+r_enc/EEG_TOP_synth.v
-set rc_corner_cworst_QRC=/materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cworst/qrcTechFile
-set rc_corner_cbest_QRC=/materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_ut-alrdl_5corners_1.0a/RC_QRC_crn65lp_1p09m+ut-alrdl_6x1z1u_mim7_cbest/qrcTechFile
+set rc_corner_cworst_QRC=/materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_alrdl_5corners_1.0a1/RC_QRC_crn65lp_1p09m+alrdl_6x1z1u_mim7_cworst/qrcTechFile
+set rc_corner_cbest_QRC=/materials/technology/tsmc65/RC_Extraction/Cadence/RC_QRC_crn65lp_1p9m_6x1z1u_mim7_alrdl_5corners_1.0a1/RC_QRC_crn65lp_1p09m+alrdl_6x1z1u_mim7_cbest/qrcTechFile
 
-set NOTE="3vt_leakage0"
-
-################################################################################
-if($PERIOD_CLK == "") then 
-    echo "<<<<<<<<<<<<<<<<<<<empty PERIOD_CLK>>>>>>>>>>>>>>>>>>>>>>"
-    exit
-endif
-
+#############################################################################################
+##                                  Create Directory                                       ## 
+#############################################################################################
 set DATE_VALUE = `date "+%y%m%d_%H%M" ` 
 set SYNTH_OUTDIR = ../../work/$WORK
 set SYNTH_PROJDIR = ${SYNTH_OUTDIR}/$DESIGN_NAME/Date${DATE_VALUE}_${TECH_SETTING}_Periodclk${PERIOD_CLK}_LV_TT${LV_TT}_${UNGROUP}_MaxLeakPwr${MAXLEAKAGE}_MaxDynPwr${MAXDYNAMIC}_OptWgt${OPTWGT}_Note_${NOTE}
 rm -rf ${SYNTH_PROJDIR}
 mkdir -p ${SYNTH_OUTDIR}/$DESIGN_NAME ${SYNTH_PROJDIR}
 
+cp -r ../../src  ${SYNTH_PROJDIR}
+cp -r ../../impl ${SYNTH_PROJDIR}
+
+#############################################################################################
+##                                  Write Variable File                                    ## 
+#############################################################################################
 rm ./config_temp.tcl
 rm ./define.vh
 
@@ -69,9 +78,6 @@ echo "set rc_corner_cworst_QRC $rc_corner_cworst_QRC"      >> ./config_temp.tcl
 echo "set rc_corner_cbest_QRC  $rc_corner_cbest_QRC"       >> ./config_temp.tcl
 echo "              "                   >> ./define.vh # Create
 
-cp -r ../../src  ${SYNTH_PROJDIR}
-cp -r ../../impl ${SYNTH_PROJDIR}
-
 if( $UNGROUP == "group") then 
   echo "set UNGROUP none" >> ./config_temp.tcl
 else if( $UNGROUP == "ungroup") then 
@@ -81,6 +87,9 @@ else
     exit  
 endif 
 
+#############################################################################################
+##                                  Start Synth/STA                                        ## 
+#############################################################################################
 if($WORK == "synth") then
     genus -legacy_ui -no_gui -overwrite -f ../synth/script/syn_RISC.scr -log ${SYNTH_PROJDIR}/$DESIGN_NAME.log
 else if($WORK == "STA") then
