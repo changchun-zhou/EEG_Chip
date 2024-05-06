@@ -91,6 +91,10 @@ wire [WBUF_NUM_DW   -1 : 0][WRAM_ADD_AW + 1 -1 : 0] PortRdAddrLst;
 genvar                                              gv_port;
 genvar                                              gv_ele;
 integer                                             i;
+reg [HIT_ADDR_WIDTH     -1 : 0] addr_upd_dat_loop;
+reg [HIT_ADDR_WIDTH     -1 : 0] addr_upd_dat_mtow;
+wire[HIT_ADDR_WIDTH     -1 : 0] addr_upd_dat;
+
 
 //=====================================================================================================================
 // Logic Design: FSM
@@ -132,20 +136,28 @@ always @(posedge clk or negedge rst_n) begin
 end
 assign {byp_hit, byp} = cfg_isa;
 
-wire [WBUF_NUM_DW  -1 : 0] addr_match_hit;
+reg [WBUF_NUM_DW  -1 : 0] addr_match_hit;
 
 //=====================================================================================================================
 // High Hit Array
 //=====================================================================================================================
+// Mode0: byp; Mode1: Direct loop w/o mtow; Mode2: mtow enables
 assign MTOW_DAT_RDY = state == WORK;
 
-wire                        upd_hit_array_mtow;
-wire                        upd_hit_array_wram;
+wire                        upd_hit_idx;
+wire                        upd_hit_data;
 wire [HIT_ARRAY_LEN -1 : 0] compare_vector_Addr_s2;
 wire                        Adr_s2_match_exist_idx;
+wire                        wram_en_upd;
+wire                        hit_en_upd;
 
-assign upd_hit_array_mtow = !byp & !byp_hit & MTOW_DAT_VLD & MTOW_DAT_RDY; // Hit
-assign upd_hit_array_wram = !byp & (byp_hit | addr_match_hit_s2 & !hit_data_vld[addr_upd_hit_data_wram]) & WRAM_DAT_VLD & WRAM_DAT_RDY & !Adr_s2_match_exist_idx;
+// Update Hit Idx
+assign wram_en_upd = WRAM_DAT_VLD & WRAM_DAT_RDY & !Adr_s2_match_exist_idx;
+assign upd_hit_idx = !byp & (byp_hit? wram_en_upd : MTOW_DAT_VLD & MTOW_DAT_RDY );
+
+// Update Hit Data
+assign hit_en_upd = addr_match_hit_s2 & !hit_data_vld[addr_upd_hit_data_wram];
+assign upd_hit_data = !byp & (byp_hit | hit_en_upd) & wram_en_upd;
 
 generate
     for(gv_ele=0; gv_ele<HIT_ARRAY_LEN; gv_ele=gv_ele + 1) begin
@@ -156,6 +168,15 @@ assign Adr_s2_match_exist_idx = state == WORK & |compare_vector_Addr_s2;
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
+        addr_upd_idx            <= 0;
+    end else if(state == IDLE) begin
+        addr_upd_idx            <= 0;
+    end else if(upd_hit_idx) begin // Over Write -> Set 0
+        addr_upd_idx            <= addr_upd_idx + 1;
+    end
+end
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
         for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
             hit_idx_array[i] <= 0;
         end
@@ -163,94 +184,58 @@ always @(posedge clk or negedge rst_n) begin
         for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
             hit_idx_array[i] <= 0;
         end
-    end else if(upd_hit_array_mtow) begin // Over Write -> Set 0
-        hit_idx_array [addr_upd_idx] <= MTOW_DAT_DAT;
-    end else if ( upd_hit_array_wram) begin
-        hit_idx_array [addr_upd_idx] <= WCAWBF_Adr_s2;
+    end else if(upd_hit_idx) begin
+        hit_idx_array [addr_upd_idx] <= byp_hit? WCAWBF_Adr_s2 : MTOW_DAT_DAT;
     end
 end
 
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
-        addr_upd_idx            <= 0;
+        addr_upd_dat_loop     <= 0;
     end else if(state == IDLE) begin
-        addr_upd_idx            <= 0;
-    end else if(upd_hit_array_mtow) begin // Over Write -> Set 0
-        addr_upd_idx            <= addr_upd_idx + 1;
-    end else if (upd_hit_array_wram) begin
-        addr_upd_idx            <= addr_upd_idx + 1;
+        addr_upd_dat_loop     <= 0;
+    end else if (upd_hit_data & byp_hit) begin
+        addr_upd_dat_loop     <= addr_upd_dat_loop + 1;
     end
 end
-
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
-        addr_upd_dat            <= 0;
+        addr_match_hit_s2   <= 0;
     end else if(state == IDLE) begin
-        addr_upd_dat            <= 0;
-    end else if(upd_hit_array_mtow) begin 
-        addr_upd_dat            <= ;
-    end else if (upd_hit_array_wram) begin
-        addr_upd_dat            <= addr_upd_dat + 1;
-    end
-end
-
-
-always @(posedge clk or negedge rst_n) begin
-    if(!rst_n) begin
-        for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
-            hit_data_array[i]<= 0;
-            hit_data_vld     <= 1'b0;
-        end
-    end else if(state == IDLE) begin
-        for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
-            hit_data_array[i]<= 0;
-            hit_data_vld     <= 1'b0;
-        end
-    end else if(upd_hit_array_mtow) begin // Over Write -> Set 0
-        hit_data_array [addr_upd_idx] <= 0;
-        hit_data_vld   [addr_upd_idx] <= 1'b0;
-    end else if ( upd_hit_array_wram) begin
-        hit_data_array[addr_upd_hit_data_wram]  <= WRAM_DAT_DAT;
-        hit_data_vld  [addr_upd_hit_data_wram]  <= 1'b1;
-    end
-end
-
-always @(posedge clk or negedge rst_n) begin
-    if(!rst_n) begin
-        addr_upd_hit   <= 0;
-    end else if(state == IDLE) begin
-        addr_upd_hit   <= 0;
-    end else if(!byp_hit & upd_hit_array_mtow) begin
-
-    end else if(byp_hit & upd_hit_array_wram) begin
-            addr_upd_hit   <= addr_upd_hit + 1;
-            
+        addr_match_hit_s2   <= 0;
     end else if(WRAM_ADD_VLD & WRAM_ADD_RDY) begin
-        addr_match_hit_s2        <= addr_match_hit   [ArbIdx];
-        addr_upd_hit   <= addr_hit_array[ArbIdx];
+        addr_match_hit_s2   <= addr_match_hit   [ArbIdx];
     end else if(WRAM_DAT_VLD & WRAM_DAT_RDY) begin
-        addr_match_hit_s2        <= 1'b0;
-        addr_upd_hit   <= addr_hit_array[ArbIdx];
+        addr_match_hit_s2   <= 1'b0;
     end
 end
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        addr_upd_dat_mtow   <= 0;
+    end else if(state == IDLE) begin
+        addr_upd_dat_mtow   <= 0;
+    end else if(!byp_hit & WRAM_ADD_VLD & WRAM_ADD_RDY) begin
+        addr_upd_dat_mtow   <= addr_hit_array[ArbIdx];
+    end
+end
+assign addr_upd_dat = byp_hit? addr_upd_dat_loop :  addr_upd_dat_mtow;
 
-
-// always @(posedge clk or negedge rst_n) begin
-//     if(!rst_n) begin
-//         addr_match_hit_s2        <= 1'b0;
-//         addr_upd_hit_data_wram   <= 0;
-//     end else if(state == IDLE) begin
-//         addr_match_hit_s2        <= 1'b0;
-//         addr_upd_hit_data_wram   <= 0;
-//     end else if(WRAM_ADD_VLD & WRAM_ADD_RDY) begin
-//         addr_match_hit_s2        <= addr_match_hit   [ArbIdx];
-//         addr_upd_hit_data_wram   <= addr_hit_array[ArbIdx];
-//     end else if(WRAM_DAT_VLD & WRAM_DAT_RDY) begin
-//         addr_match_hit_s2        <= 1'b0;
-//         addr_upd_hit_data_wram   <= addr_hit_array[ArbIdx];
-//     end
-// end
-
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
+            hit_data_array[i]<= 0;
+            hit_data_vld     <= 1'b0;
+        end
+    end else if(state == IDLE) begin
+        for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
+            hit_data_array[i]<= 0;
+            hit_data_vld     <= 1'b0;
+        end
+    end else if ( upd_hit_data) begin
+        hit_data_array[addr_upd_dat]  <= WRAM_DAT_DAT;
+        hit_data_vld  [addr_upd_dat]  <= 1'b1;
+    end
+end
 
 //=====================================================================================================================
 // Last Access
