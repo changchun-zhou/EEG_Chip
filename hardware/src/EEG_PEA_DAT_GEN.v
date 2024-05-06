@@ -388,7 +388,7 @@ reg  [FRAM_DAT_AW   :0] ff_flag_sum;
 wire [FRAM_BUF_AW   :0] ff_fifo_cnt;
 
 wire [ARAM_ADD_AW -1:0] ff_fifo_aram_add = ff_fifo_pdx +(ff_fifo_idx+ff_flag_idx)*(cfg_conv_len+'d1);// +ff_fifo_ddx;
-wire [ARAM_ADD_AW -1:0] ff_fifo_aact_add = ff_fifo_pdx + ff_fifo_odx*(cfg_conv_len+'d1);// +ff_fifo_ddx;
+wire [ARAM_ADD_AW -1:0] ff_fifo_aact_add = ff_fifo_lpad ? ff_fifo_ddx +ff_fifo_odx*(cfg_conv_len+'d1) : ff_fifo_pdx +ff_fifo_odx*(cfg_conv_len+'d1);// +ff_fifo_ddx;
 wire [CONV_ICH_DW -1:0] ff_fifo_wram_idx = ff_fifo_idx + ff_flag_idx;
 
 assign ff_fifo_ren = ~ff_fifo_empty && fw_fifo_rdy && fa_fifo_rdy && ff_flag_sum<='d1;
@@ -547,7 +547,7 @@ generate
         wadd_lst_din = fnch_fifo_lst && fwei_fifo_lst;
         wadd_end_din = fwei_fifo_lst;
         wadd_fid_din = fwei_fifo_fid;
-        wadd_buf_din = wadd_add_ich;
+        wadd_buf_din ={fwei_fifo_wid, fnch_fifo_ich};
         wadd_add_din = wadd_add_ich +fnch_fifo_och*(cfg_conv_ich+'d1)*(cfg_conv_wei+'d1) +cfg_wram_add;
     end
 endgenerate
@@ -662,7 +662,7 @@ generate
     for( gen_i=0 ; gen_i < WWEI_MAXLEN; gen_i = gen_i+1 )begin
         always @( * )begin
             fwei_last_din[gen_i] = fwei_fifo_num<=gen_i;
-            fwei_wfid_din[gen_i] = gen_i;
+            fwei_wfid_din[gen_i] = ff_fifo_rpad ? gen_i +ff_fifo_pct +'d1 : gen_i;//for act_add wont go forward for rpad
         end
     end
 endgenerate
@@ -747,43 +747,52 @@ always @ ( posedge clk or negedge rst_n )begin
         ff_cntr_ich <= ff_cntr_ich+'d1;
 end
 
+wire [2 -1:0] PEA_GEN_CIDX_M1 = PEA_GEN_CIDX-'d1;
+wire [2 -1:0] PEA_GEN_CIDX_A1 = PEA_GEN_CIDX+'d1;
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
         ff_ridx <= 'd0;
     else if( ff_load )
-        ff_ridx <= |cal_lpad_len ? PEA_GEN_CIDX-1 : PEA_GEN_CIDX;
+        ff_ridx <= |cal_lpad_len ? PEA_GEN_CIDX_M1 : PEA_GEN_CIDX;
     else if( ff_lpad && ff_lpad_done )
         ff_ridx <= PEA_GEN_CIDX;
     else if( ff_tile && ff_tile_done )
-        ff_ridx <= |cal_rpad_len ? PEA_GEN_CIDX+1 : PEA_GEN_CIDX;
+        ff_ridx <= |cal_rpad_len ? PEA_GEN_CIDX_A1 : |cal_lpad_len ? PEA_GEN_CIDX_M1 : PEA_GEN_CIDX;
+    else if( ff_rpad && ff_rpad_done )
+        ff_ridx <= |cal_lpad_len ? PEA_GEN_CIDX_M1 : PEA_GEN_CIDX;
 end
 
+wire [CONV_LEN_DW -1:0] ff_pidx_lpad = |cal_lpad_len ? CFG_CONV_LEN +'d1 -{{(DILA_FAC_DW){1'd0}}, cal_lpad_len}<<cfg_dila_fac : 'd0;
+wire [DILA_LEN_DW -1:0] ff_pidx_didx = |cfg_step_len ? ff_didx +'d1 : 'd0;
+wire [CONV_LEN_DW -1:0] ff_pidx_next = ff_pidx_lpad +ff_pidx_didx;
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
         ff_pidx <= 'd0;
     else if( ff_load )
-        ff_pidx <= |cal_lpad_len ? CFG_CONV_LEN-{{(DILA_FAC_DW){1'd0}}, cal_lpad_len}<<cfg_dila_fac +ff_didx : ff_didx;
+        ff_pidx <= ff_pidx_lpad;
     else if( ff_lpad && ff_lpad_done )
-        ff_pidx <= |cfg_step_len ? ff_didx+'d1 : 'd0;
+        ff_pidx <= ff_pidx_didx;
     else if( ff_tile && ff_tile_done )
-        ff_pidx <= |cfg_step_len ? ff_didx+'d1 : 'd0;
+        ff_pidx <= |cal_rpad_len ? ff_pidx_didx : ff_pidx_next;
     else if( ff_rpad && ff_rpad_done )
-        ff_pidx <= |cfg_step_len ? ff_didx+'d1 : 'd0;
+        ff_pidx <= ff_pidx_next;
     else if( ff_conv && fram_add_ena && ff_last_ich )
         ff_pidx <= ff_pidx +cal_step_pix;
 end
 
+wire [DILA_LEN_DW -1:0] ff_addr_didx = |cfg_step_len ? ff_didx : 'd0;
+wire [FRAM_ADD_AW -1:0] ff_addr_next = ff_pidx_lpad +ff_addr_didx;
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
         ff_addr <= 'd0;
     else if( ff_load )
-        ff_addr <= |cal_lpad_len ? CFG_CONV_LEN-{{(DILA_FAC_DW){1'd0}}, cal_lpad_len}<<cfg_dila_fac +ff_didx : ff_didx;
+        ff_addr <= ff_pidx_lpad;
     else if( ff_lpad && ff_lpad_done )
-        ff_addr <= ff_didx;
+        ff_addr <= ff_addr_didx;
     else if( ff_tile && ff_tile_done )
-        ff_addr <= ff_didx;
+        ff_addr <= |cal_rpad_len ? ff_addr_didx : ff_addr_next;
     else if( ff_rpad && ff_rpad_done )
-        ff_addr <= ff_didx;
+        ff_addr <= ff_addr_next;
     else if( ff_conv && fram_add_ena )
         ff_addr <= ff_addr+cal_step_ich;
     else if( ff_conv && fram_add_ena && ff_last_ich )
@@ -863,6 +872,19 @@ end
 
 `ifdef ASSERT_ON
 
+localparam ASS_WNCH_BUF_DW = CONV_LEN_DW;
+
+wire ass_fnch_fifo_wen = ff_fifo_wen_rdy;
+wire ass_fnch_fifo_ren = fwei_fifo_ren && fwei_fifo_lst;
+wire ass_fnch_fifo_empty;
+wire ass_fnch_fifo_full;
+wire [ASS_WNCH_BUF_DW -1:0] ass_fnch_fifo_din = {ff_fifo_pdx};
+wire [ASS_WNCH_BUF_DW -1:0] ass_fnch_fifo_out;
+wire [WNCH_BUF_AW   :0] ass_fnch_fifo_cnt;
+wire [CONV_LEN_DW -1:0] fnch_fifo_pdx = ass_fnch_fifo_out;
+CPM_FIFO      #( .DATA_WIDTH( ASS_WNCH_BUF_DW ), .ADDR_WIDTH( WNCH_BUF_AW ) )ASS_FNCH_FIFO_U( clk, rst_n, 1'd0, ass_fnch_fifo_wen, ass_fnch_fifo_ren, ass_fnch_fifo_din, ass_fnch_fifo_out, ass_fnch_fifo_empty, ass_fnch_fifo_full, ass_fnch_fifo_cnt);
+
+//ass cnt
 wire [32 -1:0] ass_aram_add_cnt;
 wire [32 -1:0] ass_aram_dat_cnt;
 wire [32 -1:0] ass_fram_add_cnt;

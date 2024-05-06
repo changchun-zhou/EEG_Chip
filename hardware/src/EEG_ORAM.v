@@ -31,6 +31,7 @@ module EEG_ORAM #(
     input                                                         CFG_INFO_VLD,
     output                                                        CFG_INFO_RDY,
     input  [ORAM_CMD_DW                                     -1:0] CFG_INFO_CMD,
+    input  [OMUX_NUM_DW                                     -1:0] CFG_OMUX_IDX,//FOR POOL_OMUX
     input  [CONV_LEN_DW                                     -1:0] CFG_CONV_LEN,
     input  [POOL_LEN_DW                                     -1:0] CFG_POOL_LEN,
     input  [POOL_FAC_DW                                     -1:0] CFG_POOL_FAC,
@@ -60,8 +61,9 @@ module EEG_ORAM #(
 //=====================================================================================================================
 localparam OMUX_ADD_DW = 1<<OMUX_ADD_AW;
 localparam ORAM_BUF_DW = OMUX_ADD_AW+ORAM_DAT_DW+1;
-localparam ORAM_BUF_AW = 1;
-localparam POOL_FAC_LW = 4;
+localparam ORAM_BUF_AW = 2;
+localparam POOL_WEI_DW = 3;
+localparam POOL_DAT_DW = ORAM_DAT_DW+POOL_WEI_DW;
 
 localparam ORAM_STATE = ORAM_CMD_DW;
 localparam ORAM_IDLE  = 9'b00000001;
@@ -88,13 +90,14 @@ wire oram_ptoo = oram_conv || oram_resn;
 assign IS_IDLE = oram_idle;
 reg [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0] zero_lst_done;
 reg [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0] conv_lst_done;
-reg [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0] pool_lst_done;
+reg [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0] resn_lst_done;
+reg [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0] pool_lst_done, pool_add_done;
 reg [ORAM_NUM_DW -1:0]                   otoa_lst_done;
 reg                                      read_lst_done;
 
 wire oram_zero_done = &zero_lst_done;
 wire oram_conv_done = &conv_lst_done;
-wire oram_resn_done = &conv_lst_done;
+wire oram_resn_done = &resn_lst_done;
 wire oram_pool_done = &pool_lst_done;
 wire oram_otoa_done = &otoa_lst_done;
 wire oram_stat_done = &otoa_lst_done;//same with otoa
@@ -111,10 +114,11 @@ assign CFG_INFO_RDY = cfg_info_rdy;
 
 wire cfg_info_ena = cfg_info_vld & cfg_info_rdy;
 reg  [ORAM_CMD_DW  -1:0] cfg_info_cmd;
+reg  [OMUX_NUM_DW  -1:0] cfg_omux_idx;
 reg  [CONV_LEN_DW  -1:0] cfg_conv_len;
 reg  [POOL_LEN_DW  -1:0] cfg_pool_len;
 reg  [POOL_FAC_DW  -1:0] cfg_pool_fac;
-reg  [POOL_FAC_LW  -1:0] cal_pool_len;
+reg  [POOL_WEI_DW  -1:0] cfg_pool_wei;
 reg                      cfg_relu_ena;
 reg                      cfg_splt_ena;
 reg                      cfg_comb_ena;
@@ -164,7 +168,13 @@ reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] etoo_buf_dat;
 wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_BUF_AW   :0] etoo_buf_cnt;
 
 //RES
-reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW   :0] oram_res_dat;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   oram_res_vld;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] oram_res_dat;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW -1:0] oram_res_add;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   oram_res_lst;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW   :0] oram_res_dat_add;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] oram_res_dat_clp;
+CPM_CLP #( ORAM_DAT_DW+1, ORAM_DAT_DW ) ORAM_RES_DAT_CLP_U[ORAM_NUM_DW*OMUX_NUM_DW -1:0] ( oram_res_dat_add, oram_res_dat_clp );
 
 reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW -1:0] oram_din_cnt;
 reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW -1:0] oram_add_cnt;
@@ -185,13 +195,19 @@ wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   ram_oram_add_rdy;
 reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][OMUX_ADD_AW -1:0] ram_oram_add_add;
 wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   ram_oram_dat_vld;
 wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   ram_oram_dat_lst;
-wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   ram_oram_dat_rdy;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   ram_oram_dat_rdy;
 wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] ram_oram_dat_dat;
 
 wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   ram_oram_din_ena = ram_oram_din_vld & ram_oram_din_rdy;
 wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   ram_oram_add_ena = ram_oram_add_vld & ram_oram_add_rdy;
 wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0]                   ram_oram_dat_ena = ram_oram_dat_vld & ram_oram_dat_rdy;
-reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW+POOL_FAC_DW -1:0] ram_pool_dat_dat;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][POOL_DAT_DW -1:0] pool_dat_reg;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][POOL_DAT_DW -1:0] pool_dat_add;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][POOL_DAT_DW -1:0] pool_dat_sft;
+wire [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] pool_dat_avg;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] pool_dat_max;
+reg  [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0][ORAM_DAT_DW -1:0] pool_dat_dat;
+CPM_CLP #( POOL_DAT_DW, ORAM_DAT_DW ) POOL_DAT_CLP_U[ORAM_NUM_DW*OMUX_NUM_DW -1:0] ( pool_dat_sft, pool_dat_avg );
 
 CPM_FIFO #( .DATA_WIDTH( ORAM_BUF_DW ), .ADDR_WIDTH( ORAM_BUF_AW ) ) ORAM_FIFO_U[ORAM_NUM_DW*OMUX_NUM_DW -1:0] ( clk, rst_n, 1'd0, etoo_buf_wen, etoo_buf_ren, etoo_buf_din, etoo_buf_out, etoo_buf_empty, etoo_buf_full, etoo_buf_cnt);
 //=====================================================================================================================
@@ -201,26 +217,28 @@ genvar gen_i, gen_j;
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )begin
         cfg_info_cmd <= 'd0;
+        cfg_omux_idx <= 'd0;
         cfg_conv_len <= 'd0;
         cfg_pool_len <= 'd0;
         cfg_pool_fac <= 'd0;
+        cfg_pool_wei <= 'd0;
         cfg_relu_ena <= 'd0;
         cfg_splt_ena <= 'd0;
         cfg_comb_ena <= 'd0;
         cfg_maxp_ena <= 'd0;
         cfg_avgp_ena <= 'd0;
-        cal_pool_len <= 'd0;
     end else if( cfg_info_ena )begin
         cfg_info_cmd <= CFG_INFO_CMD;
+        cfg_omux_idx <= CFG_OMUX_IDX;
         cfg_conv_len <= CFG_CONV_LEN;
         cfg_pool_len <= CFG_POOL_LEN;
         cfg_pool_fac <= CFG_POOL_FAC;
+        cfg_pool_wei <= (1<<CFG_POOL_FAC) -'d1;
         cfg_relu_ena <= CFG_RELU_ENA;
         cfg_splt_ena <= CFG_SPLT_ENA;
         cfg_comb_ena <= CFG_COMB_ENA;
         cfg_maxp_ena <= CFG_MAXP_ENA;
         cfg_avgp_ena <= CFG_AVGP_ENA;
-        cal_pool_len <= 1<<CFG_POOL_FAC;
     end
 end
 
@@ -255,9 +273,9 @@ generate
         for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
             always @ ( posedge clk or negedge rst_n )begin
                 if( ~rst_n )
-                    zero_lst_done[gen_i][gen_j] <= 'd0;
+                    zero_lst_done[gen_i][gen_j] <= 'd1;
                 else if( cfg_info_ena )
-                    zero_lst_done[gen_i][gen_j] <= 'd0;
+                    zero_lst_done[gen_i][gen_j] <= ~(CFG_INFO_CMD==ORAM_ZERO);
                 else if( ram_oram_din_ena[gen_i][gen_j] && &oram_din_cnt[gen_i][gen_j] )
                     zero_lst_done[gen_i][gen_j] <= 'd1;
             end
@@ -270,9 +288,9 @@ generate
         for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
             always @ ( posedge clk or negedge rst_n )begin
                 if( ~rst_n )
-                    conv_lst_done[gen_i][gen_j] <= 'd0;
+                    conv_lst_done[gen_i][gen_j] <= 'd1;
                 else if( cfg_info_ena )
-                    conv_lst_done[gen_i][gen_j] <= 'd0;
+                    conv_lst_done[gen_i][gen_j] <= ~(CFG_INFO_CMD==ORAM_CONV);
                 else if( etoo_buf_ren[gen_i][gen_j] && etoo_buf_lst[gen_i][gen_j] )
                     conv_lst_done[gen_i][gen_j] <= 'd1;
             end
@@ -285,10 +303,40 @@ generate
         for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
             always @ ( posedge clk or negedge rst_n )begin
                 if( ~rst_n )
-                    pool_lst_done[gen_i][gen_j] <= 'd0;
+                    resn_lst_done[gen_i][gen_j] <= 'd1;
                 else if( cfg_info_ena )
-                    pool_lst_done[gen_i][gen_j] <= 'd0;
-                else if( ram_oram_din_ena[gen_i][gen_j] && (oram_din_cnt[gen_i][gen_j]==oram_din_cnt_last[gen_i][gen_j]) )
+                    resn_lst_done[gen_i][gen_j] <= ~(CFG_INFO_CMD==ORAM_RESN);
+                else if( oram_res_vld[gen_i][gen_j] && oram_res_lst[gen_i][gen_j] )
+                    resn_lst_done[gen_i][gen_j] <= 'd1;
+            end
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
+        for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
+            always @ ( posedge clk or negedge rst_n )begin
+                if( ~rst_n )
+                    pool_add_done[gen_i][gen_j] <= 'd1;
+                else if( cfg_info_ena )
+                    pool_add_done[gen_i][gen_j] <= ~(CFG_INFO_CMD==ORAM_POOL);
+                else if( ram_oram_add_ena[gen_i][gen_j] && ram_oram_add_lst[gen_i][gen_j] )
+                    pool_add_done[gen_i][gen_j] <= 'd1;
+            end
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
+        for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
+            always @ ( posedge clk or negedge rst_n )begin
+                if( ~rst_n )
+                    pool_lst_done[gen_i][gen_j] <= 'd1;
+                else if( cfg_info_ena )
+                    pool_lst_done[gen_i][gen_j] <= ~(CFG_INFO_CMD==ORAM_POOL);
+                else if( ram_oram_din_ena[gen_i][gen_j] && etoo_buf_lst[gen_i][gen_j] )
                     pool_lst_done[gen_i][gen_j] <= 'd1;
             end
         end
@@ -322,9 +370,30 @@ generate
     for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
         for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
             always @ ( * )begin
-                etoo_buf_wen[gen_i][gen_j] = oram_ptoo && etoo_dat_vld[gen_i][gen_j] && etoo_dat_rdy[gen_i][gen_j];
-                etoo_buf_ren[gen_i][gen_j] = oram_ptoo && ram_oram_din_vld[gen_i][gen_j] && ram_oram_din_rdy[gen_i][gen_j];
-                etoo_buf_din[gen_i][gen_j] = {etoo_dat_lst[gen_i][gen_j], etoo_dat_add[gen_i][gen_j], etoo_dat_dat[gen_i][gen_j]};
+                case( oram_cs )
+                    ORAM_CONV: etoo_buf_wen[gen_i][gen_j] = etoo_dat_vld[gen_i][gen_j] && etoo_dat_rdy[gen_i][gen_j];
+                    ORAM_RESN: etoo_buf_wen[gen_i][gen_j] = etoo_dat_vld[gen_i][gen_j] && etoo_dat_rdy[gen_i][gen_j];
+                    ORAM_POOL: etoo_buf_wen[gen_i][gen_j] = ram_oram_dat_ena[gen_i][gen_j] && oram_avg_cnt[gen_i][gen_j]==cfg_pool_wei;
+                    default  : etoo_buf_wen[gen_i][gen_j] = 'd0;
+                endcase
+            end
+            
+            always @ ( * )begin
+                case( oram_cs )
+                    ORAM_CONV: etoo_buf_din[gen_i][gen_j] = {etoo_dat_lst[gen_i][gen_j], etoo_dat_add[gen_i][gen_j], etoo_dat_dat[gen_i][gen_j]};
+                    ORAM_RESN: etoo_buf_din[gen_i][gen_j] = {etoo_dat_lst[gen_i][gen_j], etoo_dat_add[gen_i][gen_j], etoo_dat_dat[gen_i][gen_j]};
+                    ORAM_POOL: etoo_buf_din[gen_i][gen_j] = {ram_oram_dat_lst[gen_i][gen_j], oram_din_cnt[gen_i][gen_j], pool_dat_dat[gen_i][gen_j]};
+                    default  : etoo_buf_din[gen_i][gen_j] = 'd0;
+                endcase
+            end
+            
+            always @ ( * )begin
+                case( oram_cs )
+                    ORAM_CONV: etoo_buf_ren[gen_i][gen_j] = ram_oram_din_vld[gen_i][gen_j] && ram_oram_din_rdy[gen_i][gen_j];
+                    ORAM_RESN: etoo_buf_ren[gen_i][gen_j] = ram_oram_dat_vld[gen_i][gen_j] && ram_oram_dat_rdy[gen_i][gen_j];
+                    ORAM_POOL: etoo_buf_ren[gen_i][gen_j] = ram_oram_din_vld[gen_i][gen_j] && ram_oram_din_rdy[gen_i][gen_j];
+                    default  : etoo_buf_ren[gen_i][gen_j] = 'd0;
+                endcase
             end
         end
     end
@@ -347,8 +416,38 @@ generate
     for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
         for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
             always @ ( * )begin
-                oram_res_dat[gen_i][gen_j] = etoo_buf_dat[gen_i][gen_j]+etoo_buf_dat[gen_i][gen_j];
+                oram_res_dat_add[gen_i][gen_j] = $signed(ram_oram_dat_dat[gen_i][gen_j]) +$signed(etoo_buf_dat[gen_i][gen_j]);
             end
+          
+            always @ ( posedge clk or negedge rst_n )begin
+                if( ~rst_n )
+                    oram_res_dat[gen_i][gen_j] <= 'd0;
+                else if( ram_oram_dat_ena[gen_i][gen_j] )
+                    oram_res_dat[gen_i][gen_j] <= oram_res_dat_clp[gen_i][gen_j];
+            end
+
+            always @ ( posedge clk or negedge rst_n )begin
+                if( ~rst_n )
+                    oram_res_add[gen_i][gen_j] <= 'd0;
+                else if( ram_oram_dat_ena[gen_i][gen_j] )
+                    oram_res_add[gen_i][gen_j] <= etoo_buf_add[gen_i][gen_j];
+            end
+
+            always @ ( posedge clk or negedge rst_n )begin
+                if( ~rst_n )
+                    oram_res_lst[gen_i][gen_j] <= 'd0;
+                else if( ram_oram_dat_ena[gen_i][gen_j] )
+                    oram_res_lst[gen_i][gen_j] <= etoo_buf_lst[gen_i][gen_j];
+            end
+
+            always @ ( posedge clk or negedge rst_n )begin
+                if( ~rst_n )
+                    oram_res_vld[gen_i][gen_j] <= 'd0;
+                else if( ram_oram_dat_ena[gen_i][gen_j] )
+                    oram_res_vld[gen_i][gen_j] <= 'd1;
+                else if( ram_oram_din_ena[gen_i][gen_j] )
+                    oram_res_vld[gen_i][gen_j] <= 'd0;
+            end            
         end
     end
 endgenerate
@@ -361,8 +460,8 @@ generate
                 case( oram_cs )
                     ORAM_ZERO: ram_oram_din_vld[gen_i][gen_j] = 'd1;
                     ORAM_CONV: ram_oram_din_vld[gen_i][gen_j] =~etoo_buf_empty[gen_i][gen_j];
-                    ORAM_RESN: ram_oram_din_vld[gen_i][gen_j] = ram_oram_dat_ena[gen_i][gen_j];
-                    ORAM_POOL: ram_oram_din_vld[gen_i][gen_j] = ram_oram_dat_ena[gen_i][gen_j] && oram_avg_cnt[gen_i][gen_j]==cal_pool_len;
+                    ORAM_RESN: ram_oram_din_vld[gen_i][gen_j] = oram_res_vld[gen_i][gen_j];
+                    ORAM_POOL: ram_oram_din_vld[gen_i][gen_j] =~etoo_buf_empty[gen_i][gen_j];
                     default  : ram_oram_din_vld[gen_i][gen_j] = 'd0;
                 endcase
             end
@@ -371,8 +470,8 @@ generate
                 case( oram_cs )
                     ORAM_ZERO: ram_oram_din_add[gen_i][gen_j] = oram_din_cnt[gen_i][gen_j];
                     ORAM_CONV: ram_oram_din_add[gen_i][gen_j] = etoo_buf_add[gen_i][gen_j];
-                    ORAM_RESN: ram_oram_din_add[gen_i][gen_j] = etoo_buf_add[gen_i][gen_j];
-                    ORAM_POOL: ram_oram_din_add[gen_i][gen_j] = oram_din_cnt[gen_i][gen_j];
+                    ORAM_RESN: ram_oram_din_add[gen_i][gen_j] = oram_res_add[gen_i][gen_j];
+                    ORAM_POOL: ram_oram_din_add[gen_i][gen_j] = etoo_buf_add[gen_i][gen_j];
                     default  : ram_oram_din_add[gen_i][gen_j] = 'd0;
                 endcase
             end
@@ -380,8 +479,8 @@ generate
             always @ ( * )begin
                 case( oram_cs )
                     ORAM_CONV: ram_oram_din_dat[gen_i][gen_j] = cfg_relu_ena && etoo_buf_dat[gen_i][gen_j][ORAM_DAT_DW -1] ? 'd0 : etoo_buf_dat[gen_i][gen_j];
-                    ORAM_RESN: ram_oram_din_dat[gen_i][gen_j] = cfg_relu_ena && oram_res_dat[gen_i][gen_j][ORAM_DAT_DW   ] ? 'd0 : oram_res_dat[gen_i][gen_j][ORAM_DAT_DW :1];
-                    ORAM_POOL: ram_oram_din_dat[gen_i][gen_j] = ram_pool_dat_dat;
+                    ORAM_RESN: ram_oram_din_dat[gen_i][gen_j] = cfg_relu_ena && oram_res_dat[gen_i][gen_j][ORAM_DAT_DW -1] ? 'd0 : oram_res_dat[gen_i][gen_j];
+                    ORAM_POOL: ram_oram_din_dat[gen_i][gen_j] = cfg_relu_ena && etoo_buf_dat[gen_i][gen_j][ORAM_DAT_DW -1] ? 'd0 : etoo_buf_dat[gen_i][gen_j];
                     default  : ram_oram_din_dat[gen_i][gen_j] = 'd0;//ORAM_ZERO
                 endcase
             end
@@ -395,7 +494,7 @@ generate
             always @ ( * )begin
                 case( oram_cs )
                     ORAM_RESN: ram_oram_add_vld[gen_i][gen_j] =~etoo_buf_empty[gen_i][gen_j] && ~ram_oram_dat_vld[gen_i][gen_j];
-                    ORAM_POOL: ram_oram_add_vld[gen_i][gen_j] =~ram_oram_dat_vld[gen_i][gen_j];
+                    ORAM_POOL: ram_oram_add_vld[gen_i][gen_j] = etoo_buf_empty[gen_i][gen_j] && ~etoo_buf_full[gen_i][gen_j] && ~pool_add_done[gen_i][gen_j];
                     ORAM_OTOA: ram_oram_add_vld[gen_i][gen_j] = etoo_add_vld[gen_i][gen_j];
                     ORAM_STAT: ram_oram_add_vld[gen_i][gen_j] = etoo_add_vld[gen_i][gen_j];
                     ORAM_READ: ram_oram_add_vld[gen_i][gen_j] = etoo_add_vld[gen_i][gen_j];
@@ -406,7 +505,7 @@ generate
             always @ ( * )begin
                 case( oram_cs )
                     ORAM_RESN: ram_oram_add_lst[gen_i][gen_j] = etoo_buf_lst[gen_i][gen_j];
-                    ORAM_POOL: ram_oram_add_lst[gen_i][gen_j] = oram_dat_cnt[gen_i][gen_j]==cfg_conv_len[CONV_LEN_DW -1:2];
+                    ORAM_POOL: ram_oram_add_lst[gen_i][gen_j] = oram_add_cnt[gen_i][gen_j]==cfg_pool_len;
                     ORAM_OTOA: ram_oram_add_lst[gen_i][gen_j] = etoo_add_lst[gen_i][gen_j];
                     ORAM_STAT: ram_oram_add_lst[gen_i][gen_j] = etoo_add_lst[gen_i][gen_j];
                     ORAM_READ: ram_oram_add_lst[gen_i][gen_j] = etoo_add_lst[gen_i][gen_j];
@@ -417,14 +516,24 @@ generate
             always @ ( * )begin
                 case( oram_cs )
                     ORAM_RESN: ram_oram_add_add[gen_i][gen_j] = etoo_buf_add[gen_i][gen_j];
-                    ORAM_POOL: ram_oram_add_add[gen_i][gen_j] = oram_dat_cnt[gen_i][gen_j];
+                    ORAM_POOL: ram_oram_add_add[gen_i][gen_j] = oram_add_cnt[gen_i][gen_j];
                     ORAM_OTOA: ram_oram_add_add[gen_i][gen_j] = etoo_add_add[gen_i][gen_j];
                     ORAM_STAT: ram_oram_add_add[gen_i][gen_j] = etoo_add_add[gen_i][gen_j];
                     ORAM_READ: ram_oram_add_add[gen_i][gen_j] = etoo_add_add[gen_i][gen_j];
                     default  : ram_oram_add_add[gen_i][gen_j] = 'd0;
                 endcase
             end
-            assign ram_oram_dat_rdy[gen_i][gen_j] = ~(oram_otoa || oram_read) || otoe_dat_rdy[gen_i];
+            
+            always @ ( * )begin
+                case( oram_cs )
+                    ORAM_RESN: ram_oram_dat_rdy[gen_i][gen_j] = 'd1;
+                    ORAM_POOL: ram_oram_dat_rdy[gen_i][gen_j] =~etoo_buf_full[gen_i][gen_j];
+                    ORAM_OTOA: ram_oram_dat_rdy[gen_i][gen_j] = otoe_dat_rdy[gen_i][gen_j];
+                    ORAM_STAT: ram_oram_dat_rdy[gen_i][gen_j] = otoe_dat_rdy[gen_i][gen_j];
+                    ORAM_READ: ram_oram_dat_rdy[gen_i][gen_j] = otoe_dat_rdy[gen_i][gen_j];
+                    default  : ram_oram_dat_rdy[gen_i][gen_j] = 'd0;
+                endcase
+            end
         end
     end
 endgenerate
@@ -434,7 +543,7 @@ generate
     for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
         for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
             always @ ( * )begin
-                oram_din_cnt_last[gen_i][gen_j] <= oram_zero ? &oram_din_cnt[gen_i][gen_j] : oram_din_cnt[gen_i][gen_j]==cfg_pool_len;
+                oram_din_cnt_last[gen_i][gen_j] <= oram_zero && &oram_din_cnt[gen_i][gen_j];
             end
         end
     end
@@ -495,7 +604,7 @@ generate
                 else if( cfg_info_ena )
                     oram_avg_cnt[gen_i][gen_j] <= 'd0;
                 else if( ram_oram_dat_ena[gen_i][gen_j] && oram_pool )begin
-                    if( oram_avg_cnt[gen_i][gen_j]==cal_pool_len )
+                    if( oram_avg_cnt[gen_i][gen_j]==cfg_pool_wei )
                         oram_avg_cnt[gen_i][gen_j] <= 'd0;
                     else
                         oram_avg_cnt[gen_i][gen_j] <= oram_avg_cnt[gen_i][gen_j] +'d1;
@@ -508,17 +617,38 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
         for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
+            always @ ( * )begin
+                pool_dat_add[gen_i][gen_j] = $signed(ram_oram_dat_dat[gen_i][gen_j]) + $signed(pool_dat_reg[gen_i][gen_j]);
+                pool_dat_sft[gen_i][gen_j] = $signed(pool_dat_add[gen_i][gen_j])>>>cfg_pool_fac;
+                pool_dat_max[gen_i][gen_j] = $signed(ram_oram_dat_dat[gen_i][gen_j]) > $signed(pool_dat_reg[gen_i][gen_j]) ? ram_oram_dat_dat[gen_i][gen_j] : pool_dat_reg[gen_i][gen_j];
+            end
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
+        for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
+            always @ ( * )begin
+                pool_dat_dat[gen_i][gen_j] = cfg_avgp_ena ? pool_dat_avg[gen_i][gen_j] : pool_dat_max[gen_i][gen_j];
+            end
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
+        for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 )begin
             always @ ( posedge clk or negedge rst_n )begin
                 if( ~rst_n )
-                    ram_pool_dat_dat[gen_i][gen_j] <= 'd0;
+                    pool_dat_reg[gen_i][gen_j] <= 'd0;
                 else if( cfg_info_ena )
-                    ram_pool_dat_dat[gen_i][gen_j] <= 'd0;
+                    pool_dat_reg[gen_i][gen_j] <= 'd0;
                 else if( ram_oram_dat_ena[gen_i][gen_j] && oram_pool )begin
-                    if( cfg_avgp_ena )begin
-                        ram_pool_dat_dat[gen_i][gen_j] <= oram_avg_cnt[gen_i][gen_j]==cal_pool_len ? ram_oram_dat_dat : ram_oram_dat_dat+ram_pool_dat_dat;
-                    end
+                    if( cfg_avgp_ena )
+                        pool_dat_reg[gen_i][gen_j] <= oram_avg_cnt[gen_i][gen_j]==cfg_pool_wei ? 'd0 : pool_dat_add[gen_i][gen_j];
                     else
-                        ram_pool_dat_dat[gen_i][gen_j] <= ram_oram_dat_dat > ram_pool_dat_dat ? ram_oram_dat_dat : ram_pool_dat_dat;
+                        pool_dat_reg[gen_i][gen_j] <= oram_avg_cnt[gen_i][gen_j]==cfg_pool_wei ? 'd0 : pool_dat_max[gen_i][gen_j];
                 end
             end
         end
@@ -568,7 +698,7 @@ always @ ( * )begin
     ORAM_IDLE: oram_ns = cfg_info_ena? CFG_INFO_CMD : oram_cs;
     ORAM_ZERO: oram_ns = oram_zero_done ? ORAM_IDLE : oram_cs;
     ORAM_CONV: oram_ns = oram_conv_done ? ORAM_IDLE : oram_cs;
-    ORAM_RESN: oram_ns = oram_conv_done ? ORAM_IDLE : oram_cs;
+    ORAM_RESN: oram_ns = oram_resn_done ? ORAM_IDLE : oram_cs;
     ORAM_POOL: oram_ns = oram_pool_done ? ORAM_IDLE : oram_cs;
     ORAM_OTOA: oram_ns = oram_otoa_done ? ORAM_IDLE : oram_cs;
     ORAM_STAT: oram_ns = oram_stat_done ? ORAM_IDLE : oram_cs;

@@ -36,6 +36,7 @@ module EEG_ARAM #(
     
     input  [ARAM_NUM_DW -1:0]                      ETOA_ADD_VLD,
     input  [ARAM_NUM_DW -1:0]                      ETOA_ADD_LST,
+    input  [ARAM_NUM_DW -1:0]                      ETOA_ADD_END,
     output [ARAM_NUM_DW -1:0]                      ETOA_ADD_RDY,
     input  [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] ETOA_ADD_ADD,
     output [ARAM_NUM_DW -1:0]                      ATOE_DAT_VLD,
@@ -113,6 +114,7 @@ wire [ARAM_NUM_DW -1:0] etoa_dat_end = etoa_dat_vld & etoa_dat_rdy & etoa_dat_ls
 //ARAM_OUT
 wire [ARAM_NUM_DW -1:0]                   etoa_add_vld = ETOA_ADD_VLD;
 wire [ARAM_NUM_DW -1:0]                   etoa_add_lst = ETOA_ADD_LST;
+wire [ARAM_NUM_DW -1:0]                   conv_add_end = ETOA_ADD_END;
 reg  [ARAM_NUM_DW -1:0]                   etoa_add_rdy;
 wire [ARAM_NUM_DW -1:0][ARAM_ADD_AW -1:0] etoa_add_add = ETOA_ADD_ADD;
 reg  [ARAM_NUM_DW -1:0]                   atoe_dat_vld;
@@ -150,7 +152,7 @@ wire [ARAM_NUM_DW -1:0]                      ram_aram_add_ena = ram_aram_add_vld
 wire [ARAM_NUM_DW -1:0]                      ram_aram_dat_ena = ram_aram_dat_vld & ram_aram_dat_rdy;
 
 CPM_REG_RCE #( 1, 1 ) ITOA_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_ARAM_IDX, etoa_dat_end, aram_itoa, itoa_lst_done );
-CPM_REG_RCE #( 1, 1 ) CONV_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 4'b0000      , atoe_dat_end, aram_conv, conv_lst_done );//only support 4 open
+CPM_REG_RCE #( 1, 1 ) CONV_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 4'b0000      , conv_add_end, aram_conv, conv_lst_done );//only support 4 open
 CPM_REG_RCE #( 1, 1 ) OTOA_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_ARAM_IDX, etoa_dat_end, aram_otoa, otoa_lst_done );
 CPM_REG_RCE #( 1, 1 ) WTOA_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_ARAM_IDX, etoa_dat_end, aram_wtoa, wtoa_lst_done );
 CPM_REG_RCE #( 1, 1 ) ATOW_LST_DONE_REG [ARAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_ARAM_IDX, atoe_dat_end, aram_atow, atow_lst_done );
