@@ -18,6 +18,7 @@ set VERILOG_FILES { \
 ../../src/EEG_WRAM_WBUF.v\
 ../../src/EEG_XRAM_RAM.v\
 ../../src/CPM/CPM_ARB_MI.v\
+../../src/CPM/CPM_CLP.v\
 ../../src/CPM/CPM_CNT.v\
 ../../src/CPM/CPM_CNT_C.v\
 ../../src/CPM/CPM_FIFO.v\

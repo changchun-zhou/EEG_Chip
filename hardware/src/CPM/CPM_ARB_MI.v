@@ -14,13 +14,13 @@ module CPM_ARB_MI #(
     parameter IDX_AW = 2,
     parameter REQ_AW = $clog2(REQ_DW)
 ) (
-    input                       clk,
-    input                       rst_n,
-
-    input  [REQ_DW        -1:0] REQ_ARB,
-    input  [REQ_DW*IDX_AW -1:0] REQ_IDX,
-    output [REQ_DW        -1:0] GNT_ARB,
-    output [REQ_DW*IDX_AW -1:0] GNT_IDX
+    input                             clk,
+    input                             rst_n,
+                   
+    input  [REQ_DW              -1:0] REQ_ARB,
+    input  [REQ_DW -1:0][IDX_AW -1:0] REQ_IDX,
+    output [REQ_DW              -1:0] GNT_ARB,
+    output [REQ_DW -1:0][IDX_AW -1:0] GNT_IDX
 );
 integer i;
 genvar gen_i;
@@ -41,7 +41,7 @@ reg  [REQ_DW -1:0][IDX_AW -1:0] req_pri;
 reg  [REQ_DW -1:0][IDX_AW -1:0] arb_pri;
 reg  [REQ_DW -1:0][IDX_AW -1:0] gen_pri;
 
-always @ ( * )begin
+always @ ( * )begin//next arbiter priority, high location indicates low priority
     case( gnt_arb )
         4'b0000: gnt_pri = req_pri;
         4'b0001: gnt_pri = {2'd0,2'd3,2'd2,2'd1};
@@ -69,7 +69,7 @@ always @ ( posedge clk or negedge rst_n )begin
         req_pri <= gnt_pri;
 end
 
-always @ ( * )begin
+always @ ( * )begin//next arbiter priority level, high number indicates high priority
     case( gnt_arb )
         4'b0000: arb_pri = gen_pri;
         4'b0001: arb_pri = {2'd3,2'd2,2'd1,2'd0};
@@ -100,10 +100,10 @@ end
 generate for( gen_i=0 ; gen_i < REQ_DW; gen_i = gen_i+1 ) begin : ARB_BLOCK
       
     always @ ( * )begin
-        req_idx_equ[gen_i] = 0;
-        for( i = 0; i < gen_i; i = i + 1 )begin
+        req_idx_equ[gen_i] = 'd0;
+        for( i = 0; i < REQ_DW; i = i + 1 )begin
             if( (req_idx[i]==req_idx[gen_i]) && (gen_pri[i]>gen_pri[gen_i]) && req_arb[i] )
-                req_idx_equ[gen_i] = 1;
+                req_idx_equ[gen_i] = 'd1;
         end
     end
     
@@ -112,7 +112,7 @@ generate for( gen_i=0 ; gen_i < REQ_DW; gen_i = gen_i+1 ) begin : ARB_BLOCK
     always @ ( * )begin
         gnt_idx[gen_i] = 'd0;
         for( i = REQ_DW-1; i >= 0; i = i - 1 )begin
-            if( req_idx[ req_pri[i] ] == gen_i )
+            if( ( req_idx[ req_pri[i] ]==gen_i ) && req_arb[ req_pri[i] ] )
                 gnt_idx[gen_i] = req_pri[i];
         end
     end

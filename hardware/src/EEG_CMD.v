@@ -55,11 +55,13 @@ module EEG_CMD #(
     output                       CFG_SPLT_ENA,
     output                       CFG_COMB_ENA,
     output                       CFG_FLAG_ENA,
+    output                       CFG_WSTA_ENA,
+    output                       CFG_ZERO_ENA,
     output                       CFG_MAXP_ENA,
     output                       CFG_AVGP_ENA,
     output                       CFG_RESN_ENA,
     output                       CFG_FLAG_VLD,
-    output                       CFG_STAT_VLD,
+    output                       CFG_WSTA_VLD,
     output                       CFG_WBUF_ENA,
     output                       CFG_CPAD_ENA,
     //RAM
@@ -182,15 +184,17 @@ assign CFG_POOL_LEN = cfg_pool_len;
 assign CFG_POOL_FAC = cfg_pool_fac;
 
 //ENA
-wire cfg_relu_ena;
+reg  cfg_relu_ena;
 wire cfg_splt_ena;
 wire cfg_comb_ena;
 wire cfg_flag_ena;
+reg  cfg_wsta_ena;
+wire cfg_zero_ena;
 wire cfg_maxp_ena;
 wire cfg_avgp_ena;
 wire cfg_resn_ena;
 wire cfg_flag_vld;
-wire cfg_stat_vld;
+wire cfg_wsta_vld;
 wire cfg_wbuf_ena;
 wire cfg_cpad_ena;
 
@@ -198,11 +202,13 @@ assign CFG_RELU_ENA = cfg_relu_ena;
 assign CFG_SPLT_ENA = cfg_splt_ena;
 assign CFG_COMB_ENA = cfg_comb_ena;
 assign CFG_FLAG_ENA = cfg_flag_ena;
+assign CFG_WSTA_ENA = cfg_wsta_ena;
+assign CFG_ZERO_ENA = cfg_zero_ena;
 assign CFG_MAXP_ENA = cfg_maxp_ena;
 assign CFG_AVGP_ENA = cfg_avgp_ena;
 assign CFG_RESN_ENA = cfg_resn_ena;
 assign CFG_FLAG_VLD = cfg_flag_vld;
-assign CFG_STAT_VLD = cfg_stat_vld;
+assign CFG_WSTA_VLD = cfg_wsta_vld;
 assign CFG_WBUF_ENA = cfg_wbuf_ena;
 assign CFG_CPAD_ENA = cfg_cpad_ena;
 //CMD
@@ -230,26 +236,26 @@ assign cfg_info_cmd = {cmd_read_ena, cmd_stat_ena, cmd_pool_ena, cmd_conv_ena, c
 //=====================================================================================================================
 // Variable Definition :
 //=====================================================================================================================
-wire cfg_relu_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_OTOA;
 wire cfg_splt_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_OTOA;
 wire cfg_comb_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_OTOA;
-wire cfg_flag_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_OTOA;
+wire cfg_flag_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_STAT;
+wire cfg_zero_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_STAT;
 wire cfg_maxp_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_POOL;
 wire cfg_avgp_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_POOL;
 wire cfg_resn_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
 wire cfg_flag_vld_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
-wire cfg_stat_vld_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
+wire cfg_wsta_vld_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
 wire cfg_wbuf_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
 wire cfg_cpad_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
-CPM_REG_E #( 1 ) CFG_RELU_ENA_REG( clk, rst_n, cfg_relu_ena_ena, cfg_acmd_dat[20], cfg_relu_ena );
-CPM_REG_E #( 1 ) CFG_SPLT_ENA_REG( clk, rst_n, cfg_splt_ena_ena, cfg_acmd_dat[21], cfg_splt_ena );
-CPM_REG_E #( 1 ) CFG_COMB_ENA_REG( clk, rst_n, cfg_comb_ena_ena, cfg_acmd_dat[22], cfg_comb_ena );
-CPM_REG_E #( 1 ) CFG_FLAG_ENA_REG( clk, rst_n, cfg_flag_ena_ena, cfg_acmd_dat[23], cfg_flag_ena );
+CPM_REG_E #( 1 ) CFG_SPLT_ENA_REG( clk, rst_n, cfg_splt_ena_ena, cfg_acmd_dat[20], cfg_splt_ena );
+CPM_REG_E #( 1 ) CFG_COMB_ENA_REG( clk, rst_n, cfg_comb_ena_ena, cfg_acmd_dat[21], cfg_comb_ena );
+CPM_REG_E #( 1 ) CFG_FLAG_ENA_REG( clk, rst_n, cfg_flag_ena_ena, cfg_acmd_dat[ 4], cfg_flag_ena );
+CPM_REG_E #( 1 ) CFG_ZERO_ENA_REG( clk, rst_n, cfg_zero_ena_ena, cfg_acmd_dat[ 6], cfg_zero_ena );
 CPM_REG_E #( 1 ) CFG_MAXP_ENA_REG( clk, rst_n, cfg_maxp_ena_ena, cfg_acmd_dat[16], cfg_maxp_ena );
 CPM_REG_E #( 1 ) CFG_AVGP_ENA_REG( clk, rst_n, cfg_avgp_ena_ena, cfg_acmd_dat[17], cfg_avgp_ena );
 CPM_REG_E #( 1 ) CFG_RESN_ENA_REG( clk, rst_n, cfg_resn_ena_ena, cfg_acmd_dat[11], cfg_resn_ena );
 CPM_REG_E #( 1 ) CFG_FLAG_VLD_REG( clk, rst_n, cfg_flag_vld_ena, cfg_acmd_dat[12], cfg_flag_vld );
-CPM_REG_E #( 1 ) CFG_STAT_VLD_REG( clk, rst_n, cfg_stat_vld_ena, cfg_acmd_dat[13], cfg_stat_vld );
+CPM_REG_E #( 1 ) CFG_WSTA_VLD_REG( clk, rst_n, cfg_wsta_vld_ena, cfg_acmd_dat[13], cfg_wsta_vld );
 CPM_REG_E #( 1 ) CFG_WBUF_ENA_REG( clk, rst_n, cfg_wbuf_ena_ena, cfg_acmd_dat[14], cfg_wbuf_ena );
 CPM_REG_E #( 1 ) CFG_CPAD_ENA_REG( clk, rst_n, cfg_wbuf_ena_ena, cfg_acmd_dat[15], cfg_cpad_ena );
 //=====================================================================================================================
@@ -349,6 +355,7 @@ always @ ( posedge clk or negedge rst_n )begin
     end else if( cfg_acmd_vld )begin
         case( cfg_mode_cmd )
             CMD_OTOA: cfg_omux_idx <= cfg_acmd_dat[12+:4];
+            CMD_POOL: cfg_omux_idx <= cfg_acmd_dat[12+:4];
              default: cfg_omux_idx <= cfg_omux_idx;
         endcase
     end
@@ -521,6 +528,7 @@ always @ ( posedge clk or negedge rst_n )begin
     end else if( cfg_acmd_vld )begin
         case( cfg_mode_cmd )
             CMD_CONV: cfg_conv_wei <= cfg_acmd_dat[8 +:3];
+            CMD_OTOA: cfg_conv_wei <= cfg_acmd_dat[4 +:3];
              default: cfg_conv_wei <= cfg_conv_wei;
         endcase
     end
@@ -547,7 +555,7 @@ always @ ( posedge clk or negedge rst_n )begin
         cfg_pool_len <= 'd0;
     end else if( cfg_acmd_vld )begin
         case( cfg_mode_cmd )
-            CMD_POOL: cfg_pool_len <= cfg_acmd_dat[4 +:10];
+            CMD_POOL: cfg_pool_len <= cfg_acmd_dat[22 +:10];
              default: cfg_pool_len <= cfg_pool_len;
         endcase
     end
@@ -558,8 +566,32 @@ always @ ( posedge clk or negedge rst_n )begin
         cfg_pool_fac <= 'd0;
     end else if( cfg_acmd_vld )begin
         case( cfg_mode_cmd )
-            CMD_POOL: cfg_pool_fac <= cfg_acmd_dat[14 +:2];
+            CMD_POOL: cfg_pool_fac <= cfg_acmd_dat[4 +:2];
              default: cfg_pool_fac <= cfg_pool_fac;
+        endcase
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        cfg_relu_ena <= 'd0;
+    end else if( cfg_acmd_vld )begin
+        case( cfg_mode_cmd )
+            CMD_CONV: cfg_relu_ena <= cfg_acmd_dat[16 +:1];
+            CMD_POOL: cfg_relu_ena <= cfg_acmd_dat[18 +:1];
+             default: cfg_relu_ena <= cfg_relu_ena;
+        endcase
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        cfg_wsta_ena <= 'd0;
+    end else if( cfg_acmd_vld )begin
+        case( cfg_mode_cmd )
+            CMD_OTOA: cfg_wsta_ena <= cfg_acmd_dat[22 +:1];
+            CMD_STAT: cfg_wsta_ena <= cfg_acmd_dat[5  +:1];
+             default: cfg_wsta_ena <= cfg_wsta_ena;
         endcase
     end
 end

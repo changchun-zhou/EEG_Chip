@@ -34,6 +34,7 @@ module EEG_FRAM #(
     
     input  [FRAM_NUM_DW -1:0]                      ETOF_ADD_VLD,
     input  [FRAM_NUM_DW -1:0]                      ETOF_ADD_LST,
+    input  [FRAM_NUM_DW -1:0]                      ETOF_ADD_END,
     output [FRAM_NUM_DW -1:0]                      ETOF_ADD_RDY,
     input  [FRAM_NUM_DW -1:0][FRAM_ADD_AW    -1:0] ETOF_ADD_ADD,
     output [FRAM_NUM_DW -1:0]                      FTOE_DAT_VLD,
@@ -94,6 +95,7 @@ wire [FRAM_NUM_DW -1:0] etof_dat_end = etof_dat_vld & etof_dat_rdy & etof_dat_ls
 //FRAM_OUT
 wire [FRAM_NUM_DW -1:0]                   etof_add_vld = ETOF_ADD_VLD;
 wire [FRAM_NUM_DW -1:0]                   etof_add_lst = ETOF_ADD_LST;
+wire [FRAM_NUM_DW -1:0]                   conv_add_end = ETOF_ADD_END;
 reg  [FRAM_NUM_DW -1:0]                   etof_add_rdy;
 wire [FRAM_NUM_DW -1:0][FRAM_ADD_AW -1:0] etof_add_add = ETOF_ADD_ADD;
 reg  [FRAM_NUM_DW -1:0]                   ftoe_dat_vld;
@@ -131,7 +133,7 @@ wire [FRAM_NUM_DW -1:0]                      ram_fram_add_ena = ram_fram_add_vld
 wire [FRAM_NUM_DW -1:0]                      ram_fram_dat_ena = ram_fram_dat_vld & ram_fram_dat_rdy;
 
 CPM_REG_RCE #( 1, 1 ) ITOF_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 1'd0, etof_dat_end, 1'd1, itof_lst_done );
-CPM_REG_RCE #( 1, 1 ) CONV_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 1'd0, ftoe_dat_end, 1'd1, conv_lst_done );
+CPM_REG_RCE #( 1, 1 ) CONV_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 1'd0, conv_add_end, 1'd1, conv_lst_done );
 CPM_REG_RCE #( 1, 1 ) OTOF_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 1'd0, etof_dat_end, 1'd1, otof_lst_done );
 //=====================================================================================================================
 // IO Logic Design :

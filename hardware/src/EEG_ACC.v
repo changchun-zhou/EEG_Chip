@@ -186,6 +186,7 @@ wire cmd_pool_ena;
 wire cmd_stat_ena;
 wire cmd_read_ena;
 wire cmd_otof_ena;
+wire cmd_zero_ena;
 
 wire cfg_load_vld = chip_dat_ena && chip_dat_cmd && &acc_load_cnt;
 wire cfg_acmd_vld;
@@ -217,14 +218,15 @@ wire [DILA_FAC_DW    -1:0] cfg_dila_fac;
 wire [STRD_FAC_DW    -1:0] cfg_strd_fac;
 wire [CONV_WEI_DW    -1:0] cfg_conv_wei;
 wire                       cfg_flag_vld;
-wire                       cfg_stat_vld;
+wire                       cfg_wsta_vld;
 wire                       cfg_wbuf_ena;
 
 wire                       cfg_relu_ena;
 wire                       cfg_splt_ena;
 wire                       cfg_comb_ena;
 wire                       cfg_flag_ena;
-wire                       cfg_stat_ena;
+wire                       cfg_wsta_ena;
+wire                       cfg_zero_ena;
 wire                       cfg_maxp_ena;
 wire                       cfg_avgp_ena;
 wire                       cfg_resn_ena;
@@ -237,14 +239,15 @@ wire [CONV_SPT_DW    -1:0] cfg_splt_len;
 wire [POOL_LEN_DW    -1:0] cfg_pool_len;
 wire [POOL_FAC_DW    -1:0] cfg_pool_fac;
 
-assign cmd_otof_ena = cmd_otoa_ena && cfg_flag_ena;
+assign cmd_otof_ena = cmd_stat_ena && cfg_flag_ena;
+assign cmd_zero_ena = cmd_stat_ena && cfg_zero_ena;
 
 wire [PEAY_CMD_DW   -2:0] peay_cfg_info_cmd_tmp = {cmd_conv_ena, 1'd0};
 wire [WRAM_CMD_DW   -2:0] wram_cfg_info_cmd_tmp = {cmd_read_ena && |cfg_wram_idx, cmd_wtoa_ena, cmd_atow_ena, cmd_conv_ena, cmd_itow_ena};
 wire [FRAM_CMD_DW   -2:0] fram_cfg_info_cmd_tmp = {cmd_otof_ena, cmd_conv_ena, 1'd0};
 wire [ARAM_CMD_DW   -2:0] aram_cfg_info_cmd_tmp = {cmd_read_ena && |cfg_aram_idx, 1'd0, cmd_atow_ena, cmd_wtoa_ena, cmd_otoa_ena, cmd_conv_ena, cmd_itoa_ena};
-wire [ORAM_CMD_DW   -2:0] oram_cfg_info_cmd_tmp = {cmd_read_ena && |cfg_oram_idx, cmd_stat_ena, cmd_otoa_ena, cmd_pool_ena, cmd_conv_ena&&cfg_resn_ena, cmd_conv_ena, 1'd0};
-wire [MOVE_CMD_DW   -2:0] move_cfg_info_cmd_tmp = {cmd_read_ena, cmd_stat_ena, cmd_wtoa_ena, cmd_atow_ena, cmd_otoa_ena, cmd_itow_ena, cmd_itoa_ena};
+wire [ORAM_CMD_DW   -2:0] oram_cfg_info_cmd_tmp = {cmd_read_ena && |cfg_oram_idx, cmd_stat_ena && ~cfg_zero_ena, cmd_otoa_ena, cmd_pool_ena, cmd_conv_ena&&cfg_resn_ena, cmd_conv_ena&&~cfg_resn_ena, cmd_zero_ena};
+wire [MOVE_CMD_DW   -2:0] move_cfg_info_cmd_tmp = {cmd_read_ena, cmd_stat_ena && ~cfg_zero_ena, cmd_wtoa_ena, cmd_atow_ena, cmd_otoa_ena, cmd_itow_ena, cmd_itoa_ena};
 
 wire [PEAY_CMD_DW   -1:0] peay_cfg_info_cmd = {peay_cfg_info_cmd_tmp, ~|peay_cfg_info_cmd_tmp};
 wire [WRAM_CMD_DW   -1:0] wram_cfg_info_cmd = {wram_cfg_info_cmd_tmp, ~|wram_cfg_info_cmd_tmp};
@@ -368,6 +371,7 @@ reg  [FRAM_NUM_DW -1:0][FRAM_DAT_DW    -1:0] fram_etof_dat_dat;
 
 reg  [FRAM_NUM_DW -1:0]                      fram_etof_add_vld;
 reg  [FRAM_NUM_DW -1:0]                      fram_etof_add_lst;
+reg  [FRAM_NUM_DW -1:0]                      fram_etof_add_end;
 wire [FRAM_NUM_DW -1:0]                      fram_etof_add_rdy;
 reg  [FRAM_NUM_DW -1:0][FRAM_ADD_AW    -1:0] fram_etof_add_add;
 wire [FRAM_NUM_DW -1:0]                      fram_ftoe_dat_vld;
@@ -388,6 +392,7 @@ wire [FRAM_NUM_DW -1:0][FRAM_DAT_DW    -1:0] farb_aram_dat_dat;
 
 wire [FRAM_NUM_DW -1:0]                      farb_aarb_add_vld;
 wire [FRAM_NUM_DW -1:0]                      farb_aarb_add_lst;
+wire [FRAM_NUM_DW -1:0]                      farb_aarb_add_end;
 reg  [FRAM_NUM_DW -1:0]                      farb_aarb_add_rdy;
 wire [FRAM_NUM_DW -1:0][FRAM_ADD_AW    -1:0] farb_aarb_add_add;
 reg  [FRAM_NUM_DW -1:0]                      farb_aarb_dat_vld;
@@ -409,6 +414,7 @@ reg  [ARAM_NUM_DW -1:0][ARAM_DAT_DW    -1:0] aram_etoa_dat_dat;
 
 reg  [ARAM_NUM_DW -1:0]                      aram_etoa_add_vld;
 reg  [ARAM_NUM_DW -1:0]                      aram_etoa_add_lst;
+reg  [ARAM_NUM_DW -1:0]                      aram_etoa_add_end;
 wire [ARAM_NUM_DW -1:0]                      aram_etoa_add_rdy;
 reg  [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] aram_etoa_add_add;
 wire [ARAM_NUM_DW -1:0]                      aram_atoe_dat_vld;
@@ -429,6 +435,7 @@ wire [ARAM_NUM_DW -1:0][ARAM_DAT_DW    -1:0] aarb_aram_dat_dat;
 
 wire [ARAM_NUM_DW -1:0]                      aarb_aarb_add_vld;
 wire [ARAM_NUM_DW -1:0]                      aarb_aarb_add_lst;
+wire [ARAM_NUM_DW -1:0]                      aarb_aarb_add_end;
 reg  [ARAM_NUM_DW -1:0]                      aarb_aarb_add_rdy;
 wire [ARAM_NUM_DW -1:0][ARAM_ADD_AW    -1:0] aarb_aarb_add_add;
 reg  [ARAM_NUM_DW -1:0]                      aarb_aarb_dat_vld;
@@ -504,11 +511,11 @@ wire                                         move_mtoc_dat_lst;
 reg                                          move_mtoc_dat_rdy;
 wire [MOVE_DAT_DW                      -1:0] move_mtoc_dat_dat;
 
-wire                                         move_mtos_dat_vld;
-wire                                         move_mtos_dat_lst;
-reg                                          move_mtos_dat_rdy;
-wire [STAT_NUM_AW                      -1:0] move_mtos_dat_add;
-wire [STAT_DAT_DW                      -1:0] move_mtos_dat_dat;
+wire [BANK_NUM_DW -1:0]                      move_mtos_dat_vld;
+wire [BANK_NUM_DW -1:0]                      move_mtos_dat_lst;
+reg  [BANK_NUM_DW -1:0]                      move_mtos_dat_rdy;
+wire [BANK_NUM_DW -1:0][STAT_NUM_AW    -1:0] move_mtos_dat_add;
+wire [BANK_NUM_DW -1:0][STAT_DAT_DW    -1:0] move_mtos_dat_dat;
 
 wire [FRAM_NUM_DW -1:0]                      move_mtof_dat_vld;
 wire [FRAM_NUM_DW -1:0]                      move_mtof_dat_lst;
@@ -657,9 +664,9 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            wbuf_mtow_dat_vld[gen_i] = move_mtos_dat_vld;
-            wbuf_mtow_dat_lst[gen_i] = move_mtos_dat_lst;
-            wbuf_mtow_dat_dat[gen_i] = move_mtos_dat_dat;
+            wbuf_mtow_dat_vld[gen_i] = move_mtos_dat_vld[gen_i];
+            wbuf_mtow_dat_lst[gen_i] = move_mtos_dat_lst[gen_i];
+            wbuf_mtow_dat_dat[gen_i] = move_mtos_dat_dat[gen_i];
         end
     end
 endgenerate
@@ -729,6 +736,7 @@ generate
         always @ ( * )begin
             fram_etof_add_vld[gen_i] = farb_aarb_add_vld[gen_i];
             fram_etof_add_lst[gen_i] = farb_aarb_add_lst[gen_i];
+            fram_etof_add_end[gen_i] = farb_aarb_add_end[gen_i];
             fram_etof_add_add[gen_i] = farb_aarb_add_add[gen_i];
             fram_ftoe_dat_rdy[gen_i] = farb_aarb_dat_rdy[gen_i];
         end
@@ -776,6 +784,7 @@ generate
         always @ ( * )begin
             aram_etoa_add_vld[gen_i] = acc_read || acc_atow ? move_mtoa_add_vld[gen_i] : aarb_aarb_add_vld[gen_i];
             aram_etoa_add_lst[gen_i] = acc_read || acc_atow ? move_mtoa_add_lst[gen_i] : aarb_aarb_add_lst[gen_i];
+            aram_etoa_add_end[gen_i] = acc_read || acc_atow ? move_mtoa_add_lst[gen_i] : aarb_aarb_add_end[gen_i];
             aram_etoa_add_add[gen_i] = acc_read || acc_atow ? move_mtoa_add_add[gen_i] : aarb_aarb_add_add[gen_i];
             aram_atoe_dat_rdy[gen_i] = acc_read || acc_atow ? move_atom_dat_rdy[gen_i] : aarb_aarb_dat_rdy[gen_i];
         end
@@ -891,7 +900,7 @@ always @ ( * )begin
 end
 
 always @ ( * )begin
-    move_mtos_dat_rdy = &wbuf_mtow_dat_rdy;
+    move_mtos_dat_rdy = wbuf_mtow_dat_rdy;
 end
 
 generate
@@ -1006,11 +1015,13 @@ EEG_CMD #(
     .CFG_SPLT_ENA         ( cfg_splt_ena     ),
     .CFG_COMB_ENA         ( cfg_comb_ena     ),
     .CFG_FLAG_ENA         ( cfg_flag_ena     ),
+    .CFG_WSTA_ENA         ( cfg_wsta_ena     ),
+    .CFG_ZERO_ENA         ( cfg_zero_ena     ),
     .CFG_MAXP_ENA         ( cfg_maxp_ena     ),
     .CFG_AVGP_ENA         ( cfg_avgp_ena     ),
     .CFG_RESN_ENA         ( cfg_resn_ena     ),
     .CFG_FLAG_VLD         ( cfg_flag_vld     ),
-    .CFG_STAT_VLD         ( cfg_stat_vld     ),
+    .CFG_WSTA_VLD         ( cfg_wsta_vld     ),
     .CFG_WBUF_ENA         ( cfg_wbuf_ena     ),
     .CFG_CPAD_ENA         ( cfg_cpad_ena     ),
 
@@ -1113,7 +1124,7 @@ EEG_WRAM_WBUF #(
 
     .CFG_INFO_VLD         ( wbuf_cfg_info_vld ),
     .CFG_INFO_RDY         ( wbuf_cfg_info_rdy ),
-    .CFG_STAT_VLD         ( cfg_stat_vld ),
+    .CFG_STAT_VLD         ( cfg_wsta_vld ),
     .CFG_WBUF_ENA         ( cfg_wbuf_ena ),
 
     .MTOW_DAT_VLD         ( wbuf_mtow_dat_vld ),
@@ -1197,6 +1208,7 @@ EEG_FRAM #(
 
     .ETOF_ADD_VLD         ( fram_etof_add_vld ),
     .ETOF_ADD_LST         ( fram_etof_add_lst ),
+    .ETOF_ADD_END         ( fram_etof_add_end ),
     .ETOF_ADD_RDY         ( fram_etof_add_rdy ),
     .ETOF_ADD_ADD         ( fram_etof_add_add ),
     .FTOE_DAT_VLD         ( fram_ftoe_dat_vld ),
@@ -1225,6 +1237,7 @@ EEG_ARAM_ROUTER #(
 
     .AARB_ADD_VLD         ( farb_aarb_add_vld ),
     .AARB_ADD_LST         ( farb_aarb_add_lst ),
+    .AARB_ADD_END         ( farb_aarb_add_end ),
     .AARB_ADD_RDY         ( farb_aarb_add_rdy ),
     .AARB_ADD_ADD         ( farb_aarb_add_add ),
     .AARB_DAT_VLD         ( farb_aarb_dat_vld ),
@@ -1257,6 +1270,7 @@ EEG_ARAM #(
 
     .ETOA_ADD_VLD         ( aram_etoa_add_vld ),
     .ETOA_ADD_LST         ( aram_etoa_add_lst ),
+    .ETOA_ADD_END         ( aram_etoa_add_end ),
     .ETOA_ADD_RDY         ( aram_etoa_add_rdy ),
     .ETOA_ADD_ADD         ( aram_etoa_add_add ),
     .ATOE_DAT_VLD         ( aram_atoe_dat_vld ),
@@ -1285,6 +1299,7 @@ EEG_ARAM_ROUTER #(
 
     .AARB_ADD_VLD         ( aarb_aarb_add_vld ),
     .AARB_ADD_LST         ( aarb_aarb_add_lst ),
+    .AARB_ADD_END         ( aarb_aarb_add_end ),
     .AARB_ADD_RDY         ( aarb_aarb_add_rdy ),
     .AARB_ADD_ADD         ( aarb_aarb_add_add ),
     .AARB_DAT_VLD         ( aarb_aarb_dat_vld ),
@@ -1312,6 +1327,7 @@ EEG_ORAM #(
     .CFG_INFO_VLD         ( oram_cfg_info_vld ),
     .CFG_INFO_RDY         ( oram_cfg_info_rdy ),
     .CFG_INFO_CMD         ( oram_cfg_info_cmd ),
+    .CFG_OMUX_IDX         ( cfg_omux_idx      ),
     .CFG_CONV_LEN         ( cfg_conv_len      ),
     .CFG_POOL_LEN         ( cfg_pool_len      ),
     .CFG_POOL_FAC         ( cfg_pool_fac      ),
@@ -1417,6 +1433,7 @@ EEG_RAM_MOVER #(
     .CFG_CONV_OCH         ( cfg_conv_och ),
     .CFG_CONV_WEI         ( cfg_conv_wei ),
     .CFG_FLAG_ENA         ( cfg_flag_ena ),
+    .CFG_WSTA_ENA         ( cfg_wsta_ena ),
     .CFG_SPLT_ENA         ( cfg_splt_ena ),
     .CFG_SPLT_LEN         ( cfg_splt_len ),
 

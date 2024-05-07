@@ -180,15 +180,18 @@ generate
 endgenerate
 
 //when is_addr_out_range->wei_idx==0, for wei no zero value
-always @ ( posedge clk or negedge rst_n )begin
-    if( ~rst_n )
-        wei_idx_cnt <= 'd0;
-    else if( pe_psum_rst )
-        wei_idx_cnt <= 'd0;
-    else if( din_ena && WEI_LST )
-        wei_idx_cnt <= 'd0;
-    else if( din_ena )
-        wei_idx_cnt <= wei_idx_cnt +'d1;
+//always @ ( posedge clk or negedge rst_n )begin
+//    if( ~rst_n )
+//        wei_idx_cnt <= 'd0;
+//    else if( pe_psum_rst )
+//        wei_idx_cnt <= 'd0;
+//    else if( din_ena && WEI_LST )
+//        wei_idx_cnt <= 'd0;
+//    else if( din_ena )
+//        wei_idx_cnt <= wei_idx_cnt +'d1;
+//end
+always @ ( * )begin
+    wei_idx_cnt = wei_idx;
 end
 
 always @ ( posedge clk or negedge rst_n )begin
@@ -202,9 +205,11 @@ end
 
 wire signed [CONV_CAL_DW -1:0] psum_out_mul = $signed(psum_cal_reg[0])*$signed(cfg_conv_mul) +$signed(cfg_conv_add);
 wire signed [CONV_CAL_DW -1:0] psum_out_sft = $signed(psum_out_mul)>>>cfg_conv_sft;
-wire signed [CONV_CAL_DW -1:0] psum_out_min = {{(CONV_CAL_DW-DATA_OUT_DW+1){1'd1}}, {(DATA_OUT_DW-1){1'd0}}};
-wire signed [CONV_CAL_DW -1:0] psum_out_max = {{(CONV_CAL_DW-DATA_OUT_DW+1){1'd0}}, {(DATA_OUT_DW-1){1'd1}}};
-wire signed [DATA_OUT_DW -1:0] psum_out_clp = psum_out_sft<psum_out_min ? {1'd1, {(DATA_OUT_DW-1){1'd0}}} : (psum_out_sft>psum_out_max ? {1'd0, {(DATA_OUT_DW-1){1'd1}}} : psum_out_sft[0 +:DATA_OUT_DW]);
+wire signed [DATA_OUT_DW -1:0] psum_out_clp;
+CPM_CLP #( CONV_CAL_DW, DATA_OUT_DW ) PSUM_OUT_CLP_U( psum_out_sft, psum_out_clp );
+//wire signed [CONV_CAL_DW -1:0] psum_out_min = {{(CONV_CAL_DW-DATA_OUT_DW+1){1'd1}}, {(DATA_OUT_DW-1){1'd0}}};
+//wire signed [CONV_CAL_DW -1:0] psum_out_max = {{(CONV_CAL_DW-DATA_OUT_DW+1){1'd0}}, {(DATA_OUT_DW-1){1'd1}}};
+//wire signed [DATA_OUT_DW -1:0] psum_out_clp = psum_out_sft<psum_out_min ? {1'd1, {(DATA_OUT_DW-1){1'd0}}} : (psum_out_sft>psum_out_max ? {1'd0, {(DATA_OUT_DW-1){1'd1}}} : psum_out_sft[0 +:DATA_OUT_DW]);
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
         psum_out_reg <= 'd0;
