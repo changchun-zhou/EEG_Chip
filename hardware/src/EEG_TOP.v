@@ -116,11 +116,7 @@ endgenerate
 //=====================================================================================================================
 // Logic Design :
 //=====================================================================================================================
-assign eacc_dat_vld = chip_dat_vld;
-assign eacc_dat_lst = chip_dat_lst;
-assign eacc_dat_dat = chip_dat_dat;
-assign eacc_dat_cmd = chip_dat_cmd;
-assign eacc_out_rdy = chip_out_rdy;
+
 //=====================================================================================================================
 // Sub-Module :
 //=====================================================================================================================
@@ -136,7 +132,7 @@ EEG_ACC #(
     .CHIP_DAT_RDY         ( eacc_dat_rdy     ),
     .CHIP_DAT_DAT         ( eacc_dat_dat     ),
     .CHIP_DAT_CMD         ( eacc_dat_cmd     ),
-                                             
+
     .CHIP_OUT_VLD         ( eacc_out_vld     ),
     .CHIP_OUT_LST         ( eacc_out_lst     ),
     .CHIP_OUT_RDY         ( eacc_out_rdy     ),
@@ -150,15 +146,27 @@ EEG_OBUF #(
     .clk                  ( clk              ),
     .rst_n                ( rst_n            ),
 
+    .PAD_DAT_VLD          ( chip_dat_vld     ),
+    .PAD_DAT_LST          ( chip_dat_lst     ),
+    .PAD_DAT_RDY          ( chip_dat_rdy     ),
+    .PAD_DAT_DAT          ( chip_dat_dat     ),
+    .PAD_DAT_CMD          ( chip_dat_cmd     ),
+
+    .ACC_DAT_VLD          ( eacc_dat_vld     ),
+    .ACC_DAT_LST          ( eacc_dat_lst     ),
     .ACC_DAT_RDY          ( eacc_dat_rdy     ),
+    .ACC_DAT_DAT          ( eacc_dat_dat     ),
+    .ACC_DAT_CMD          ( eacc_dat_cmd     ),
+                          
     .ACC_OUT_VLD          ( eacc_out_vld     ),
     .ACC_OUT_LST          ( eacc_out_lst     ),
+    .ACC_OUT_RDY          ( eacc_out_rdy     ),
     .ACC_OUT_DAT          ( eacc_out_dat     ),
 
-    .BUF_DAT_RDY          ( chip_dat_rdy     ),
-    .BUF_OUT_VLD          ( chip_out_vld     ),
-    .BUF_OUT_LST          ( chip_out_lst     ),
-    .BUF_OUT_DAT          ( chip_out_dat     )
+    .PAD_OUT_VLD          ( chip_out_vld     ),
+    .PAD_OUT_LST          ( chip_out_lst     ),
+    .PAD_OUT_RDY          ( chip_out_rdy     ),
+    .PAD_OUT_DAT          ( chip_out_dat     )
 );
 //=====================================================================================================================
 // FSM :

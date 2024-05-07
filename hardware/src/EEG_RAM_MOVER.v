@@ -404,7 +404,7 @@ reg  [BANK_NUM_DW -1:0] flag_dat_vld;
 //STAT
 reg  [BANK_NUM_DW -1:0] wsta_dat_nzd;
 reg                     wsta_dat_vld;
-wire                    wsta_dat_rdy;
+wire [BANK_NUM_DW -1:0] wsta_dat_rdy;
 reg                     wsta_dat_lst;
 reg  [BANK_NUM_DW -1:0][STAT_CNT_DW -1:0] wsta_dat_dat, wsta_dat_dat_reg;
 reg  [BANK_NUM_DW -1:0][STAT_INF_DW -1:0] wsta_dat_inf;
