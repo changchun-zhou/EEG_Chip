@@ -307,12 +307,13 @@ generate
         //=====================================================================================================================
         // Logic Design: S1
         //=====================================================================================================================
+        wire [STAT_DAT_DW  -1 : 0] PtowHitAddr = byp_hit? PTOW_ADD_ADD[gv_port] : PTOW_ADD_BUF[gv_port];
         for(gv_ele=0; gv_ele<HIT_ARRAY_LEN; gv_ele=gv_ele + 1) begin
-            assign compare_vector[gv_ele] = PTOW_ADD_BUF[gv_port] == hit_idx_array[gv_ele];
+            assign compare_vector[gv_ele] = PtowHitAddr == hit_idx_array[gv_ele];
         end
         assign addr_match_hit[gv_port]  = state == WORK & |compare_vector;
         assign hit                      = state == WORK & |compare_vector & hit_data_vld[hit_addr];
-        assign hit_last                 = state == WORK & PTOW_ADD_BUF[gv_port] == last_idx & last_data_vld;
+        assign hit_last                 = state == WORK & PtowHitAddr == last_idx & last_data_vld;
 
         First1#(
             .LEN   ( HIT_ARRAY_LEN  )
@@ -375,7 +376,7 @@ generate
 
         always @(*) begin
             if(state == WORK) begin
-                if(( ArbIdx_d == gv_port)) begin
+                if(( ArbIdx_d == gv_port & WRAM_DAT_VLD)) begin
                     {PTOW_DAT_DAT  [gv_port], PTOW_DAT_LST[gv_port]} = {WRAM_DAT_DAT, WRAM_DAT_LST};
                 end else if(hit_last_vld_s2) begin
                     {PTOW_DAT_DAT  [gv_port], PTOW_DAT_LST[gv_port]} = {last_data_s2, last_data_LST_s2};
