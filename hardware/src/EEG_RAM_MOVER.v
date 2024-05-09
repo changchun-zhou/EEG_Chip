@@ -168,7 +168,7 @@ wire move_itow = move_cs == MOVE_ITOW;
 wire move_otoa = move_cs == MOVE_OTOA;//PIXEL FIRST OTOA/WSTA
 wire move_atow = move_cs == MOVE_ATOW;
 wire move_wtoa = move_cs == MOVE_WTOA;
-wire move_stat = move_cs == MOVE_STAT;//CHANNEL FIRST
+wire move_stat = move_cs == MOVE_STAT;//CHANNEL FIRST FLAG
 wire move_read = move_cs == MOVE_READ;
 wire move_itoo = 1'd0;
 assign IS_IDLE = move_idle;
