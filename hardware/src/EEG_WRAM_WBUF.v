@@ -27,6 +27,7 @@ module EEG_WRAM_WBUF #( // Weight Cache
     output                                              CFG_INFO_RDY    ,
     input                                               CFG_WBUF_ENA    ,
     input                                               CFG_STAT_VLD    ,
+    input                                               CFG_STAT_RST    ,
 
     input                                               MTOW_DAT_VLD    , // Idx from Flag Buffer
     input                                               MTOW_DAT_LST    , // Not Used
@@ -64,6 +65,7 @@ localparam ISA_WIDTH     = 2;
 localparam IDLE    = 3'b000;
 localparam CFG     = 3'b001;
 localparam WORK    = 3'b010;
+localparam RSTD    = 3'b011;
 
 //=====================================================================================================================
 // Variable Definition :
@@ -95,6 +97,7 @@ reg [HIT_ADDR_WIDTH     -1 : 0] addr_upd_dat_loop;
 reg [HIT_ADDR_WIDTH     -1 : 0] addr_upd_dat_mtow;
 wire[HIT_ADDR_WIDTH     -1 : 0] addr_upd_dat;
 
+wire                                                hit_empty_cache;
 
 //=====================================================================================================================
 // Logic Design: FSM
@@ -110,8 +113,15 @@ always @(*) begin
         CFG :   next_state <= WORK;
         WORK:   if( CFG_INFO_VLD )
                     next_state <= IDLE;
+                else if(CFG_STAT_RST ) // & CFG_INFO_VLD
+                    next_state <= RSTD;
                 else
                     next_state <= WORK;
+        RSTD:   if( hit_empty_cache )
+                    next_state <= WORK;
+                else
+                    next_state <= RSTD;
+
         default:    next_state <= IDLE;
     endcase
 end
@@ -226,7 +236,7 @@ always @(posedge clk or negedge rst_n) begin
             hit_data_array[i]<= 0;
             hit_data_vld     <= 1'b0;
         end
-    end else if(state == IDLE) begin
+    end else if(state == IDLE | next_state == RSTD) begin
         for(i=0; i<HIT_ARRAY_LEN; i=i+1) begin
             hit_data_array[i]<= 0;
             hit_data_vld     <= 1'b0;
@@ -236,6 +246,8 @@ always @(posedge clk or negedge rst_n) begin
         hit_data_vld  [addr_upd_dat]  <= 1'b1;
     end
 end
+
+assign hit_empty_cache = state == RSTD & !(|PTOW_DAT_VLD); // All 0: stage0: ADD, disabled by CFG_STAT_RST; stage1: Data of WRAM or Hit_data_s2, Monitored by PTOW_DAT_VLD
 
 //=====================================================================================================================
 // Last Access
@@ -291,6 +303,7 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
+wire work = state == WORK & next_state != RSTD;
 generate
     for(gv_port=0; gv_port<WBUF_NUM_DW; gv_port=gv_port+1) begin: GV_PORT
         //=====================================================================================================================
@@ -311,9 +324,9 @@ generate
         for(gv_ele=0; gv_ele<HIT_ARRAY_LEN; gv_ele=gv_ele + 1) begin
             assign compare_vector[gv_ele] = PtowHitAddr == hit_idx_array[gv_ele];
         end
-        assign addr_match_hit[gv_port]  = state == WORK & |compare_vector;
-        assign hit                      = state == WORK & |compare_vector & hit_data_vld[hit_addr];
-        assign hit_last                 = state == WORK & PtowHitAddr == last_idx & last_data_vld;
+        assign addr_match_hit[gv_port]  = work & |compare_vector;
+        assign hit                      = work & |compare_vector & hit_data_vld[hit_addr];
+        assign hit_last                 = work & PtowHitAddr == last_idx & last_data_vld;
 
         First1#(
             .LEN   ( HIT_ARRAY_LEN  )
@@ -321,8 +334,8 @@ generate
             .Array ( compare_vector ),
             .Addr  ( hit_addr       )
         );
-        assign PortRdAddrVld[gv_port] = state == WORK & PTOW_ADD_VLD[gv_port] & (byp | !hit & !hit_last);
-        assign PTOW_ADD_RDY [gv_port] = state == WORK & ( (WRAM_ADD_RDY & ArbIdx == gv_port) | hit | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
+        assign PortRdAddrVld[gv_port] = work & PTOW_ADD_VLD[gv_port] & (byp | !hit & !hit_last);
+        assign PTOW_ADD_RDY [gv_port] = work & ( (WRAM_ADD_RDY & ArbIdx == gv_port) | hit | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
         //=====================================================================================================================
         // Logic Design: S2
         //=====================================================================================================================
