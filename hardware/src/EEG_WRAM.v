@@ -137,11 +137,18 @@ wire [WRAM_NUM_DW -1:0][WRAM_DAT_DW    -1:0] ram_wram_dat_dat;
 wire [WRAM_NUM_DW -1:0]                      ram_wram_add_ena = ram_wram_add_vld & ram_wram_add_rdy;
 wire [WRAM_NUM_DW -1:0]                      ram_wram_dat_ena = ram_wram_dat_vld & ram_wram_dat_rdy;
 
-CPM_REG_RCE #( 1, 1 ) ITOW_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_WRAM_IDX, etow_dat_end, wram_itow, itow_lst_done );
-CPM_REG_RCE #( 1, 1 ) CONV_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_WRAM_IDX, wtoe_dat_end, wram_conv, conv_lst_done );
-CPM_REG_RCE #( 1, 1 ) ATOW_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_WRAM_IDX, etow_dat_end, wram_atow, atow_lst_done );
-CPM_REG_RCE #( 1, 1 ) WTOA_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_WRAM_IDX, wtoe_dat_end, wram_wtoa, wtoa_lst_done );
-CPM_REG_RCE #( 1, 1 ) READ_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, ~CFG_WRAM_IDX, wtoe_dat_end, wram_read, read_lst_done );
+wire cfg_itow_ena = cfg_info_ena && CFG_INFO_CMD==WRAM_ITOW;
+wire cfg_conv_ena = cfg_info_ena && CFG_INFO_CMD==WRAM_CONV;
+wire cfg_atow_ena = cfg_info_ena && CFG_INFO_CMD==WRAM_ATOW;
+wire cfg_wtoa_ena = cfg_info_ena && CFG_INFO_CMD==WRAM_WTOA;
+wire cfg_read_ena = cfg_info_ena && CFG_INFO_CMD==WRAM_READ;
+
+wire [WRAM_NUM_DW -1:0] CFG_CONV_IDX = ~{WRAM_NUM_DW{1'd0}};
+CPM_REG_RCE #( 1, 1 ) ITOW_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_itow_ena, ~CFG_WRAM_IDX, etow_dat_end, wram_itow, itow_lst_done );
+CPM_REG_RCE #( 1, 1 ) CONV_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_conv_ena,  CFG_CONV_IDX, wtoe_dat_end, wram_conv, conv_lst_done );//all eng start
+CPM_REG_RCE #( 1, 1 ) ATOW_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_atow_ena, ~CFG_WRAM_IDX, etow_dat_end, wram_atow, atow_lst_done );
+CPM_REG_RCE #( 1, 1 ) WTOA_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_wtoa_ena, ~CFG_WRAM_IDX, wtoe_dat_end, wram_wtoa, wtoa_lst_done );
+CPM_REG_RCE #( 1, 1 ) READ_LST_DONE_REG [WRAM_NUM_DW-1:0]( clk, rst_n, cfg_read_ena, ~CFG_WRAM_IDX, wtoe_dat_end, wram_read, read_lst_done );
 //=====================================================================================================================
 // IO Logic Design :
 //=====================================================================================================================
