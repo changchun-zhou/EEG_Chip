@@ -18,6 +18,7 @@ module EEG_WRAM_WBUF #( // Weight Cache
     parameter WRAM_DAT_DW   = 8 ,
     parameter STAT_DAT_DW   = 8 ,
     parameter STAT_NUM_DW   = 32, 
+    parameter CONV_OCH_DW   = 6,
     parameter HIT_ADDR_WIDTH= $clog2(STAT_NUM_DW)
     )(
     input                                               clk             ,
@@ -87,7 +88,6 @@ reg                                                 last_data_vld;
 reg [WRAM_DAT_DW                            -1 : 0] last_data;
 reg [WRAM_ADD_AW                            -1 : 0] WCAWBF_Adr_s2;
 wire[WBUF_NUM_DW                            -1 : 0] PortRdAddrVld;
-reg [HIT_ADDR_WIDTH                         -1 : 0] addr_upd_hit_data_wram;
 wire [WBUF_NUM_DW   -1 : 0][WRAM_ADD_AW + 1 -1 : 0] PortRdAddrLst;
 
 genvar                                              gv_port;
@@ -166,7 +166,7 @@ assign wram_en_upd = WRAM_DAT_VLD & WRAM_DAT_RDY & !Adr_s2_match_exist_idx;
 assign upd_hit_idx = !byp & (byp_hit? wram_en_upd : MTOW_DAT_VLD & MTOW_DAT_RDY );
 
 // Update Hit Data
-assign hit_en_upd = addr_match_hit_s2 & !hit_data_vld[addr_upd_hit_data_wram];
+assign hit_en_upd = addr_match_hit_s2 & !hit_data_vld[addr_upd_dat];
 assign upd_hit_data = !byp & (byp_hit | hit_en_upd) & wram_en_upd;
 
 generate
