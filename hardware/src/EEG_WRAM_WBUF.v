@@ -102,6 +102,10 @@ reg                                                 rst_hit_data;
 reg [WBUF_NUM_DW                            -1 : 0] addr_match_hit;
 reg [WBUF_OCH_DW                            -1 : 0] CntHitFilter;
 wire[WBUF_NUM_DW                            -1 : 0] ptow_add_och_cur;
+reg [WBUF_NUM_DW                            -1 : 0] WCAWBF_Lst_s2;
+wire[WBUF_NUM_DW                            -1 : 0] MultiResp;
+reg [WBUF_NUM_DW                            -1 : 0] MultiResp_d;
+
 //=====================================================================================================================
 // Logic Design: FSM
 //=====================================================================================================================
@@ -295,7 +299,8 @@ end
 
 generate
     for(gv_port=0; gv_port<WBUF_NUM_DW; gv_port=gv_port+1)begin
-        assign PortRdAddrLst[gv_port] = PortRdAddrVld? {PTOW_ADD_ADD[gv_port], PTOW_ADD_LST[gv_port]} : 0;
+        assign PortRdAddrLst[gv_port] = PortRdAddrVld[gv_port]? {PTOW_ADD_ADD[gv_port], PTOW_ADD_LST[gv_port]} : 0;
+        assign MultiResp    [gv_port] = PortRdAddrVld[gv_port] & PTOW_ADD_ADD [gv_port] == PTOW_ADD_ADD[ArbIdx];
     end
 endgenerate
 ArbCore#(
@@ -317,14 +322,19 @@ ArbCore#(
     .ArbCoreIdx  ( ArbIdx                                       ),
     .ArbCoreIdx_d( ArbIdx_d                                     )
 );
-
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         WCAWBF_Adr_s2 <= 0;
+        WCAWBF_Lst_s2 <= 0;
+        MultiResp_d   <= 0;
     end else if(state == IDLE) begin
         WCAWBF_Adr_s2 <= 0;
+        WCAWBF_Lst_s2 <= 0;
+        MultiResp_d   <= 0;
     end else if(WRAM_ADD_VLD & WRAM_ADD_RDY) begin
         WCAWBF_Adr_s2 <= WRAM_ADD_ADD;
+        WCAWBF_Lst_s2 <= PTOW_ADD_LST;
+        MultiResp_d   <= MultiResp;
     end
 end
 
@@ -362,7 +372,7 @@ generate
         );
         assign ptow_add_vld_cur = ptow_add_och_cur[gv_port] & PTOW_ADD_VLD[gv_port];
         assign PortRdAddrVld[gv_port] = work & ptow_add_vld_cur & (byp | !hit & !hit_last);
-        assign PTOW_ADD_RDY [gv_port] = work & ptow_add_och_cur[gv_port] & ( (WRAM_ADD_RDY & ArbIdx == gv_port) | hit | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
+        assign PTOW_ADD_RDY [gv_port] = work & ptow_add_och_cur[gv_port] & ( (WRAM_ADD_RDY & MultiResp[gv_port]) | hit | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
         //=====================================================================================================================
         // Logic Design: S2
         //=====================================================================================================================
@@ -416,8 +426,8 @@ generate
 
         always @(*) begin
             if(state == WORK) begin
-                if(( ArbIdx_d == gv_port & WRAM_DAT_VLD)) begin
-                    {PTOW_DAT_DAT  [gv_port], PTOW_DAT_LST[gv_port]} = {WRAM_DAT_DAT, WRAM_DAT_LST};
+                if(( MultiResp_d[gv_port] & WRAM_DAT_VLD)) begin
+                    {PTOW_DAT_DAT  [gv_port], PTOW_DAT_LST[gv_port]} = {WRAM_DAT_DAT, WCAWBF_Lst_s2[gv_port]};
                 end else if(hit_last_vld_s2) begin
                     {PTOW_DAT_DAT  [gv_port], PTOW_DAT_LST[gv_port]} = {last_data_s2, last_data_LST_s2};
                 end else if(hit_vld_s2) begin
@@ -429,7 +439,7 @@ generate
                     {PTOW_DAT_DAT  [gv_port], PTOW_DAT_LST[gv_port]} = 0;
             end
         end
-        assign PTOW_DAT_VLD  [gv_port]= state == WORK & ( (  byp & ArbIdx_d == gv_port | ArbIdx_d == gv_port) & WRAM_DAT_VLD | hit_last_vld_s2               | hit_vld_s2                  );
+        assign PTOW_DAT_VLD [gv_port]= state == WORK & ( MultiResp_d[gv_port] & WRAM_DAT_VLD | hit_last_vld_s2 | hit_vld_s2 );
 
     end
 endgenerate
@@ -439,5 +449,27 @@ endgenerate
     wire debug_update_hit_data = state == WORK & |GV_PORT[0].compare_vector & PTOW_ADD_VLD[0] & !hit_data_vld[GV_PORT[0].hit_addr];
     wire debug_hit_real = state == WORK & |GV_PORT[3].compare_vector & PTOW_ADD_VLD[3];
 `endif
+
+reg [WBUF_NUM_DW    -1 : 0][WRAM_ADD_AW     -1 : 0] PTOW_ADD_ADD_d;
+reg [WBUF_NUM_DW    -1 : 0]                         MonDelaySame;
+generate
+    for(gv_port=0; gv_port<WBUF_NUM_DW; gv_port=gv_port+1) begin: GV_MonDelaySame
+        always @(*) begin
+            for(i=0; i<WBUF_NUM_DW; i=i+1) begin
+                MonDelaySame[gv_port] = 1'b0;
+                if(i != gv_port & PTOW_ADD_ADD[gv_port] == PTOW_ADD_ADD_d[i])
+                    MonDelaySame[gv_port] = 1'b1;
+            end
+        end
+
+        always @(posedge clk or negedge rst_n) begin
+            if(!rst_n) begin
+                PTOW_ADD_ADD_d[gv_port] <= 0;
+            end else begin
+                PTOW_ADD_ADD_d[gv_port] <= PTOW_ADD_ADD[gv_port];
+            end
+        end
+    end
+endgenerate
 
 endmodule
