@@ -82,7 +82,6 @@ reg                                                 addr_match_hit_s2;
 wire[WBUF_NUM_DW    -1 : 0] [HIT_ADDR_WIDTH -1 : 0] addr_hit_array;
 wire[$clog2(WBUF_NUM_DW)                    -1 : 0] ArbIdx;
 wire[$clog2(WBUF_NUM_DW)                    -1 : 0] ArbIdx_d;
-wire[WBUF_NUM_DW                            -1 : 0] hit_array;
 reg [STAT_DAT_DW                            -1 : 0] last_idx;
 reg                                                 last_data_vld;
 reg [WRAM_DAT_DW                            -1 : 0] last_data;
@@ -158,7 +157,7 @@ assign {byp_hit, byp} = cfg_isa;
 //=====================================================================================================================
 generate
     for(gv_port=0; gv_port<WBUF_NUM_DW; gv_port=gv_port+1)begin
-        assign ptow_add_och_cur[gv_port] = PTOW_ADD_OCH[gv_port] == CntHitFilter;
+        assign ptow_add_och_cur[gv_port] = PTOW_ADD_OCH[gv_port] == CntHitFilter | byp_hit | byp;
     end
 endgenerate
 always@(*) begin
@@ -370,9 +369,18 @@ generate
             .Array ( compare_vector ),
             .Addr  ( hit_addr       )
         );
-        assign ptow_add_vld_cur = ptow_add_och_cur[gv_port] & PTOW_ADD_VLD[gv_port];
-        assign PortRdAddrVld[gv_port] = work & ptow_add_vld_cur & (byp | !hit & !hit_last);
-        assign PTOW_ADD_RDY [gv_port] = work & ptow_add_och_cur[gv_port] & ( (WRAM_ADD_RDY & MultiResp[gv_port]) | hit | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
+        assign ptow_add_vld_cur = ptow_add_och_cur[gv_port] & PTOW_ADD_VLD[gv_port]; // Valid only when Hit mode
+        reg   OtherCur;
+        always @(*) begin
+            for(i=0; i<WBUF_NUM_DW; i=i+1) begin
+                OtherCur = 1'b0;
+                if(i != gv_port & ptow_add_och_cur[i] & PTOW_ADD_VLD[i])
+                    OtherCur = 1'b1;
+            end
+        end
+        wire NotHitReadSram = !hit & (ptow_add_och_cur[gv_port]? 1'b1: !OtherCur );  // Cur is Prior // !(hit & ptow_add_och_cur[gv_port]) & (&ptow_add_och_cur[gv_port] ==0? ptow_add_och_cur[gv_port] : 1'b0);
+        assign PortRdAddrVld[gv_port] = work & PTOW_ADD_VLD[gv_port] & (byp | NotHitReadSram & !hit_last );
+        assign PTOW_ADD_RDY [gv_port] = work & ( (WRAM_ADD_RDY & MultiResp[gv_port]) | (hit & ptow_add_och_cur[gv_port]) | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
         //=====================================================================================================================
         // Logic Design: S2
         //=====================================================================================================================
@@ -417,11 +425,10 @@ generate
             end else if(state == IDLE) begin
                 {last_data_s2, last_data_LST_s2, hit_last_vld_s2} <= 0;
             end else if( hit_last_ena_s2 ) begin
-                {last_data_s2, last_data_LST_s2, hit_last_vld_s2} <= {last_data, PTOW_ADD_LST[gv_port], hit_last & ptow_add_vld_cur};
+                {last_data_s2, last_data_LST_s2, hit_last_vld_s2} <= {last_data, PTOW_ADD_LST[gv_port], hit_last & PTOW_ADD_VLD[gv_port]};
             end
         end
 
-        assign hit_array     [gv_port] = hit;
         assign addr_hit_array[gv_port] = hit_addr;
 
         always @(*) begin
