@@ -18,7 +18,7 @@ module EEG_WRAM_WBUF #( // Weight Cache
     parameter WRAM_DAT_DW   = 8 ,
     parameter STAT_DAT_DW   = 8 ,
     parameter STAT_NUM_DW   = 32, 
-    parameter CONV_OCH_DW   = 6,
+    parameter WBUF_OCH_DW   = 6,
     parameter HIT_ADDR_WIDTH= $clog2(STAT_NUM_DW)
     )(
     input                                               clk             ,
@@ -28,7 +28,6 @@ module EEG_WRAM_WBUF #( // Weight Cache
     output                                              CFG_INFO_RDY    ,
     input                                               CFG_WBUF_ENA    ,
     input                                               CFG_STAT_VLD    ,
-    input                                               CFG_STAT_RST    ,
 
     input                                               MTOW_DAT_VLD    , // Idx from Flag Buffer
     input                                               MTOW_DAT_LST    , // Not Used
@@ -40,6 +39,7 @@ module EEG_WRAM_WBUF #( // Weight Cache
     output [WBUF_NUM_DW    -1 : 0]                      PTOW_ADD_RDY    ,
     input  [WBUF_NUM_DW    -1 : 0][WRAM_ADD_AW  -1 : 0] PTOW_ADD_ADD    ,
     input  [WBUF_NUM_DW    -1 : 0][STAT_DAT_DW  -1 : 0] PTOW_ADD_BUF    ,
+    input  [WBUF_NUM_DW    -1 : 0][WBUF_OCH_DW  -1 : 0] PTOW_ADD_OCH    ,
 
     output [WBUF_NUM_DW    -1 : 0]                      PTOW_DAT_VLD    , // data to PE row
     output reg[WBUF_NUM_DW -1 : 0]                      PTOW_DAT_LST    ,   
@@ -93,11 +93,14 @@ wire [WBUF_NUM_DW   -1 : 0][WRAM_ADD_AW + 1 -1 : 0] PortRdAddrLst;
 genvar                                              gv_port;
 genvar                                              gv_ele;
 integer                                             i;
-reg [HIT_ADDR_WIDTH     -1 : 0] addr_upd_dat_loop;
-reg [HIT_ADDR_WIDTH     -1 : 0] addr_upd_dat_mtow;
-wire[HIT_ADDR_WIDTH     -1 : 0] addr_upd_dat;
+reg [HIT_ADDR_WIDTH                         -1 : 0] addr_upd_dat_loop;
+reg [HIT_ADDR_WIDTH                         -1 : 0] addr_upd_dat_mtow;
+wire[HIT_ADDR_WIDTH                         -1 : 0] addr_upd_dat;
 
 wire                                                hit_empty_cache;
+reg                                                 rst_hit_data;
+reg [WBUF_NUM_DW                            -1 : 0] addr_match_hit;
+reg [WBUF_OCH_DW                            -1 : 0] CntHitFilter;
 
 //=====================================================================================================================
 // Logic Design: FSM
@@ -113,7 +116,7 @@ always @(*) begin
         CFG :   next_state <= WORK;
         WORK:   if( CFG_INFO_VLD )
                     next_state <= IDLE;
-                else if(CFG_STAT_RST ) // & CFG_INFO_VLD
+                else if(rst_hit_data ) // & CFG_INFO_VLD
                     next_state <= RSTD;
                 else
                     next_state <= WORK;
@@ -146,7 +149,25 @@ always @(posedge clk or negedge rst_n) begin
 end
 assign {byp_hit, byp} = cfg_isa;
 
-reg [WBUF_NUM_DW  -1 : 0] addr_match_hit;
+
+//=====================================================================================================================
+// Reset Hit_data when turn to next filter
+//=====================================================================================================================
+always@(*) begin
+    rst_hit_data = 1'b1;
+    for(i=0; i<WBUF_NUM_DW; i=i+1) begin
+        rst_hit_data = rst_hit_data & (PTOW_ADD_OCH[i] > CntHitFilter);
+    end
+end
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        CntHitFilter     <= 0;
+    end else if(state == IDLE) begin
+        CntHitFilter     <= 0;
+    end else if ( rst_hit_data) begin
+        CntHitFilter     <= CntHitFilter + 1;
+    end
+end
 
 //=====================================================================================================================
 // High Hit Array
@@ -316,6 +337,8 @@ generate
         reg                             hit_last_vld_s2;
         reg [WRAM_DAT_DW         -1 : 0] last_data_s2;
         reg                             last_data_LST_s2;
+        wire                            ptow_add_vld_cur;
+        wire                            ptow_add_och_cur;
 
         //=====================================================================================================================
         // Logic Design: S1
@@ -334,8 +357,10 @@ generate
             .Array ( compare_vector ),
             .Addr  ( hit_addr       )
         );
-        assign PortRdAddrVld[gv_port] = work & PTOW_ADD_VLD[gv_port] & (byp | !hit & !hit_last);
-        assign PTOW_ADD_RDY [gv_port] = work & ( (WRAM_ADD_RDY & ArbIdx == gv_port) | hit | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
+        assign ptow_add_och_cur = PTOW_ADD_OCH[gv_port] == CntHitFilter;
+        assign ptow_add_vld_cur = ptow_add_och_cur & PTOW_ADD_VLD[gv_port];
+        assign PortRdAddrVld[gv_port] = work & ptow_add_vld_cur & (byp | !hit & !hit_last);
+        assign PTOW_ADD_RDY [gv_port] = work & ptow_add_och_cur & ( (WRAM_ADD_RDY & ArbIdx == gv_port) | hit | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
         //=====================================================================================================================
         // Logic Design: S2
         //=====================================================================================================================
@@ -364,7 +389,7 @@ generate
             end else if(state == IDLE) begin
                 hit_vld_s2 <= 0;
             end else if( hit_ena_s2 ) begin
-                hit_vld_s2 <= hit & PTOW_ADD_VLD[gv_port];
+                hit_vld_s2 <= hit & ptow_add_vld_cur;
             end
         end
 
@@ -380,7 +405,7 @@ generate
             end else if(state == IDLE) begin
                 {last_data_s2, last_data_LST_s2, hit_last_vld_s2} <= 0;
             end else if( hit_last_ena_s2 ) begin
-                {last_data_s2, last_data_LST_s2, hit_last_vld_s2} <= {last_data, PTOW_ADD_LST[gv_port], hit_last & PTOW_ADD_VLD[gv_port]};
+                {last_data_s2, last_data_LST_s2, hit_last_vld_s2} <= {last_data, PTOW_ADD_LST[gv_port], hit_last & ptow_add_vld_cur};
             end
         end
 
