@@ -97,11 +97,11 @@ reg [HIT_ADDR_WIDTH                         -1 : 0] addr_upd_dat_loop;
 reg [HIT_ADDR_WIDTH                         -1 : 0] addr_upd_dat_mtow;
 wire[HIT_ADDR_WIDTH                         -1 : 0] addr_upd_dat;
 
-wire                                                hit_empty_cache;
+wire                                                empty_hit_cache;
 reg                                                 rst_hit_data;
 reg [WBUF_NUM_DW                            -1 : 0] addr_match_hit;
 reg [WBUF_OCH_DW                            -1 : 0] CntHitFilter;
-
+wire[WBUF_NUM_DW                            -1 : 0] ptow_add_och_cur;
 //=====================================================================================================================
 // Logic Design: FSM
 //=====================================================================================================================
@@ -120,7 +120,7 @@ always @(*) begin
                     next_state <= RSTD;
                 else
                     next_state <= WORK;
-        RSTD:   if( hit_empty_cache )
+        RSTD:   if( empty_hit_cache )
                     next_state <= WORK;
                 else
                     next_state <= RSTD;
@@ -149,14 +149,18 @@ always @(posedge clk or negedge rst_n) begin
 end
 assign {byp_hit, byp} = cfg_isa;
 
-
 //=====================================================================================================================
 // Reset Hit_data when turn to next filter
 //=====================================================================================================================
+generate
+    for(gv_port=0; gv_port<WBUF_NUM_DW; gv_port=gv_port+1)begin
+        assign ptow_add_och_cur[gv_port] = PTOW_ADD_OCH[gv_port] == CntHitFilter;
+    end
+endgenerate
 always@(*) begin
     rst_hit_data = 1'b1;
     for(i=0; i<WBUF_NUM_DW; i=i+1) begin
-        rst_hit_data = rst_hit_data & (PTOW_ADD_OCH[i] > CntHitFilter);
+        rst_hit_data = rst_hit_data & !ptow_add_och_cur[i] & PTOW_ADD_VLD[i];
     end
 end
 always @(posedge clk or negedge rst_n) begin
@@ -268,7 +272,7 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
-assign hit_empty_cache = state == RSTD & !(|PTOW_DAT_VLD); // All 0: stage0: ADD, disabled by CFG_STAT_RST; stage1: Data of WRAM or Hit_data_s2, Monitored by PTOW_DAT_VLD
+assign empty_hit_cache = state == RSTD & !(|PTOW_DAT_VLD); // All 0: stage0: ADD, disabled by CFG_STAT_RST; stage1: Data of WRAM or Hit_data_s2, Monitored by PTOW_DAT_VLD
 
 //=====================================================================================================================
 // Last Access
@@ -338,7 +342,6 @@ generate
         reg [WRAM_DAT_DW         -1 : 0] last_data_s2;
         reg                             last_data_LST_s2;
         wire                            ptow_add_vld_cur;
-        wire                            ptow_add_och_cur;
 
         //=====================================================================================================================
         // Logic Design: S1
@@ -357,10 +360,9 @@ generate
             .Array ( compare_vector ),
             .Addr  ( hit_addr       )
         );
-        assign ptow_add_och_cur = PTOW_ADD_OCH[gv_port] == CntHitFilter;
-        assign ptow_add_vld_cur = ptow_add_och_cur & PTOW_ADD_VLD[gv_port];
+        assign ptow_add_vld_cur = ptow_add_och_cur[gv_port] & PTOW_ADD_VLD[gv_port];
         assign PortRdAddrVld[gv_port] = work & ptow_add_vld_cur & (byp | !hit & !hit_last);
-        assign PTOW_ADD_RDY [gv_port] = work & ptow_add_och_cur & ( (WRAM_ADD_RDY & ArbIdx == gv_port) | hit | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
+        assign PTOW_ADD_RDY [gv_port] = work & ptow_add_och_cur[gv_port] & ( (WRAM_ADD_RDY & ArbIdx == gv_port) | hit | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
         //=====================================================================================================================
         // Logic Design: S2
         //=====================================================================================================================
