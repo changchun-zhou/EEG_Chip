@@ -304,7 +304,6 @@ always @(*) begin
             CurSramExistPrior = 1'b1;
     end
 end
-
 reg [WBUF_NUM_DW -1 : 0] PortRdAddrVld_Prior;
 always @(*) begin
     PortRdAddrVld_Prior = PortRdAddrVld;
@@ -493,3 +492,4 @@ generate
 endgenerate
 
 endmodule
+

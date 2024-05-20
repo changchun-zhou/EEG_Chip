@@ -72,21 +72,21 @@ end
 always @ ( * )begin//next arbiter priority level, high number indicates high priority
     case( gnt_arb )
         4'b0000: arb_pri = gen_pri;
-        4'b0001: arb_pri = {2'd3,2'd2,2'd1,2'd0};
-        4'b0010: arb_pri = {2'd3,2'd2,2'd0,2'd1};
-        4'b0011: arb_pri = {2'd3,2'd2,2'd1,2'd0};
-        4'b0100: arb_pri = {2'd3,2'd0,2'd2,2'd1};
-        4'b0101: arb_pri = {2'd3,2'd0,2'd2,2'd1};
-        4'b0110: arb_pri = {2'd3,2'd1,2'd0,2'd2};
-        4'b0111: arb_pri = {2'd3,2'd2,2'd1,2'd0};
-        4'b1000: arb_pri = {2'd0,2'd3,2'd2,2'd1};
-        4'b1001: arb_pri = {2'd0,2'd3,2'd2,2'd1};
-        4'b1010: arb_pri = {2'd0,2'd3,2'd1,2'd2};
-        4'b1011: arb_pri = {2'd0,2'd3,2'd2,2'd1};
-        4'b1100: arb_pri = {2'd0,2'd1,2'd3,2'd2};
+        4'b0001: arb_pri = {2'd1,2'd2,2'd3,2'd0};
+        4'b0010: arb_pri = {2'd1,2'd2,2'd0,2'd3};
+        4'b0011: arb_pri = {2'd2,2'd3,2'd0,2'd1};
+        4'b0100: arb_pri = {2'd1,2'd0,2'd2,2'd3};
+        4'b0101: arb_pri = {2'd2,2'd0,2'd3,2'd1};
+        4'b0110: arb_pri = {2'd2,2'd0,2'd1,2'd3};
+        4'b0111: arb_pri = {2'd3,2'd0,2'd1,2'd2};
+        4'b1000: arb_pri = {2'd0,2'd1,2'd2,2'd3};
+        4'b1001: arb_pri = {2'd0,2'd2,2'd3,2'd1};
+        4'b1010: arb_pri = {2'd0,2'd2,2'd1,2'd3};
+        4'b1011: arb_pri = {2'd0,2'd3,2'd1,2'd2};
+        4'b1100: arb_pri = {2'd0,2'd1,2'd2,2'd3};
         4'b1101: arb_pri = {2'd0,2'd1,2'd3,2'd2};
         4'b1110: arb_pri = {2'd0,2'd1,2'd2,2'd3};
-        default: arb_pri = {2'd3,2'd2,2'd1,2'd0};
+        default: arb_pri = {2'd0,2'd1,2'd2,2'd3};
     endcase
 end
 

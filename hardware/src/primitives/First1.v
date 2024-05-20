@@ -10,12 +10,10 @@ integer i;
 reg     flag;
 
 always@(*) begin
-    flag = 'd0;
     Addr = 'd0;
-    for(i=0; i<LEN; i=i+1) begin
-        if(Array[i] & !flag) begin
+    for(i=LEN-1; i>=0; i=i-1) begin
+        if(Array[i]) begin
             Addr = i;
-            flag = 1'b1;
         end
     end
 end

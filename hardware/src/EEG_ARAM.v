@@ -224,8 +224,6 @@ EEG_XRAM_RAM #(
     .clk                  ( clk              ),
     .rst_n                ( rst_n            ),
 
-    .PASS_DAT_ENA         ( 1'd0     ),
-
     .XRAM_DIN_VLD         ( ram_aram_din_vld ),
     .XRAM_DIN_RDY         ( ram_aram_din_rdy ),
     .XRAM_DIN_ADD         ( ram_aram_din_add ),

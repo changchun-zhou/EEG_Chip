@@ -38,6 +38,10 @@ module top;
 
   bit DumpStart;
   bit DumpEnd;
+  int frame_cnt = 0;
+  int layer_cnt = 0;
+  event frame_start;
+  event layer_start;
 
   // System Clock and Reset
   initial begin

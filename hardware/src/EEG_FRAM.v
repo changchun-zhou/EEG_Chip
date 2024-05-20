@@ -135,6 +135,11 @@ wire [FRAM_NUM_DW -1:0]                      ram_fram_dat_ena = ram_fram_dat_vld
 CPM_REG_RCE #( 1, 1 ) ITOF_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 1'd0, etof_dat_end, 1'd1, itof_lst_done );
 CPM_REG_RCE #( 1, 1 ) CONV_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 1'd0, conv_add_end, 1'd1, conv_lst_done );
 CPM_REG_RCE #( 1, 1 ) OTOF_LST_DONE_REG [FRAM_NUM_DW-1:0]( clk, rst_n, cfg_info_ena, 1'd0, etof_dat_end, 1'd1, otof_lst_done );
+
+wire [FRAM_NUM_DW -1:0] etof_add_vld_d;
+wire [FRAM_NUM_DW -1:0] etof_add_lst_d;
+CPM_REG_E #( 1 ) ETOF_DAT_VLD_REG [FRAM_NUM_DW-1:0]( clk, rst_n, etof_add_rdy, etof_add_vld, etof_add_vld_d );
+CPM_REG_E #( 1 ) ETOF_DAT_LST_REG [FRAM_NUM_DW-1:0]( clk, rst_n, etof_add_rdy, etof_add_lst, etof_add_lst_d );
 //=====================================================================================================================
 // IO Logic Design :
 //=====================================================================================================================
@@ -162,8 +167,8 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < FRAM_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            ftoe_dat_vld[gen_i] = ram_fram_dat_vld[gen_i];
-            ftoe_dat_lst[gen_i] = ram_fram_dat_lst[gen_i];
+            ftoe_dat_vld[gen_i] = cfg_flag_vld ? ram_fram_dat_vld[gen_i] : etof_add_vld_d[gen_i];
+            ftoe_dat_lst[gen_i] = cfg_flag_vld ? ram_fram_dat_lst[gen_i] : etof_add_lst_d[gen_i];
             ftoe_dat_dat[gen_i] = cfg_flag_vld ? ram_fram_dat_dat[gen_i] : {FRAM_DAT_DW{1'b1}};
         end
     end
@@ -184,9 +189,9 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < FRAM_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            ram_fram_add_vld[gen_i] = etof_add_vld[gen_i];
-            ram_fram_add_lst[gen_i] = etof_add_lst[gen_i];
-            ram_fram_add_add[gen_i] = etof_add_add[gen_i][0 +:FRAM_ADD_AW -2];
+            ram_fram_add_vld[gen_i] = cfg_flag_non ? 'd0 : etof_add_vld[gen_i];
+            ram_fram_add_lst[gen_i] = cfg_flag_non ? 'd0 : etof_add_lst[gen_i];
+            ram_fram_add_add[gen_i] = cfg_flag_non ? 'd0 : etof_add_add[gen_i][0 +:FRAM_ADD_AW -2];
             ram_fram_dat_rdy[gen_i] = ftoe_dat_rdy[gen_i];
         end
     end
@@ -201,8 +206,6 @@ EEG_XRAM_RAM #(
 ) EEG_FRAM_RAM_U(
     .clk                  ( clk              ),
     .rst_n                ( rst_n            ),
-    
-    .PASS_DAT_ENA         ( cfg_flag_non     ),
 
     .XRAM_DIN_VLD         ( ram_fram_din_vld ),
     .XRAM_DIN_RDY         ( ram_fram_din_rdy ),

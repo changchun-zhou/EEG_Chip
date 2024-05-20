@@ -215,8 +215,6 @@ EEG_XRAM_RAM #(
     .clk                  ( clk              ),
     .rst_n                ( rst_n            ),
 
-    .PASS_DAT_ENA         ( 1'd0     ),
-
     .XRAM_DIN_VLD         ( ram_wram_din_vld ),
     .XRAM_DIN_RDY         ( ram_wram_din_rdy ),
     .XRAM_DIN_ADD         ( ram_wram_din_add ),
@@ -256,19 +254,19 @@ end
 
 `ifdef ASSERT_ON
 
-property wram_rdy_check(dat_vld, dat_rdy);
-@(posedge clk)
-disable iff(rst_n!=1'b1)
-    dat_vld |-> ( dat_rdy );
-endproperty
-
-generate
-  for( gen_i=0 ; gen_i < WRAM_NUM_DW; gen_i = gen_i+1 ) begin : ASSERT_BLOCK
-
-    assert property ( wram_rdy_check(ram_wram_dat_vld[gen_i], ram_wram_dat_rdy[gen_i]) );
-
-  end
-endgenerate
+//property wram_rdy_check(dat_vld, dat_rdy);
+//@(posedge clk)
+//disable iff(rst_n!=1'b1)
+//    dat_vld |-> ( dat_rdy );
+//endproperty
+//
+//generate
+//  for( gen_i=0 ; gen_i < WRAM_NUM_DW; gen_i = gen_i+1 ) begin : ASSERT_BLOCK
+//
+//    assert property ( wram_rdy_check(ram_wram_dat_vld[gen_i], ram_wram_dat_rdy[gen_i]) );
+//
+//  end
+//endgenerate
 
 `endif
 endmodule

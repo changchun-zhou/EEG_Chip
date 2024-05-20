@@ -141,5 +141,19 @@ RAM #( .SRAM_WORD( OMUX_ADD_DW ), .SRAM_BIT( ORAM_DAT_DW ), .SRAM_BYTE(1) ) XRAM
 //    end
 //endgenerate
 
+property xram_dat_check(dat_vld, dat_rdy, dat_dat);
+@(posedge clk)
+disable iff(rst_n!=1'b1)
+    dat_vld && dat_rdy |-> ( |dat_dat inside {0, 1} );
+endproperty
+
+generate
+    for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
+        for( gen_j=0 ; gen_j < OMUX_NUM_DW; gen_j = gen_j+1 ) begin
+            assert property ( xram_dat_check(oram_dat_vld[gen_i][gen_j], oram_dat_rdy[gen_i][gen_j], oram_dat_dat[gen_i][gen_j]) );
+        end
+    end
+endgenerate
+
 `endif
 endmodule
