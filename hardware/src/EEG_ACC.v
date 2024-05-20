@@ -51,8 +51,10 @@ localparam WBUF_NUM_AW = $clog2(WBUF_NUM_DW);
 localparam ARAM_ADD_AW = 12;//4k
 localparam WRAM_ADD_AW = 13;//8k
 localparam ORAM_ADD_AW = 10;//4x0.25k
-localparam FRAM_ADD_AW = ARAM_ADD_AW;//4x1k
 localparam OMUX_ADD_AW = ORAM_ADD_AW-2;
+localparam FRAM_ADD_AW = ARAM_ADD_AW;//4x1k
+localparam FRAM_OCH_AW = 8;
+localparam FRAM_OCH_DW = 6;
 
 localparam MOVE_DAT_DW = CHIP_DAT_DW;
 localparam ARAM_DAT_DW = DATA_ACT_DW;
@@ -65,7 +67,7 @@ localparam CONV_OCH_DW =  8;//256
 localparam CONV_LEN_DW = 10;//1024
 localparam CONV_SUM_DW = 24;
 localparam CONV_MUL_DW = CONV_SUM_DW;
-localparam CONV_SFT_DW =  4;
+localparam CONV_SFT_DW =  8;
 localparam CONV_ADD_DW = CONV_SUM_DW;
 localparam DILA_FAC_DW =  2;//1/2/4/8
 localparam STRD_FAC_DW =  2;//1/2/4/8
@@ -73,6 +75,7 @@ localparam CONV_WEI_DW =  3;//8
 localparam CONV_SPT_DW =  8;//256
 localparam POOL_LEN_DW = ORAM_ADD_AW;
 localparam POOL_FAC_DW =  2;//1/2/4/8
+localparam WBUF_OCH_DW = CONV_OCH_DW-2;
 
 localparam PE_ROW = BANK_NUM_DW;
 localparam PE_COL = BANK_NUM_DW;
@@ -81,28 +84,29 @@ localparam STAT_DAT_DW = CONV_ICH_DW+CONV_WEI_DW;
 localparam STAT_NUM_DW = 32;
 localparam STAT_NUM_AW = $clog2(STAT_NUM_DW);
 
-localparam STAT_CMD_DW =  9;
+localparam STAT_CMD_DW = 10;
 localparam CHIP_CMD_DW = 32;
 localparam PEAY_CMD_DW =  3;
 localparam ARAM_CMD_DW =  8;
 localparam WRAM_CMD_DW =  6;
 localparam FRAM_CMD_DW =  4;
 localparam ORAM_CMD_DW =  9;
-localparam MOVE_CMD_DW =  8;
+localparam MOVE_CMD_DW =  9;
 
-localparam ACC_STATE = 12;
-localparam ACC_IDLE  = 12'b0000_0000_0001;
-localparam ACC_LOAD  = 12'b0000_0000_0010;
-localparam ACC_ACMD  = 12'b0000_0000_0100;
-localparam ACC_ITOA  = 12'b0000_0000_1000;
-localparam ACC_ITOW  = 12'b0000_0001_0000;
-localparam ACC_OTOA  = 12'b0000_0010_0000;
-localparam ACC_ATOW  = 12'b0000_0100_0000;
-localparam ACC_WTOA  = 12'b0000_1000_0000;
-localparam ACC_CONV  = 12'b0001_0000_0000;
-localparam ACC_POOL  = 12'b0010_0000_0000;
-localparam ACC_STAT  = 12'b0100_0000_0000;
-localparam ACC_READ  = 12'b1000_0000_0000;
+localparam ACC_STATE = 13;
+localparam ACC_IDLE  = 13'b0_0000_0000_0001;
+localparam ACC_LOAD  = 13'b0_0000_0000_0010;
+localparam ACC_ACMD  = 13'b0_0000_0000_0100;
+localparam ACC_ITOA  = 13'b0_0000_0000_1000;
+localparam ACC_ITOW  = 13'b0_0000_0001_0000;
+localparam ACC_OTOA  = 13'b0_0000_0010_0000;
+localparam ACC_ATOW  = 13'b0_0000_0100_0000;
+localparam ACC_WTOA  = 13'b0_0000_1000_0000;
+localparam ACC_CONV  = 13'b0_0001_0000_0000;
+localparam ACC_POOL  = 13'b0_0010_0000_0000;
+localparam ACC_STAT  = 13'b0_0100_0000_0000;
+localparam ACC_READ  = 13'b0_1000_0000_0000;
+localparam ACC_WTOS  = 13'b1_0000_0000_0000;
 
 reg [ACC_STATE -1:0] acc_cs;
 reg [ACC_STATE -1:0] acc_ns;
@@ -119,6 +123,7 @@ wire acc_conv = acc_cs == ACC_CONV;
 wire acc_pool = acc_cs == ACC_POOL;
 wire acc_stat = acc_cs == ACC_STAT;
 wire acc_read = acc_cs == ACC_READ;
+wire acc_wtos = acc_cs == ACC_WTOS;
 
 reg acc_idle_done;
 reg acc_load_done;
@@ -132,6 +137,7 @@ reg acc_conv_done;
 reg acc_pool_done;
 reg acc_stat_done;
 reg acc_read_done;
+reg acc_wtos_done;
 
 wire peay_idle;
 wire wram_idle;
@@ -185,6 +191,7 @@ wire cmd_conv_ena;
 wire cmd_pool_ena;
 wire cmd_stat_ena;
 wire cmd_read_ena;
+wire cmd_wtos_ena;
 wire cmd_otof_ena;
 wire cmd_zero_ena;
 
@@ -204,16 +211,20 @@ wire [OMUX_NUM_DW    -1:0] cfg_omux_idx;
 wire [ARAM_ADD_AW    -1:0] cfg_aram_add;
 wire [WRAM_ADD_AW    -1:0] cfg_wram_add;
 wire [ORAM_ADD_AW    -1:0] cfg_oram_add;
+wire [WRAM_ADD_AW    -1:0] cfg_bias_add;
 wire [ARAM_ADD_AW    -1:0] cfg_aram_len;
 wire [WRAM_ADD_AW    -1:0] cfg_wram_len;
 wire [ORAM_ADD_AW    -1:0] cfg_oram_len;
+wire [FRAM_ADD_AW    -1:0] cfg_fram_add;
+wire [FRAM_OCH_AW    -1:0] cfg_foch_idx;
+wire [FRAM_OCH_AW    -1:0] cfg_foch_num;
+wire [FRAM_OCH_DW    -1:0] cfg_foch_len;
 
 wire [CONV_ICH_DW    -1:0] cfg_conv_ich;
 wire [CONV_OCH_DW    -1:0] cfg_conv_och;
 wire [CONV_LEN_DW    -1:0] cfg_conv_len;
 wire [CONV_MUL_DW    -1:0] cfg_conv_mul;
 wire [CONV_SFT_DW    -1:0] cfg_conv_sft;
-wire [CONV_ADD_DW    -1:0] cfg_conv_add;
 wire [DILA_FAC_DW    -1:0] cfg_dila_fac;
 wire [STRD_FAC_DW    -1:0] cfg_strd_fac;
 wire [CONV_WEI_DW    -1:0] cfg_conv_wei;
@@ -232,8 +243,6 @@ wire                       cfg_avgp_ena;
 wire                       cfg_resn_ena;
 wire                       cfg_cpad_ena;
 
-
-
 wire [CONV_SPT_DW    -1:0] cfg_splt_len;
 
 wire [POOL_LEN_DW    -1:0] cfg_pool_len;
@@ -247,7 +256,7 @@ wire [WRAM_CMD_DW   -2:0] wram_cfg_info_cmd_tmp = {cmd_read_ena && |cfg_wram_idx
 wire [FRAM_CMD_DW   -2:0] fram_cfg_info_cmd_tmp = {cmd_otof_ena, cmd_conv_ena, 1'd0};
 wire [ARAM_CMD_DW   -2:0] aram_cfg_info_cmd_tmp = {cmd_read_ena && |cfg_aram_idx, 1'd0, cmd_atow_ena, cmd_wtoa_ena, cmd_otoa_ena, cmd_conv_ena, cmd_itoa_ena};
 wire [ORAM_CMD_DW   -2:0] oram_cfg_info_cmd_tmp = {cmd_read_ena && |cfg_oram_idx, cmd_stat_ena && ~cfg_zero_ena, cmd_otoa_ena, cmd_pool_ena, cmd_conv_ena&&cfg_resn_ena, cmd_conv_ena&&~cfg_resn_ena, cmd_zero_ena};
-wire [MOVE_CMD_DW   -2:0] move_cfg_info_cmd_tmp = {cmd_read_ena, cmd_stat_ena && ~cfg_zero_ena, cmd_wtoa_ena, cmd_atow_ena, cmd_otoa_ena, cmd_itow_ena, cmd_itoa_ena};
+wire [MOVE_CMD_DW   -2:0] move_cfg_info_cmd_tmp = {cmd_wtos_ena, cmd_read_ena, cmd_stat_ena && ~cfg_zero_ena, cmd_wtoa_ena, cmd_atow_ena, cmd_otoa_ena, cmd_itow_ena, cmd_itoa_ena};
 
 wire [PEAY_CMD_DW   -1:0] peay_cfg_info_cmd = {peay_cfg_info_cmd_tmp, ~|peay_cfg_info_cmd_tmp};
 wire [WRAM_CMD_DW   -1:0] wram_cfg_info_cmd = {wram_cfg_info_cmd_tmp, ~|wram_cfg_info_cmd_tmp};
@@ -287,6 +296,7 @@ wire [PE_ROW -1:0][PE_COL -1:0]                      peay_wram_add_lst;
 reg  [PE_ROW -1:0][PE_COL -1:0]                      peay_wram_add_rdy;
 wire [PE_ROW -1:0][PE_COL -1:0][WRAM_ADD_AW    -1:0] peay_wram_add_add;
 wire [PE_ROW -1:0][PE_COL -1:0][STAT_DAT_DW    -1:0] peay_wram_add_buf;
+wire [PE_ROW -1:0][PE_COL -1:0][WBUF_OCH_DW    -1:0] peay_wram_add_och;
 reg  [PE_ROW -1:0][PE_COL -1:0]                      peay_wram_dat_vld;
 reg  [PE_ROW -1:0][PE_COL -1:0]                      peay_wram_dat_lst;
 wire [PE_ROW -1:0][PE_COL -1:0]                      peay_wram_dat_rdy;
@@ -299,7 +309,7 @@ wire [PE_COL -1:0][PE_ROW -1:0][OMUX_ADD_AW    -1:0] peay_oram_dat_add;
 wire [PE_COL -1:0][PE_ROW -1:0][ORAM_DAT_DW    -1:0] peay_oram_dat_dat;
 
 //WRAM_WBUF
-wire wbuf_cfg_info_change = cfg_acmd_dat[0 +:4]=='d5;
+wire wbuf_cfg_info_change = cfg_acmd_dat[0 +:4]=='d9 && cfg_acmd_dat[4 +:4]=='d2;
 
 wire [PE_ROW -1:0] wbuf_cfg_info_vld;
 wire [PE_ROW -1:0] wbuf_cfg_info_rdy;
@@ -318,6 +328,7 @@ reg  [PE_ROW -1:0][PE_COL -1:0]                      wbuf_ptow_add_lst;
 wire [PE_ROW -1:0][PE_COL -1:0]                      wbuf_ptow_add_rdy;
 reg  [PE_ROW -1:0][PE_COL -1:0][WRAM_ADD_AW    -1:0] wbuf_ptow_add_add;
 reg  [PE_ROW -1:0][PE_COL -1:0][STAT_DAT_DW    -1:0] wbuf_ptow_add_buf;
+reg  [PE_ROW -1:0][PE_COL -1:0][WBUF_OCH_DW    -1:0] wbuf_ptow_add_och;
 wire [PE_ROW -1:0][PE_COL -1:0]                      wbuf_ptow_dat_vld;
 wire [PE_ROW -1:0][PE_COL -1:0]                      wbuf_ptow_dat_lst;
 reg  [PE_ROW -1:0][PE_COL -1:0]                      wbuf_ptow_dat_rdy;
@@ -601,6 +612,7 @@ always @ ( * )begin
   acc_pool_done =/*~cfg_acmd_vld && */oram_idle;
   acc_stat_done =/*~cfg_acmd_vld && */oram_idle;
   acc_read_done =/*~cfg_acmd_vld && */move_idle && wram_idle && aram_idle && oram_idle;
+  acc_wtos_done =/*~cfg_acmd_vld && */move_idle;
 end
 
 generate
@@ -679,6 +691,7 @@ generate
                 wbuf_ptow_add_lst[gen_i][gen_j] = peay_wram_add_lst[gen_i][gen_j];
                 wbuf_ptow_add_add[gen_i][gen_j] = peay_wram_add_add[gen_i][gen_j];
                 wbuf_ptow_add_buf[gen_i][gen_j] = peay_wram_add_buf[gen_i][gen_j];
+                wbuf_ptow_add_och[gen_i][gen_j] = peay_wram_add_och[gen_i][gen_j];
                 wbuf_ptow_dat_rdy[gen_i][gen_j] = peay_wram_dat_rdy[gen_i][gen_j];
             end
         end
@@ -890,7 +903,7 @@ endgenerate
 
 //MOVE
 always @ ( * )begin
-    move_itom_dat_vld = acc_itoa || acc_itow ? chip_dat_vld : 'd0;
+    move_itom_dat_vld = acc_itoa || acc_itow ? chip_dat_vld && ~chip_itox_lst : 'd0;
     move_itom_dat_lst = acc_itoa || acc_itow ? chip_dat_lst : 'd0;
     move_itom_dat_dat = acc_itoa || acc_itow ? chip_dat_dat : 'd0;
 end
@@ -928,10 +941,10 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < PE_COL; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            move_mtow_add_rdy[gen_i] = acc_wtoa || acc_read ? wram_etow_add_rdy[gen_i] : 'd0;
-            move_wtom_dat_vld[gen_i] = acc_wtoa || acc_read ? wram_wtoe_dat_vld[gen_i] : 'd0;
-            move_wtom_dat_lst[gen_i] = acc_wtoa || acc_read ? wram_wtoe_dat_lst[gen_i] : 'd0;
-            move_wtom_dat_dat[gen_i] = acc_wtoa || acc_read ? wram_wtoe_dat_dat[gen_i] : 'd0;
+            move_mtow_add_rdy[gen_i] = acc_wtoa || acc_read || acc_wtos ? wram_etow_add_rdy[gen_i] : 'd0;
+            move_wtom_dat_vld[gen_i] = acc_wtoa || acc_read || acc_wtos ? wram_wtoe_dat_vld[gen_i] : 'd0;
+            move_wtom_dat_lst[gen_i] = acc_wtoa || acc_read || acc_wtos ? wram_wtoe_dat_lst[gen_i] : 'd0;
+            move_wtom_dat_dat[gen_i] = acc_wtoa || acc_read || acc_wtos ? wram_wtoe_dat_dat[gen_i] : 'd0;
         end
     end
 endgenerate
@@ -971,7 +984,10 @@ EEG_CMD #(
     .ORAM_NUM_DW          ( ORAM_NUM_DW      ),
     .ARAM_ADD_AW          ( ARAM_ADD_AW      ),
     .WRAM_ADD_AW          ( WRAM_ADD_AW      ),
-    .ORAM_ADD_AW          ( ORAM_ADD_AW      )
+    .ORAM_ADD_AW          ( ORAM_ADD_AW      ),
+    .FRAM_ADD_AW          ( FRAM_ADD_AW      ),
+    .FRAM_OCH_AW          ( FRAM_OCH_AW      ),
+    .FRAM_OCH_DW          ( FRAM_OCH_DW      )
 ) EEG_CMD_U(
     .clk                  ( clk              ),
     .rst_n                ( rst_n            ),
@@ -989,6 +1005,7 @@ EEG_CMD #(
     .CMD_POOL_ENA         ( cmd_pool_ena     ),
     .CMD_STAT_ENA         ( cmd_stat_ena     ),
     .CMD_READ_ENA         ( cmd_read_ena     ),
+    .CMD_WTOS_ENA         ( cmd_wtos_ena     ),
 
     .CFG_ARAM_IDX         ( cfg_aram_idx     ),
     .CFG_WRAM_IDX         ( cfg_wram_idx     ),
@@ -1000,13 +1017,17 @@ EEG_CMD #(
     .CFG_ARAM_LEN         ( cfg_aram_len     ),
     .CFG_WRAM_LEN         ( cfg_wram_len     ),
     .CFG_ORAM_LEN         ( cfg_oram_len     ),
+    .CFG_FRAM_ADD         ( cfg_fram_add     ),
+    .CFG_FOCH_IDX         ( cfg_foch_idx     ),
+    .CFG_FOCH_NUM         ( cfg_foch_num     ),
+    .CFG_FOCH_LEN         ( cfg_foch_len     ),
 
     .CFG_CONV_ICH         ( cfg_conv_ich     ),
     .CFG_CONV_OCH         ( cfg_conv_och     ),
     .CFG_CONV_LEN         ( cfg_conv_len     ),
     .CFG_CONV_MUL         ( cfg_conv_mul     ),
     .CFG_CONV_SFT         ( cfg_conv_sft     ),
-    .CFG_CONV_ADD         ( cfg_conv_add     ),
+    .CFG_BIAS_ADD         ( cfg_bias_add     ),
     .CFG_DILA_FAC         ( cfg_dila_fac     ),
     .CFG_STRD_FAC         ( cfg_strd_fac     ),
     .CFG_CONV_WEI         ( cfg_conv_wei     ),
@@ -1063,13 +1084,14 @@ EEG_PEA #(
     .CFG_INFO_CMD         ( peay_cfg_info_cmd ),
     .CFG_ARAM_ADD         ( cfg_aram_add      ),
     .CFG_WRAM_ADD         ( cfg_wram_add      ),
+    .CFG_FRAM_ADD         ( cfg_fram_add      ),
+    .CFG_BIAS_ADD         ( cfg_bias_add      ),
     .CFG_CPAD_ENA         ( cfg_cpad_ena      ),
     .CFG_CONV_ICH         ( cfg_conv_ich      ),
     .CFG_CONV_OCH         ( cfg_conv_och      ),
     .CFG_CONV_LEN         ( cfg_conv_len      ),
     .CFG_CONV_MUL         ( cfg_conv_mul      ),
     .CFG_CONV_SFT         ( cfg_conv_sft      ),
-    .CFG_CONV_ADD         ( cfg_conv_add      ),
     .CFG_CONV_WEI         ( cfg_conv_wei      ),
     .CFG_FLAG_VLD         ( cfg_flag_vld      ),
     .CFG_DILA_FAC         ( cfg_dila_fac      ),
@@ -1100,6 +1122,7 @@ EEG_PEA #(
     .WRAM_ADD_RDY         ( peay_wram_add_rdy ),
     .WRAM_ADD_ADD         ( peay_wram_add_add ),
     .WRAM_ADD_BUF         ( peay_wram_add_buf ),
+    .WRAM_ADD_OCH         ( peay_wram_add_och ),
     .WRAM_DAT_VLD         ( peay_wram_dat_vld ),
     .WRAM_DAT_LST         ( peay_wram_dat_lst ),
     .WRAM_DAT_RDY         ( peay_wram_dat_rdy ),
@@ -1137,6 +1160,7 @@ EEG_WRAM_WBUF #(
     .PTOW_ADD_RDY         ( wbuf_ptow_add_rdy ),
     .PTOW_ADD_ADD         ( wbuf_ptow_add_add ),
     .PTOW_ADD_BUF         ( wbuf_ptow_add_buf ),
+    .PTOW_ADD_OCH         ( wbuf_ptow_add_och ),
     .PTOW_DAT_VLD         ( wbuf_ptow_dat_vld ),
     .PTOW_DAT_LST         ( wbuf_ptow_dat_lst ),
     .PTOW_DAT_RDY         ( wbuf_ptow_dat_rdy ),
@@ -1403,6 +1427,9 @@ EEG_RAM_MOVER #(
     .WRAM_ADD_AW          ( WRAM_ADD_AW       ),
     .ORAM_ADD_AW          ( ORAM_ADD_AW       ),
     .OMUX_ADD_AW          ( OMUX_ADD_AW       ),
+    .FRAM_ADD_AW          ( FRAM_ADD_AW       ),
+    .FRAM_OCH_AW          ( FRAM_OCH_AW       ),
+    .FRAM_OCH_DW          ( FRAM_OCH_DW       ),
     .CONV_LEN_DW          ( CONV_LEN_DW       ),
     .CONV_ICH_DW          ( CONV_ICH_DW       ),
     .CONV_OCH_DW          ( CONV_OCH_DW       ),
@@ -1419,23 +1446,27 @@ EEG_RAM_MOVER #(
     .CFG_INFO_VLD         ( move_cfg_info_vld ),
     .CFG_INFO_RDY         ( move_cfg_info_rdy ),
     .CFG_INFO_CMD         ( move_cfg_info_cmd ),
-    .CFG_ARAM_IDX         ( cfg_aram_idx ),
-    .CFG_WRAM_IDX         ( cfg_wram_idx ),
-    .CFG_ORAM_IDX         ( cfg_oram_idx ),
-    .CFG_OMUX_IDX         ( cfg_omux_idx ),
-    .CFG_ARAM_ADD         ( cfg_aram_add ),
-    .CFG_WRAM_ADD         ( cfg_wram_add ),
-    .CFG_ORAM_ADD         ( cfg_oram_add ),
-    .CFG_ARAM_LEN         ( cfg_aram_len ),
-    .CFG_WRAM_LEN         ( cfg_wram_len ),
-    .CFG_ORAM_LEN         ( cfg_oram_len ),
-    .CFG_CONV_LEN         ( cfg_conv_len ),
-    .CFG_CONV_OCH         ( cfg_conv_och ),
-    .CFG_CONV_WEI         ( cfg_conv_wei ),
-    .CFG_FLAG_ENA         ( cfg_flag_ena ),
-    .CFG_WSTA_ENA         ( cfg_wsta_ena ),
-    .CFG_SPLT_ENA         ( cfg_splt_ena ),
-    .CFG_SPLT_LEN         ( cfg_splt_len ),
+    .CFG_ARAM_IDX         ( cfg_aram_idx      ),
+    .CFG_WRAM_IDX         ( cfg_wram_idx      ),
+    .CFG_ORAM_IDX         ( cfg_oram_idx      ),
+    .CFG_OMUX_IDX         ( cfg_omux_idx      ),
+    .CFG_ARAM_ADD         ( cfg_aram_add      ),
+    .CFG_WRAM_ADD         ( cfg_wram_add      ),
+    .CFG_ORAM_ADD         ( cfg_oram_add      ),
+    .CFG_ARAM_LEN         ( cfg_aram_len      ),
+    .CFG_WRAM_LEN         ( cfg_wram_len      ),
+    .CFG_ORAM_LEN         ( cfg_oram_len      ),
+    .CFG_FRAM_ADD         ( cfg_fram_add      ),
+    .CFG_FOCH_IDX         ( cfg_foch_idx      ),
+    .CFG_FOCH_NUM         ( cfg_foch_num      ),
+    .CFG_FOCH_LEN         ( cfg_foch_len      ),
+    .CFG_CONV_LEN         ( cfg_conv_len      ),
+    .CFG_CONV_OCH         ( cfg_conv_och      ),
+    .CFG_CONV_WEI         ( cfg_conv_wei      ),
+    .CFG_FLAG_ENA         ( cfg_flag_ena      ),
+    .CFG_WSTA_ENA         ( cfg_wsta_ena      ),
+    .CFG_SPLT_ENA         ( cfg_splt_ena      ),
+    .CFG_SPLT_LEN         ( cfg_splt_len      ),
 
     .ITOM_DAT_VLD         ( move_itom_dat_vld ),
     .ITOM_DAT_LST         ( move_itom_dat_lst ),
@@ -1522,6 +1553,7 @@ always @ ( * )begin
         ACC_POOL: acc_ns = acc_pool_done ? ACC_IDLE : acc_cs;
         ACC_STAT: acc_ns = acc_stat_done ? ACC_IDLE : acc_cs;
         ACC_READ: acc_ns = acc_read_done ? ACC_IDLE : acc_cs;
+        ACC_WTOS: acc_ns = acc_wtos_done ? ACC_IDLE : acc_cs;
          default: acc_ns = ACC_IDLE;
     endcase
 end

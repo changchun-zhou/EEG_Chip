@@ -10,7 +10,7 @@
 // Description : CMD
 //========================================================
 module EEG_CMD #(
-    parameter STAT_CMD_DW =  9,
+    parameter STAT_CMD_DW = 10,
     parameter CHIP_CMD_DW = 32,
     parameter BANK_NUM_DW =  4,
     parameter CONV_ICH_DW =  8,//256
@@ -18,7 +18,7 @@ module EEG_CMD #(
     parameter CONV_LEN_DW = 10,//1024
     parameter CONV_SUM_DW = 24,
     parameter CONV_MUL_DW = CONV_SUM_DW,
-    parameter CONV_SFT_DW =  4,
+    parameter CONV_SFT_DW =  8,
     parameter CONV_ADD_DW = CONV_SUM_DW,
     parameter DILA_FAC_DW =  2,//1/2/4/8
     parameter STRD_FAC_DW =  2,//1/2/4/8
@@ -32,6 +32,9 @@ module EEG_CMD #(
     parameter ARAM_ADD_AW = 12,//4k
     parameter WRAM_ADD_AW = 13,//8k
     parameter ORAM_ADD_AW = 10,//1k
+    parameter FRAM_ADD_AW = ARAM_ADD_AW,//
+    parameter FRAM_OCH_AW = 8,
+    parameter FRAM_OCH_DW = 6,
     parameter POOL_LEN_DW = ORAM_ADD_AW
   )(
     input                        clk,
@@ -50,6 +53,7 @@ module EEG_CMD #(
     output                       CMD_POOL_ENA,
     output                       CMD_STAT_ENA,
     output                       CMD_READ_ENA,
+    output                       CMD_WTOS_ENA,
     //ENA
     output                       CFG_RELU_ENA,
     output                       CFG_SPLT_ENA,
@@ -75,13 +79,18 @@ module EEG_CMD #(
     output [ARAM_ADD_AW    -1:0] CFG_ARAM_LEN,
     output [WRAM_ADD_AW    -1:0] CFG_WRAM_LEN,
     output [ORAM_ADD_AW    -1:0] CFG_ORAM_LEN,
+    output [FRAM_ADD_AW    -1:0] CFG_FRAM_ADD,
+    output [FRAM_OCH_AW    -1:0] CFG_FOCH_IDX,
+    output [FRAM_OCH_AW    -1:0] CFG_FOCH_NUM,
+    output [FRAM_OCH_DW    -1:0] CFG_FOCH_LEN,
+
     //CONV
     output [CONV_ICH_DW    -1:0] CFG_CONV_ICH,
     output [CONV_OCH_DW    -1:0] CFG_CONV_OCH,
     output [CONV_LEN_DW    -1:0] CFG_CONV_LEN,
     output [CONV_MUL_DW    -1:0] CFG_CONV_MUL,
     output [CONV_SFT_DW    -1:0] CFG_CONV_SFT,
-    output [CONV_ADD_DW    -1:0] CFG_CONV_ADD,
+    output [WRAM_ADD_AW    -1:0] CFG_BIAS_ADD,
     output [DILA_FAC_DW    -1:0] CFG_DILA_FAC,
     output [STRD_FAC_DW    -1:0] CFG_STRD_FAC,
     output [CONV_WEI_DW    -1:0] CFG_CONV_WEI,
@@ -95,6 +104,7 @@ module EEG_CMD #(
 // Constant Definition :
 //=====================================================================================================================
 localparam MODE_CMD_DW = 4;
+localparam INFO_CMD_DW = 4;
 
 localparam CMD_ITOA = 4'd0;
 localparam CMD_ITOW = 4'd1;
@@ -106,6 +116,7 @@ localparam CMD_POOL = 4'd6;
 localparam CMD_STAT = 4'd7;
 localparam CMD_READ = 4'd8;
 
+localparam INF_INFO = 4'd9;
 localparam INF_MULT = 4'd10;
 localparam INF_BIAS = 4'd11;
 localparam INF_CONV = 4'd12;
@@ -122,7 +133,7 @@ wire                     cfg_acmd_vld = CFG_ACMD_VLD;
 wire [CHIP_CMD_DW  -1:0] cfg_acmd_dat = CFG_ACMD_DAT;
 wire                     cfg_info_vld;
 wire [STAT_CMD_DW  -1:0] cfg_info_cmd;
-wire [MODE_CMD_DW  -1:0] cfg_mode_cmd = CFG_ACMD_DAT[0 +:4];
+wire [MODE_CMD_DW  -1:0] cfg_mode_cmd = CFG_ACMD_DAT[0 +:MODE_CMD_DW];
 
 assign CFG_INFO_VLD = cfg_info_vld;
 assign CFG_INFO_CMD = cfg_info_cmd;
@@ -134,22 +145,30 @@ reg [WRAM_NUM_DW  -1:0] cfg_wram_idx;
 reg [ORAM_NUM_DW  -1:0] cfg_oram_idx;
 reg [OMUX_NUM_DW  -1:0] cfg_omux_idx;
 reg [ARAM_ADD_AW  -1:0] cfg_aram_add;
+reg [FRAM_ADD_AW  -1:0] cfg_fram_add;
 reg [WRAM_ADD_AW  -1:0] cfg_wram_add;
 reg [ORAM_ADD_AW  -1:0] cfg_oram_add;
 reg [ARAM_ADD_AW  -1:0] cfg_aram_len;
 reg [WRAM_ADD_AW  -1:0] cfg_wram_len;
 reg [ORAM_ADD_AW  -1:0] cfg_oram_len;
+reg [FRAM_OCH_AW  -1:0] cfg_foch_idx;
+reg [FRAM_OCH_AW  -1:0] cfg_foch_num;
+reg [FRAM_OCH_DW  -1:0] cfg_foch_len;
 
 assign CFG_ARAM_IDX = cfg_aram_idx;
 assign CFG_WRAM_IDX = cfg_wram_idx;
 assign CFG_ORAM_IDX = cfg_oram_idx;
 assign CFG_OMUX_IDX = cfg_omux_idx;
 assign CFG_ARAM_ADD = cfg_aram_add;
+assign CFG_FRAM_ADD = cfg_fram_add;
 assign CFG_WRAM_ADD = cfg_wram_add;
 assign CFG_ORAM_ADD = cfg_oram_add;
 assign CFG_ARAM_LEN = cfg_aram_len;
 assign CFG_WRAM_LEN = cfg_wram_len;
 assign CFG_ORAM_LEN = cfg_oram_len;
+assign CFG_FOCH_IDX = cfg_foch_idx;
+assign CFG_FOCH_NUM = cfg_foch_num;
+assign CFG_FOCH_LEN = cfg_foch_len;
 
 //CONV
 reg [CONV_ICH_DW  -1:0] cfg_conv_ich;
@@ -157,7 +176,7 @@ reg [CONV_OCH_DW  -1:0] cfg_conv_och;
 reg [CONV_LEN_DW  -1:0] cfg_conv_len;
 reg [CONV_MUL_DW  -1:0] cfg_conv_mul;
 reg [CONV_SFT_DW  -1:0] cfg_conv_sft;
-reg [CONV_ADD_DW  -1:0] cfg_conv_add;
+reg [WRAM_ADD_AW  -1:0] cfg_bias_add;
 reg [DILA_FAC_DW  -1:0] cfg_dila_fac;
 reg [STRD_FAC_DW  -1:0] cfg_strd_fac;
 reg [CONV_WEI_DW  -1:0] cfg_conv_wei;
@@ -167,7 +186,7 @@ assign CFG_CONV_OCH = cfg_conv_och;
 assign CFG_CONV_LEN = cfg_conv_len;
 assign CFG_CONV_MUL = cfg_conv_mul;
 assign CFG_CONV_SFT = cfg_conv_sft;
-assign CFG_CONV_ADD = cfg_conv_add;
+assign CFG_BIAS_ADD = cfg_bias_add;
 assign CFG_DILA_FAC = cfg_dila_fac;
 assign CFG_STRD_FAC = cfg_strd_fac;
 assign CFG_CONV_WEI = cfg_conv_wei;
@@ -221,6 +240,7 @@ wire cmd_conv_ena;
 wire cmd_pool_ena;
 wire cmd_stat_ena;
 wire cmd_read_ena;
+wire cmd_wtos_ena;
 
 assign CMD_ITOA_ENA = cmd_itoa_ena;
 assign CMD_ITOW_ENA = cmd_itow_ena;
@@ -231,11 +251,18 @@ assign CMD_CONV_ENA = cmd_conv_ena;
 assign CMD_POOL_ENA = cmd_pool_ena;
 assign CMD_STAT_ENA = cmd_stat_ena;
 assign CMD_READ_ENA = cmd_read_ena;
-assign cfg_info_cmd = {cmd_read_ena, cmd_stat_ena, cmd_pool_ena, cmd_conv_ena, cmd_wtoa_ena,
-                       cmd_atow_ena, cmd_otoa_ena, cmd_itow_ena, cmd_itoa_ena};
+assign CMD_WTOS_ENA = cmd_wtos_ena;
+assign cfg_info_cmd ={cmd_wtos_ena, cmd_read_ena, cmd_stat_ena, cmd_pool_ena, cmd_conv_ena, 
+                      cmd_wtoa_ena, cmd_atow_ena, cmd_otoa_ena, cmd_itow_ena, cmd_itoa_ena};
 //=====================================================================================================================
 // Variable Definition :
 //=====================================================================================================================
+//INF_INFO
+wire [INFO_CMD_DW -1:0] cfg_info_idx = CFG_ACMD_DAT[MODE_CMD_DW +:INFO_CMD_DW];
+wire cmd_foch_inf = cfg_mode_cmd==INF_INFO && cfg_info_idx=='d0;
+wire cmd_fadd_inf = cfg_mode_cmd==INF_INFO && cfg_info_idx=='d1;
+wire cmd_wbuf_inf = cfg_mode_cmd==INF_INFO && cfg_info_idx=='d2;
+
 wire cfg_splt_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_OTOA;
 wire cfg_comb_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_OTOA;
 wire cfg_flag_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_STAT;
@@ -244,9 +271,9 @@ wire cfg_maxp_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_POOL;
 wire cfg_avgp_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_POOL;
 wire cfg_resn_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
 wire cfg_flag_vld_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
-wire cfg_wsta_vld_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
-wire cfg_wbuf_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
 wire cfg_cpad_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
+wire cfg_wsta_vld_ena = cfg_acmd_vld && cmd_wbuf_inf;
+wire cfg_wbuf_ena_ena = cfg_acmd_vld && cmd_wbuf_inf;
 CPM_REG_E #( 1 ) CFG_SPLT_ENA_REG( clk, rst_n, cfg_splt_ena_ena, cfg_acmd_dat[20], cfg_splt_ena );
 CPM_REG_E #( 1 ) CFG_COMB_ENA_REG( clk, rst_n, cfg_comb_ena_ena, cfg_acmd_dat[21], cfg_comb_ena );
 CPM_REG_E #( 1 ) CFG_FLAG_ENA_REG( clk, rst_n, cfg_flag_ena_ena, cfg_acmd_dat[ 4], cfg_flag_ena );
@@ -255,9 +282,9 @@ CPM_REG_E #( 1 ) CFG_MAXP_ENA_REG( clk, rst_n, cfg_maxp_ena_ena, cfg_acmd_dat[16
 CPM_REG_E #( 1 ) CFG_AVGP_ENA_REG( clk, rst_n, cfg_avgp_ena_ena, cfg_acmd_dat[17], cfg_avgp_ena );
 CPM_REG_E #( 1 ) CFG_RESN_ENA_REG( clk, rst_n, cfg_resn_ena_ena, cfg_acmd_dat[11], cfg_resn_ena );
 CPM_REG_E #( 1 ) CFG_FLAG_VLD_REG( clk, rst_n, cfg_flag_vld_ena, cfg_acmd_dat[12], cfg_flag_vld );
-CPM_REG_E #( 1 ) CFG_WSTA_VLD_REG( clk, rst_n, cfg_wsta_vld_ena, cfg_acmd_dat[13], cfg_wsta_vld );
-CPM_REG_E #( 1 ) CFG_WBUF_ENA_REG( clk, rst_n, cfg_wbuf_ena_ena, cfg_acmd_dat[14], cfg_wbuf_ena );
-CPM_REG_E #( 1 ) CFG_CPAD_ENA_REG( clk, rst_n, cfg_wbuf_ena_ena, cfg_acmd_dat[15], cfg_cpad_ena );
+CPM_REG_E #( 1 ) CFG_CPAD_ENA_REG( clk, rst_n, cfg_cpad_ena_ena, cfg_acmd_dat[15], cfg_cpad_ena );
+CPM_REG_E #( 1 ) CFG_WSTA_VLD_REG( clk, rst_n, cfg_wsta_vld_ena, cfg_acmd_dat[ 9], cfg_wsta_vld );
+CPM_REG_E #( 1 ) CFG_WBUF_ENA_REG( clk, rst_n, cfg_wbuf_ena_ena, cfg_acmd_dat[10], cfg_wbuf_ena );
 //=====================================================================================================================
 // IO Logic Design :
 //=====================================================================================================================
@@ -270,6 +297,7 @@ wire cmd_conv_ena_tmp = cfg_mode_cmd==CMD_CONV;
 wire cmd_pool_ena_tmp = cfg_mode_cmd==CMD_POOL;
 wire cmd_stat_ena_tmp = cfg_mode_cmd==CMD_STAT;
 wire cmd_read_ena_tmp = cfg_mode_cmd==CMD_READ;
+wire cmd_wtos_ena_tmp = cmd_wbuf_inf && cfg_acmd_dat[8];
 CPM_REG_E #( 1 ) CMD_ITOA_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_itoa_ena_tmp, cmd_itoa_ena );
 CPM_REG_E #( 1 ) CMD_ITOW_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_itow_ena_tmp, cmd_itow_ena );
 CPM_REG_E #( 1 ) CMD_OTOA_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_otoa_ena_tmp, cmd_otoa_ena );
@@ -279,6 +307,7 @@ CPM_REG_E #( 1 ) CMD_CONV_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_conv_ena_tmp, c
 CPM_REG_E #( 1 ) CMD_POOL_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_pool_ena_tmp, cmd_pool_ena );
 CPM_REG_E #( 1 ) CMD_STAT_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_stat_ena_tmp, cmd_stat_ena );
 CPM_REG_E #( 1 ) CMD_READ_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_read_ena_tmp, cmd_read_ena );
+CPM_REG_E #( 1 ) CMD_WTOS_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_wtos_ena_tmp, cmd_wtos_ena );
 //=====================================================================================================================
 // Logic Design :
 //=====================================================================================================================
@@ -331,6 +360,7 @@ always @ ( posedge clk or negedge rst_n )begin
             CMD_ATOW: cfg_wram_idx <= cfg_acmd_dat[12 +:4];
             CMD_WTOA: cfg_wram_idx <= cfg_acmd_dat[12 +:4];
             CMD_READ: cfg_wram_idx <= cfg_acmd_dat[12 +:4];
+            INF_INFO: cfg_wram_idx <= cmd_wbuf_inf ? cfg_acmd_dat[12 +:4] : cfg_wram_idx;
              default: cfg_wram_idx <= cfg_wram_idx;
         endcase
     end
@@ -369,6 +399,50 @@ always @ ( posedge clk or negedge rst_n )begin
             CMD_ITOA: cfg_aram_add <= cfg_acmd_dat[20 +:12];
             INF_ARAM: cfg_aram_add <= cfg_acmd_dat[20 +:12];
              default: cfg_aram_add <= cfg_aram_add;
+        endcase
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        cfg_fram_add <= 'd0;
+    end else if( cfg_acmd_vld && cmd_fadd_inf )begin
+        case( cfg_mode_cmd )
+            INF_INFO: cfg_fram_add <= cfg_acmd_dat[8 +:12];
+             default: cfg_fram_add <= cfg_fram_add;
+        endcase
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        cfg_foch_idx <= 'd0;
+    end else if( cfg_acmd_vld && cmd_foch_inf )begin
+        case( cfg_mode_cmd )
+            INF_INFO: cfg_foch_idx <= cfg_acmd_dat[8 +:8];
+             default: cfg_foch_idx <= cfg_foch_idx;
+        endcase
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        cfg_foch_num <= 'd0;
+    end else if( cfg_acmd_vld && cmd_foch_inf )begin
+        case( cfg_mode_cmd )
+            INF_INFO: cfg_foch_num <= cfg_acmd_dat[16 +:8];
+             default: cfg_foch_num <= cfg_foch_num;
+        endcase
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        cfg_foch_len <= 'd0;
+    end else if( cfg_acmd_vld && cmd_foch_inf )begin
+        case( cfg_mode_cmd )
+            INF_INFO: cfg_foch_len <= cfg_acmd_dat[24 +:6];
+             default: cfg_foch_len <= cfg_foch_len;
         endcase
     end
 end
@@ -483,7 +557,7 @@ always @ ( posedge clk or negedge rst_n )begin
         cfg_conv_sft <= 'd0;
     end else if( cfg_acmd_vld )begin
         case( cfg_mode_cmd )
-            INF_MULT: cfg_conv_sft <= cfg_acmd_dat[28 +:4];
+            INF_BIAS: cfg_conv_sft <= cfg_acmd_dat[24 +:8];
              default: cfg_conv_sft <= cfg_conv_sft;
         endcase
     end
@@ -491,11 +565,11 @@ end
 
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )begin
-        cfg_conv_add <= 'd0;
+        cfg_bias_add <= 'd0;
     end else if( cfg_acmd_vld )begin
         case( cfg_mode_cmd )
-            INF_BIAS: cfg_conv_add <= cfg_acmd_dat[4 +:24];
-             default: cfg_conv_add <= cfg_conv_add;
+            INF_BIAS: cfg_bias_add <= cfg_acmd_dat[4 +:13];
+             default: cfg_bias_add <= cfg_bias_add;
         endcase
     end
 end

@@ -16,8 +16,6 @@ module EEG_XRAM_RAM #(
   )(
     input                                          clk,
     input                                          rst_n,
-  
-    input                                          PASS_DAT_ENA,
 
     input  [XRAM_NUM_DW -1:0]                      XRAM_DIN_VLD,
     output [XRAM_NUM_DW -1:0]                      XRAM_DIN_RDY,
@@ -96,11 +94,18 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < XRAM_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            xram_ram_wena[gen_i] = PASS_DAT_ENA ? 'd0 : xram_din_vld[gen_i] && xram_din_rdy[gen_i];
-            xram_ram_rena[gen_i] = PASS_DAT_ENA ? 'd0 : xram_add_vld[gen_i] && xram_add_rdy[gen_i];
-            xram_ram_wadd[gen_i] = PASS_DAT_ENA ? 'd0 : xram_din_add[gen_i];
-            xram_ram_radd[gen_i] = PASS_DAT_ENA ? 'd0 : xram_add_add[gen_i];
-            xram_ram_data[gen_i] = PASS_DAT_ENA ? 'd0 : xram_din_dat[gen_i];
+            xram_ram_wena[gen_i] = xram_din_vld[gen_i] && xram_din_rdy[gen_i];
+            xram_ram_wadd[gen_i] = xram_din_add[gen_i];
+            xram_ram_data[gen_i] = xram_din_dat[gen_i];
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < XRAM_NUM_DW; gen_i = gen_i+1 )begin
+        always @ ( * )begin
+            xram_ram_rena[gen_i] = xram_add_vld[gen_i] && xram_add_rdy[gen_i];
+            xram_ram_radd[gen_i] = xram_add_add[gen_i];
         end
     end
 endgenerate
@@ -128,6 +133,20 @@ RAM #( .SRAM_WORD( XRAM_ADD_DW ), .SRAM_BIT( XRAM_DAT_DW ), .SRAM_BYTE(1)) XRAM_
 //
 //  end
 //endgenerate
+
+property xram_dat_check(dat_vld, dat_rdy, dat_dat);
+@(posedge clk)
+disable iff(rst_n!=1'b1)
+    dat_vld && dat_rdy |-> ( |dat_dat inside {0, 1} );
+endproperty
+
+generate
+  for( gen_i=0 ; gen_i < XRAM_NUM_DW; gen_i = gen_i+1 )begin
+
+    assert property ( xram_dat_check(xram_dat_vld[gen_i], xram_dat_rdy[gen_i], xram_dat_dat[gen_i]) );
+
+  end
+endgenerate
 
 `endif
 endmodule

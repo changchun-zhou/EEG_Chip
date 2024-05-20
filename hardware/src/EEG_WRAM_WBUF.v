@@ -296,10 +296,31 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
+reg CurSramPrior;
+always @(*) begin
+    CurSramPrior = 1'b0;
+    for(i=0; i<WBUF_NUM_DW; i=i+1) begin
+        if(PortRdAddrVld[i] & ptow_add_och_cur[i]) // Whether Prior
+            CurSramPrior = 1'b1;
+    end
+end
+
+reg [WBUF_NUM_DW -1 : 0] PortRdAddrVld_Prior;
+always @(*) begin
+    PortRdAddrVld_Prior = PortRdAddrVld;
+    if(CurSramPrior)
+        for(i=0; i<WBUF_NUM_DW; i=i+1) begin
+            if(PortRdAddrVld[i] & ptow_add_och_cur[i]) // Prior
+                PortRdAddrVld_Prior[i] = 1'b1;
+            else
+                PortRdAddrVld_Prior[i] = 1'b0;
+        end
+end
+
 generate
     for(gv_port=0; gv_port<WBUF_NUM_DW; gv_port=gv_port+1)begin
-        assign PortRdAddrLst[gv_port] = PortRdAddrVld[gv_port]? {PTOW_ADD_ADD[gv_port], PTOW_ADD_LST[gv_port]} : 0;
-        assign MultiResp    [gv_port] = PortRdAddrVld[gv_port] & PTOW_ADD_ADD [gv_port] == PTOW_ADD_ADD[ArbIdx];
+        assign PortRdAddrLst[gv_port] = PortRdAddrVld_Prior[gv_port]? {PTOW_ADD_ADD[gv_port], PTOW_ADD_LST[gv_port]} : 0;
+        assign MultiResp    [gv_port] = PortRdAddrVld_Prior[gv_port] & PTOW_ADD_ADD [gv_port] == PTOW_ADD_ADD[ArbIdx];
     end
 endgenerate
 ArbCore#(
@@ -309,7 +330,7 @@ ArbCore#(
 ) u_ArbPort(
     .clk         ( clk                                          ),
     .rst_n       ( rst_n                                        ),
-    .CoreOutVld  ( PortRdAddrVld                                ),
+    .CoreOutVld  ( PortRdAddrVld_Prior                                ),
     .CoreOutAddr ( PortRdAddrLst                                ),
     .CoreOutDat  (                                              ),
     .CoreOutRdy  ( PTOW_DAT_RDY & {WBUF_NUM_DW{state == WORK}}  ),
@@ -370,17 +391,9 @@ generate
             .Addr  ( hit_addr       )
         );
         assign ptow_add_vld_cur = ptow_add_och_cur[gv_port] & PTOW_ADD_VLD[gv_port]; // Valid only when Hit mode
-        reg   OtherCur;
-        always @(*) begin
-            for(i=0; i<WBUF_NUM_DW; i=i+1) begin
-                OtherCur = 1'b0;
-                if(i != gv_port & ptow_add_och_cur[i] & PTOW_ADD_VLD[i])
-                    OtherCur = 1'b1;
-            end
-        end
-        wire NotHitReadSram = !hit & (ptow_add_och_cur[gv_port]? 1'b1: !OtherCur );  // Cur is Prior // !(hit & ptow_add_och_cur[gv_port]) & (&ptow_add_och_cur[gv_port] ==0? ptow_add_och_cur[gv_port] : 1'b0);
-        assign PortRdAddrVld[gv_port] = work & PTOW_ADD_VLD[gv_port] & (byp | NotHitReadSram & !hit_last );
-        assign PTOW_ADD_RDY [gv_port] = work & ( (WRAM_ADD_RDY & MultiResp[gv_port]) | (hit & ptow_add_och_cur[gv_port]) | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
+        wire ReadHit =  hit & ptow_add_och_cur[gv_port];  // Cur is Prior // !(hit & ptow_add_och_cur[gv_port]) & (&ptow_add_och_cur[gv_port] ==0? ptow_add_och_cur[gv_port] : 1'b0);
+        assign PortRdAddrVld[gv_port] = work & PTOW_ADD_VLD[gv_port] & (byp | !ReadHit & !hit_last );
+        assign PTOW_ADD_RDY [gv_port] = work & ( (WRAM_ADD_RDY & MultiResp[gv_port]) | ReadHit | hit_last) & (PTOW_DAT_VLD[gv_port]? PTOW_DAT_RDY[gv_port] : 1'b1); // 4 to 1 & valid data is fetched      
         //=====================================================================================================================
         // Logic Design: S2
         //=====================================================================================================================
@@ -480,3 +493,4 @@ generate
 endgenerate
 
 endmodule
+

@@ -25,6 +25,7 @@ program automatic TEST(
   event run_done;
   string cmd;
   int frame_num;
+  int layer_idx_fix = 0;
 
   task reset();
  
@@ -53,26 +54,45 @@ program automatic TEST(
 
   endtask: dump_en
 
-  task done();
+  task frame_start();
 
-    $display("done");
+    $display("frame_start");
+    ->top.frame_start;
+  endtask: frame_start
+
+  task frame_done();
+
+    $display("frame_done");
+    top.frame_cnt <= top.frame_cnt +1'd1;
+  endtask: frame_done
+
+  task layer_start();
+
+    $display("layer_start");
+    ->top.layer_start;
+  endtask: layer_start
+
+  task layer_done();
+
+    $display("layer_done");
     //repeat(1000+$urandom%20) @ (posedge clk);
     @ (posedge clk);
     top.DumpEnd <= 1'd1;
     @ (posedge clk);
     top.DumpEnd <= 1'd0;
-  endtask: done
+    top.layer_cnt <= top.layer_cnt +1'd1;    
+  endtask: layer_done
 
-  task done_compare(int index);
-    int dump_en = 0;
-    $system("echo 'run python compare.py'");
-    cmd = $psprintf("python ../../python/compare.py %0d", index);
+  task done_compare(int frame_idx, int layer_idx);
+
+    //$system("echo 'run python compare.py'");
+    cmd = $psprintf("python ../../python/compare.py %0d %0d", frame_idx, layer_idx);
     $display(cmd);
     $system(cmd);
   endtask: done_compare
   
   task run_model(int index);
-    int dump_en = 0;
+
     $system("echo 'run python model'");
     cmd = $psprintf("python ../../python/eeg_gen.py %0d",index);
     $display(cmd);
@@ -84,22 +104,27 @@ program automatic TEST(
     frame_num = 1;
     reset();
     for (int i=0; i<frame_num; i++) begin
-        dump_en();
+        frame_start();
         
         //run_model(i);
         env = new(eeg_if, run_done, i);
         
-        env.build();
-        env.init();
-        
-        fork
-            env.eeg_cfg();
-            env.eeg_run();
-        join_none;
-        wait fork;
-        done();
+        env.read_cfg_ram();
+        env.eeg_cfg_ram();
+        for (int j=0; j<env.layer_num; j++) begin
+            layer_idx_fix = j +env.layer_from;
+            layer_start();
+            env.read_cfg_cmd(layer_idx_fix);
+            fork
+                env.eeg_cfg_cmd();
+                env.eeg_run();
+            join_none;
+            wait fork;
+            layer_done();
+            done_compare(i, layer_idx_fix);
+        end
+        frame_done();
     end
-    done_compare(frame_num);
     @ (posedge clk);
 
   end
