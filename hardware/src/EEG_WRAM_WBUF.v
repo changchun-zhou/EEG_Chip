@@ -74,7 +74,7 @@ localparam RSTD    = 3'b011;
 reg [ISA_WIDTH                              -1 : 0] cfg_isa;
 wire                                                byp;
 wire                                                byp_hit;
-reg[HIT_ARRAY_LEN   -1 : 0] [STAT_DAT_DW    -1 : 0] hit_idx_array;
+reg[HIT_ARRAY_LEN   -1 : 0] [WRAM_ADD_AW    -1 : 0] hit_idx_array; // Expend
 reg[HIT_ARRAY_LEN   -1 : 0] [WRAM_DAT_DW    -1 : 0] hit_data_array;
 reg[HIT_ARRAY_LEN   -1 : 0]                         hit_data_vld;
 reg                         [HIT_ADDR_WIDTH -1 : 0] addr_upd_idx;
@@ -82,7 +82,7 @@ reg                                                 addr_match_hit_s2;
 wire[WBUF_NUM_DW    -1 : 0] [HIT_ADDR_WIDTH -1 : 0] addr_hit_array;
 wire[$clog2(WBUF_NUM_DW)                    -1 : 0] ArbIdx;
 wire[$clog2(WBUF_NUM_DW)                    -1 : 0] ArbIdx_d;
-reg [STAT_DAT_DW                            -1 : 0] last_idx;
+reg [WRAM_ADD_AW                            -1 : 0] last_idx;
 reg                                                 last_data_vld;
 reg [WRAM_DAT_DW                            -1 : 0] last_data;
 reg [WRAM_ADD_AW                            -1 : 0] WCAWBF_Adr_s2;
@@ -296,6 +296,9 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
+//=====================================================================================================================
+// Read WRAM
+//=====================================================================================================================
 reg CurSramExistPrior;
 always @(*) begin
     CurSramExistPrior = 1'b0;
@@ -357,6 +360,9 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
+//=====================================================================================================================
+// PTOW
+//=====================================================================================================================
 wire work = state == WORK & next_state != RSTD;
 generate
     for(gv_port=0; gv_port<WBUF_NUM_DW; gv_port=gv_port+1) begin: GV_PORT
@@ -375,7 +381,8 @@ generate
         //=====================================================================================================================
         // Logic Design: S1
         //=====================================================================================================================
-        wire [STAT_DAT_DW  -1 : 0] PtowHitAddr = byp_hit? PTOW_ADD_ADD[gv_port] : PTOW_ADD_BUF[gv_port];
+        wire [WRAM_ADD_AW  -1 : 0] PtowHitAddr;
+        assign PtowHitAddr = byp_hit? PTOW_ADD_ADD[gv_port] : PTOW_ADD_BUF[gv_port];
         for(gv_ele=0; gv_ele<HIT_ARRAY_LEN; gv_ele=gv_ele + 1) begin
             assign compare_vector[gv_ele] = PtowHitAddr == hit_idx_array[gv_ele];
         end
@@ -463,6 +470,9 @@ generate
     end
 endgenerate
 
+//=====================================================================================================================
+// Monitor
+//=====================================================================================================================
 `ifdef SIM
     wire debug_hit_last_real = GV_PORT[0].hit_last & PTOW_ADD_VLD[0];
     wire debug_update_hit_data = state == WORK & |GV_PORT[0].compare_vector & PTOW_ADD_VLD[0] & !hit_data_vld[GV_PORT[0].hit_addr];
