@@ -11,5 +11,5 @@ set tech_lef { \
     ../../src/sram/ts1n65lpa1024x4m4_140a/LEF/ts1n65lpa1024x4m4_140a_5m.lef \
     ../../src/sram/ts1n65lpa4096x8m8_140a/LEF/ts1n65lpa4096x8m8_140a_5m.lef \
     ../../src/sram/ts1n65lpa8192x8m16_140a/LEF/ts1n65lpa8192x8m16_140a_5m.lef \
-    /workspace/home/songxy/EEG_Chip/level_shifter/tsmc65/lef/C3MLS.lef \
+    /workspace/home/songxy/TSMC65/LEF/C3MLS.lef \
     };

@@ -1,6 +1,7 @@
 # CHECK LIST:
 # 1. PERIOD_CLK
-# 2. Tech.tcl lib
+# 2. CPF: HV LV libs
+# 2. tech_settings.tcl: vts of std libs ; LS 0.6/1.2V
 
 #############################################################################################
 ##                                  Need to Adjust                                         ## 
@@ -9,25 +10,24 @@ set WORK="synth"
 # set WORK="STA"
 
 set DESIGN_NAME="EEG_TOP"
-set PERIOD_CLK="15"
+set PERIOD_CLK="10"
 set MAXLEAKAGE="0"   # 0.16mW
 set MAXDYNAMIC="1.5" # 100MHz -> 14mW
-set OPTWGT="0.9" # Larger optimization weight, lower leakage
-set NOTE="3vt_leakage0"
+set OPTWGT="0.949" # Larger optimization weight, lower leakage
+set NOTE="3PD_HV_RHVT"
 
 #############################################################################################
 ##                                  Read Files                                             ## 
 #############################################################################################
 set UNGROUP="group"
 set SDC_FILE="../synth/TOP.sdc"
-set TECH_SETTING="3PD_HV_C3MLS_3VSS"
 set TECH=../synth/script/tech_settings.tcl
 set LEF=./script/lef_settings.tcl
-set IODELAY="500"
+set IODELAY="250"
 
-set LV_SS="0.45"
-set LV_TT="0.5"
-set LV_FF="0.55"
+set LV_SS="0.55"
+set LV_TT="0.6"
+set LV_FF="0.65"
 
 # synth
 set HDL=./script/read_hdl.scr
@@ -43,7 +43,7 @@ set rc_corner_cbest_QRC=/materials/technology/tsmc65/RC_Extraction/Cadence/RC_QR
 #############################################################################################
 set DATE_VALUE = `date "+%y%m%d_%H%M" ` 
 set SYNTH_OUTDIR = ../../work/$WORK
-set SYNTH_PROJDIR = ${SYNTH_OUTDIR}/$DESIGN_NAME/Date${DATE_VALUE}_${TECH_SETTING}_Periodclk${PERIOD_CLK}_LV_TT${LV_TT}_${UNGROUP}_MaxLeakPwr${MAXLEAKAGE}_MaxDynPwr${MAXDYNAMIC}_OptWgt${OPTWGT}_Note_${NOTE}
+set SYNTH_PROJDIR = ${SYNTH_OUTDIR}/$DESIGN_NAME/Date${DATE_VALUE}_Periodclk${PERIOD_CLK}_${UNGROUP}_MaxLeakPwr${MAXLEAKAGE}_MaxDynPwr${MAXDYNAMIC}_OptWgt${OPTWGT}_Note_${NOTE}
 rm -rf ${SYNTH_PROJDIR}
 mkdir -p ${SYNTH_OUTDIR}/$DESIGN_NAME ${SYNTH_PROJDIR}
 
@@ -62,7 +62,6 @@ echo "set MAXLEAKAGE    $MAXLEAKAGE"    >> ./config_temp.tcl
 echo "set MAXDYNAMIC    $MAXDYNAMIC"    >> ./config_temp.tcl
 echo "set OPTWGT        $OPTWGT"        >> ./config_temp.tcl
 echo "set DATE_VALUE    $DATE_VALUE"    >> ./config_temp.tcl
-echo "set TECH_SETTING  $TECH_SETTING"  >> ./config_temp.tcl
 echo "set SDC_FILE      $SDC_FILE"      >> ./config_temp.tcl
 echo "set SYNTH_PROJDIR $SYNTH_PROJDIR" >> ./config_temp.tcl
 echo "set LV_SS         $LV_SS"         >> ./config_temp.tcl

@@ -21,5 +21,5 @@ set_input_transition -max 0.2  [all_inputs]
 set_load -pin_load -max 1 [all_outputs]
 
 set_max_transition 1.1 ${DESIGN}
-set_max_fanout 32 ${DESIGN}
+set_max_fanout 16 ${DESIGN}
 
