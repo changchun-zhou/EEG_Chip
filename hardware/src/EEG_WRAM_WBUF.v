@@ -388,7 +388,7 @@ generate
         end
         assign addr_match_hit[gv_port]  = work & |compare_vector;
         assign hit                      = work & |compare_vector & hit_data_vld[hit_addr];
-        assign hit_last                 = work & PtowHitAddr == last_idx & last_data_vld;
+        assign hit_last                 = work & PTOW_ADD_ADD[gv_port] == last_idx & last_data_vld;
 
         First1#(
             .LEN   ( HIT_ARRAY_LEN  )
