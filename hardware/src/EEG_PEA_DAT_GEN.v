@@ -19,6 +19,9 @@ module EEG_PEA_DAT_GEN #(
     parameter CONV_LEN_DW = 10,//1024
     parameter CONV_WEI_DW =  3,//8
     parameter CONV_RUN_DW =  4,//1-8
+    parameter CONV_MUL_DW = 24,
+    parameter CONV_SFT_DW =  8,
+    parameter CONV_ADD_DW = 32,
     parameter DILA_FAC_DW =  2,//8
     parameter STRD_FAC_DW =  2,//8
     parameter ARAM_NUM_AW =  2,
@@ -47,6 +50,8 @@ module EEG_PEA_DAT_GEN #(
     input  [ARAM_ADD_AW                 -1:0] CFG_ARAM_ADD,
     input  [WRAM_ADD_AW                 -1:0] CFG_WRAM_ADD,
     input  [FRAM_ADD_AW                 -1:0] CFG_FRAM_ADD,
+    input  [WRAM_ADD_AW                 -1:0] CFG_MULT_ADD,
+    input  [WRAM_ADD_AW                 -1:0] CFG_BIAS_ADD,
     
     input                                     CFG_FLAG_VLD,
     input                                     CFG_CPAD_ENA,
@@ -87,6 +92,10 @@ module EEG_PEA_DAT_GEN #(
     input  [PE_ROW -1:0]                      WRAM_DAT_LST,
     output [PE_ROW -1:0]                      WRAM_DAT_RDY,
     input  [PE_ROW -1:0][WRAM_DAT_DW    -1:0] WRAM_DAT_DAT,
+
+    output [PE_ROW -1:0][CONV_MUL_DW    -1:0] ACT_MUL,
+    output [PE_ROW -1:0][CONV_SFT_DW    -1:0] ACT_SFT,
+    output [PE_ROW -1:0][CONV_ADD_DW    -1:0] ACT_OFF,
 
     output                                    ACT_VLD,
     output                                    ACT_LST,
@@ -140,19 +149,28 @@ localparam WRAM_BUF_AW = $clog2(WRAM_BUF_NUM);
 
 localparam FRAM_DAT_AW = $clog2(FRAM_DAT_DW);
 
-localparam FF_STATE = 6;
-localparam FF_IDLE  = 6'b000001;
-localparam FF_LOAD  = 6'b000010;
-localparam FF_LPAD  = 6'b000100;
-localparam FF_TILE  = 6'b001000;
-localparam FF_RPAD  = 6'b010000;
-localparam FF_DONE  = 6'b100000;
+localparam MULT_CNT_DW = 4;
+localparam MULT_CNT_AW = $clog2(MULT_CNT_DW);
+localparam BIAS_CNT_DW = CONV_ADD_DW>>3;
+localparam BIAS_CNT_AW = $clog2(BIAS_CNT_DW);
+
+localparam FF_STATE = 8;
+localparam FF_IDLE  = 8'b0000_0001;
+localparam FF_LOAD  = 8'b0000_0010;
+localparam FF_MULT  = 8'b0000_0100;
+localparam FF_BIAS  = 8'b0000_1000;
+localparam FF_LPAD  = 8'b0001_0000;
+localparam FF_TILE  = 8'b0010_0000;
+localparam FF_RPAD  = 8'b0100_0000;
+localparam FF_DONE  = 8'b1000_0000;
 
 reg [FF_STATE -1:0] ff_cs;
 reg [FF_STATE -1:0] ff_ns;
 
 wire ff_idle = ff_cs == FF_IDLE;
 wire ff_load = ff_cs == FF_LOAD;
+wire ff_mult = ff_cs == FF_MULT;
+wire ff_bias = ff_cs == FF_BIAS;
 wire ff_lpad = ff_cs == FF_LPAD;
 wire ff_tile = ff_cs == FF_TILE;
 wire ff_rpad = ff_cs == FF_RPAD;
@@ -227,6 +245,9 @@ wire                                 act_rdy= ACT_RDY;
 reg               [DATA_ACT_DW -1:0] act_dat;
 reg                                  act_lst;
 reg               [DATA_ACT_IW -1:0] act_inf;
+reg  [PE_ROW -1:0][CONV_MUL_DW -1:0] act_mul;
+reg  [PE_ROW -1:0][CONV_SFT_DW -1:0] act_sft;
+reg  [PE_ROW -1:0][CONV_ADD_DW -1:0] act_off;
 wire                                 act_end;
 reg  [PE_ROW -1:0]                   wei_vld;
 reg  [PE_ROW -1:0]                   wei_lst;
@@ -240,6 +261,9 @@ assign ACT_DAT = act_dat;
 assign ACT_VLD = act_vld;
 assign ACT_LST = act_lst;
 assign ACT_INF = act_inf;
+assign ACT_MUL = act_mul;
+assign ACT_SFT = act_sft;
+assign ACT_OFF = act_off;
 assign WEI_DAT = wei_dat;
 assign WEI_VLD = wei_vld;
 assign WEI_LST = wei_lst;
@@ -280,6 +304,8 @@ wire [CONV_LEN_DW             -1:0] ff_pcnt_d1;
 reg  [ARAM_ADD_AW -1:0] cfg_aram_add;
 reg  [ARAM_ADD_AW -1:0] cfg_fram_add;
 reg  [WRAM_ADD_AW -1:0] cfg_wram_add;
+reg  [WRAM_ADD_AW -1:0] cfg_mult_add;
+reg  [WRAM_ADD_AW -1:0] cfg_bias_add;
 reg                     cfg_flag_vld;
 reg                     cfg_cpad_ena;
 reg  [CONV_ICH_DW -1:0] cfg_conv_ich;
@@ -321,6 +347,8 @@ wire ff_loop_last = ff_last_didx&&ff_last_oidx;
 wire ff_conv_last = |cal_rpad_len ? ff_rpad&&ff_rpad_last : ff_tile_last;
 wire ff_conv_f2st = |cal_lpad_len ? ff_lpad && ~|ff_cntr_pix && ~|ff_cntr_ich : ff_tile && ~|ff_cntr_pix && ~|ff_cntr_ich;
 
+reg  ff_mult_done;
+reg  ff_bias_done;
 reg  ff_lpad_done;
 reg  ff_tile_done;
 reg  ff_rpad_done;
@@ -506,7 +534,7 @@ wire aram_fifo_flow_end = aram_fifo_out[ARAM_BUF_DW -1];
 wire aram_fifo_loop_end = aram_fifo_out[ARAM_BUF_DW -2];
 
 //WRAM
-wire [PE_ROW -1:0] wram_fifo_wen = wram_dat_ena;
+reg  [PE_ROW -1:0] wram_fifo_wen;
 wire [PE_ROW -1:0] wram_fifo_ren = wei_rdy;
 wire [PE_ROW -1:0] wram_fifo_empty;
 wire [PE_ROW -1:0] wram_fifo_full;
@@ -521,9 +549,58 @@ CPM_FIFO_EX #( .DATA_WIDTH( WRAM_BUF_DW ), .ADDR_WIDTH( WRAM_BUF_AW ) )WRAM_FIFO
 wire act_last_vld_rst = ff_load || ff_conv_done;
 wire act_last_vld;
 CPM_REG_RCE #( 1, 0 ) ACT_LAST_VLD_REG ( clk, rst_n, act_last_vld_rst, 1'd0, act_end, 1'd1, act_last_vld );
+
+//MULT
+wire [PE_ROW -1:0][MULT_CNT_AW -1:0] mult_add_cnt;
+wire [PE_ROW -1:0][MULT_CNT_AW -1:0] mult_dat_cnt;
+reg  [PE_ROW -1:0] mult_add_cnt_ena;
+reg  [PE_ROW -1:0] mult_dat_cnt_ena;
+reg  [PE_ROW -1:0] mult_add_cnt_last;
+reg  [PE_ROW -1:0] mult_dat_cnt_last;
+CPM_CNT_C #( MULT_CNT_AW ) MULT_ADD_CNT_U[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, mult_add_cnt_ena, mult_add_cnt );
+CPM_CNT_C #( MULT_CNT_AW ) MULT_DAT_CNT_U[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, mult_dat_cnt_ena, mult_dat_cnt );
+
+wire [PE_ROW -1:0] mult_add_vld;
+wire [PE_ROW -1:0] mult_dat_vld;
+CPM_REG_RCE #( 1, 1 ) MULT_ADD_VLD_REG[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, 1'd1, mult_add_cnt_last, 1'd0, mult_add_vld );
+CPM_REG_RCE #( 1, 0 ) MULT_DAT_VLD_REG[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, 1'd0, mult_dat_cnt_last, 1'd1, mult_dat_vld );
+
+//BIAS
+wire [PE_ROW -1:0][BIAS_CNT_AW -1:0] bias_add_cnt;
+wire [PE_ROW -1:0][BIAS_CNT_AW -1:0] bias_dat_cnt;
+reg  [PE_ROW -1:0] bias_add_cnt_ena;
+reg  [PE_ROW -1:0] bias_dat_cnt_ena;
+reg  [PE_ROW -1:0] bias_add_cnt_last;
+reg  [PE_ROW -1:0] bias_dat_cnt_last;
+CPM_CNT_C #( BIAS_CNT_AW ) BIAS_ADD_CNT_U[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, bias_add_cnt_ena, bias_add_cnt );
+CPM_CNT_C #( BIAS_CNT_AW ) BIAS_DAT_CNT_U[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, bias_dat_cnt_ena, bias_dat_cnt );
+
+wire [PE_ROW -1:0] bias_add_vld;
+wire [PE_ROW -1:0] bias_dat_vld;
+CPM_REG_RCE #( 1, 1 ) BIAS_ADD_VLD_REG[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, 1'd1, bias_add_cnt_last, 1'd0, bias_add_vld );
+CPM_REG_RCE #( 1, 0 ) BIAS_DAT_VLD_REG[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, 1'd0, bias_dat_cnt_last, 1'd1, bias_dat_vld );
+
+reg  [PE_ROW -1:0][MULT_CNT_DW -1:0][WRAM_DAT_DW -1:0] mult_dat_dat;
+reg  [PE_ROW -1:0][BIAS_CNT_DW -1:0][WRAM_DAT_DW -1:0] bias_dat_dat;
+
+reg  [PE_ROW -1:0][CONV_MUL_DW -1:0] mult_mul_dat;
+reg  [PE_ROW -1:0][CONV_SFT_DW -1:0] mult_sft_dat;
 //=====================================================================================================================
 // IO Logic Design :
 //=====================================================================================================================
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        act_mul <= 'd0;
+        act_sft <= 'd0;
+        act_off <= 'd0;
+    end
+    else if( ~ff_mult && ~ff_bias )begin
+        act_mul <= mult_mul_dat;
+        act_sft <= mult_sft_dat;
+        act_off <= bias_dat_dat;
+    end
+end
+
 generate
     for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
         always @ ( * )begin
@@ -576,12 +653,12 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
         always @ ( * )begin
-            wram_add_vld[gen_i] = ~wadd_fifo_empty[gen_i] && wram_fifo_cnt_empty[gen_i] > WRAM_ADD_GAP;
-            wram_add_add[gen_i] = wadd_fifo_add[gen_i];
-            wram_add_och[gen_i] = wadd_fifo_och[gen_i];
-            wram_add_buf[gen_i] = wadd_fifo_buf[gen_i];
-            wram_add_lst[gen_i] = wadd_fifo_lst[gen_i];
-            wram_dat_rdy[gen_i] =~wram_fifo_full[gen_i];
+            wram_add_vld[gen_i] = ff_mult ? mult_add_vld[gen_i] : ff_bias ? bias_add_vld[gen_i] : ~wadd_fifo_empty[gen_i] && wram_fifo_cnt_empty[gen_i] > WRAM_ADD_GAP;
+            wram_add_add[gen_i] = ff_mult ? mult_add_cnt[gen_i] +ff_oidx*4 +cfg_mult_add : ff_bias ? bias_add_cnt[gen_i] +ff_oidx*4 +cfg_bias_add : wadd_fifo_add[gen_i];
+            wram_add_och[gen_i] = ff_mult || ff_bias ? 'd0 : wadd_fifo_och[gen_i];
+            wram_add_buf[gen_i] = ff_mult || ff_bias ? {STAT_DAT_DW{1'd1}} : wadd_fifo_buf[gen_i];//make sure not in stat_dat
+            wram_add_lst[gen_i] = ff_mult || ff_bias ? 'd0 : wadd_fifo_lst[gen_i];
+            wram_dat_rdy[gen_i] = ff_mult || ff_bias ? 'd1 : ~wram_fifo_full[gen_i];
         end
     end
 endgenerate
@@ -593,6 +670,8 @@ always @ ( * )begin
     cfg_aram_add = CFG_ARAM_ADD;
     cfg_fram_add = CFG_FRAM_ADD;
     cfg_wram_add = CFG_WRAM_ADD;
+    cfg_mult_add = CFG_MULT_ADD;
+    cfg_bias_add = CFG_BIAS_ADD;
     cfg_flag_vld = CFG_FLAG_VLD;
     cfg_cpad_ena = CFG_CPAD_ENA;
     cfg_conv_ich = CFG_CONV_ICH;
@@ -630,6 +709,8 @@ always @( * )begin
 end
 
 always @( * )begin
+    ff_mult_done =&mult_dat_vld;
+    ff_bias_done =&bias_dat_vld;
     ff_lpad_done = ff_lpad_last;
     ff_tile_done = ff_tile_last;
     ff_rpad_done = ff_rpad_last;
@@ -667,6 +748,7 @@ generate
     for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
       always @( * )begin
           wram_fifo_din[gen_i] = {wram_dat_end[gen_i], wram_dat_fid[gen_i], wram_dat_dat[gen_i]};
+          wram_fifo_wen[gen_i] =  wram_dat_ena[gen_i] && ~ff_bias && ~ff_mult;
       end
     end
 endgenerate
@@ -873,6 +955,66 @@ always @ ( posedge clk or negedge rst_n )begin
     else if( fram_add_ena && fram_add_lst )
         fram_add_done <= 'd1;
 end
+
+//MULT
+generate
+    for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
+        always @( * )begin
+            mult_add_cnt_ena[gen_i] = ff_mult && wram_add_ena[gen_i];
+            mult_dat_cnt_ena[gen_i] = ff_mult && wram_dat_ena[gen_i];
+            mult_add_cnt_last[gen_i] = wram_add_ena[gen_i] && mult_add_cnt[gen_i]==(MULT_CNT_DW-1);
+            mult_dat_cnt_last[gen_i] = wram_dat_ena[gen_i] && mult_dat_cnt[gen_i]==(MULT_CNT_DW-1);
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
+        for( gen_j=0 ; gen_j < MULT_CNT_DW; gen_j = gen_j+1 )begin
+            always @ ( posedge clk or negedge rst_n )begin
+                if( ~rst_n )
+                    mult_dat_dat[gen_i][gen_j] <= 'd0;
+                else if( ff_mult && wram_dat_ena[gen_i] && gen_j==mult_dat_cnt[gen_i] )
+                    mult_dat_dat[gen_i][gen_j] <= wram_dat_dat[gen_i];
+            end
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
+        always @( * )begin
+            mult_mul_dat[gen_i] = mult_dat_dat[gen_i][0 +:3];
+            mult_sft_dat[gen_i] = mult_dat_dat[gen_i][3];
+        end
+    end
+endgenerate
+
+//BIAS
+generate
+    for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
+        always @( * )begin
+            bias_add_cnt_ena[gen_i] = ff_bias && wram_add_ena[gen_i];
+            bias_dat_cnt_ena[gen_i] = ff_bias && wram_dat_ena[gen_i];
+            bias_add_cnt_last[gen_i] = wram_add_ena[gen_i] && bias_add_cnt[gen_i]==(BIAS_CNT_DW-1);
+            bias_dat_cnt_last[gen_i] = wram_dat_ena[gen_i] && bias_dat_cnt[gen_i]==(BIAS_CNT_DW-1);
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
+        for( gen_j=0 ; gen_j < BIAS_CNT_DW; gen_j = gen_j+1 )begin
+            always @ ( posedge clk or negedge rst_n )begin
+                if( ~rst_n )
+                    bias_dat_dat[gen_i][gen_j] <= 'd0;
+                else if( ff_bias && wram_dat_ena[gen_i] && gen_j==bias_dat_cnt[gen_i] )
+                    bias_dat_dat[gen_i][gen_j] <= wram_dat_dat[gen_i];
+            end
+        end
+    end
+endgenerate
+
 //=====================================================================================================================
 // Sub-Module :
 //=====================================================================================================================
@@ -883,11 +1025,13 @@ end
 always @ ( * )begin
   case( ff_cs )
     FF_IDLE: ff_ns = cfg_info_ena ? FF_LOAD : ff_cs;
-    FF_LOAD: ff_ns =|cal_lpad_len ? FF_LPAD : FF_TILE;
+    FF_LOAD: ff_ns = FF_MULT;
+    FF_MULT: ff_ns = ff_mult_done ? FF_BIAS : ff_cs;
+    FF_BIAS: ff_ns = ff_bias_done ? (|cal_lpad_len ? FF_LPAD : FF_TILE) : ff_cs;
     FF_LPAD: ff_ns = ff_lpad_done ? FF_TILE : ff_cs;
     FF_TILE: ff_ns = ff_tile_done ? (|cal_rpad_len ? FF_RPAD : FF_DONE) : ff_cs;
     FF_RPAD: ff_ns = ff_rpad_done ? FF_DONE : ff_cs;
-    FF_DONE: ff_ns = ff_conv_done ? (aram_fifo_loop_end ? FF_IDLE : (|cal_lpad_len ? FF_LPAD: FF_TILE)) : ff_cs;
+    FF_DONE: ff_ns = ff_conv_done ? (aram_fifo_loop_end ? FF_IDLE : FF_MULT) : ff_cs;
     default: ff_ns = FF_IDLE;
   endcase
 end

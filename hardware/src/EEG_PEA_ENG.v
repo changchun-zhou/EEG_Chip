@@ -34,10 +34,11 @@ module EEG_PEA_ENG #(
     input  [CONV_RUN_DW                              -1:0] CFG_CONV_RUN,
     input  [CONV_WEI_DW                              -1:0] CFG_CONV_WEI,
     input  [CONV_WEI_DW                              -1:0] CFG_CONV_PAD,
-    input  [CONV_MUL_DW                              -1:0] CFG_CONV_MUL,
-    input  [CONV_SFT_DW                              -1:0] CFG_CONV_SFT,
-    input  [CONV_ADD_DW                              -1:0] CFG_CONV_ADD,
     input  [ORAM_ADD_AW                              -1:0] CFG_CONV_LST,
+
+    input  [PE_COL -1:0][PE_ROW -1:0][CONV_MUL_DW    -1:0] ACT_MUL,
+    input  [PE_COL -1:0][PE_ROW -1:0][CONV_SFT_DW    -1:0] ACT_SFT,
+    input  [PE_COL -1:0][PE_ROW -1:0][CONV_ADD_DW    -1:0] ACT_OFF,
 
     input               [PE_COL -1:0]                      ACT_VLD,
     output              [PE_COL -1:0]                      ACT_RDY,
@@ -71,12 +72,16 @@ genvar gen_i, gen_j;
 // IO Signal :
 //=====================================================================================================================
 //ACT_IO
-wire [PE_COL -1:0]                      act_vld = ACT_VLD;
-reg  [PE_COL -1:0]                      act_rdy;
-wire [PE_COL -1:0]                      act_lst = ACT_LST;
-wire [PE_COL -1:0][DATA_ACT_DW    -1:0] act_dat = ACT_DAT;
-wire [PE_COL -1:0][PE_ACT_IW      -1:0] act_inf = ACT_INF;
-wire [PE_COL -1:0]                      act_ena = act_vld & act_rdy;
+wire [PE_COL -1:0][PE_ROW -1:0][CONV_MUL_DW    -1:0] act_mul = ACT_MUL;
+wire [PE_COL -1:0][PE_ROW -1:0][CONV_SFT_DW    -1:0] act_sft = ACT_SFT;
+wire [PE_COL -1:0][PE_ROW -1:0][CONV_ADD_DW    -1:0] act_off = ACT_OFF;
+
+wire [PE_COL -1:0]                                   act_vld = ACT_VLD;
+reg  [PE_COL -1:0]                                   act_rdy;
+wire [PE_COL -1:0]                                   act_lst = ACT_LST;
+wire [PE_COL -1:0]             [DATA_ACT_DW    -1:0] act_dat = ACT_DAT;
+wire [PE_COL -1:0]             [PE_ACT_IW      -1:0] act_inf = ACT_INF;
+wire [PE_COL -1:0]                                   act_ena = act_vld & act_rdy;
 
 assign ACT_RDY = act_rdy;
 
@@ -107,13 +112,6 @@ wire [CONV_RUN_DW -1:0] cfg_conv_run = CFG_CONV_RUN;
 wire [CONV_WEI_DW -1:0] cfg_conv_wei = CFG_CONV_WEI;
 wire [CONV_WEI_DW -1:0] cfg_conv_pad = CFG_CONV_PAD;
 wire [ORAM_ADD_AW -1:0] cfg_conv_lst = CFG_CONV_LST;
-wire [PE_COL -1:0][PE_ROW -1:0][CONV_MUL_DW -1:0] cfg_conv_mul;
-wire [PE_COL -1:0][PE_ROW -1:0][CONV_SFT_DW -1:0] cfg_conv_sft;
-wire [PE_COL -1:0][PE_ROW -1:0][CONV_ADD_DW -1:0] cfg_conv_add;
-
-CPM_REG #( CONV_MUL_DW ) CFG_CONV_MUL_REG [PE_COL*PE_ROW-1:0]( clk, rst_n, CFG_CONV_MUL, cfg_conv_mul );
-CPM_REG #( CONV_SFT_DW ) CFG_CONV_SFT_REG [PE_COL*PE_ROW-1:0]( clk, rst_n, CFG_CONV_SFT, cfg_conv_sft );
-CPM_REG #( CONV_ADD_DW ) CFG_CONV_ADD_REG [PE_COL*PE_ROW-1:0]( clk, rst_n, CFG_CONV_ADD, cfg_conv_add );
 
 wire [PE_ROW -1:0][PE_COL -1:0] pe_conv_idle;
 
@@ -255,10 +253,11 @@ EEG_PEA_ENG_PE #(
     .CFG_CONV_RUN    ( cfg_conv_run   ),
     .CFG_CONV_WEI    ( cfg_conv_wei   ),
     .CFG_CONV_PAD    ( cfg_conv_pad   ),
-    .CFG_CONV_MUL    ( cfg_conv_mul   ),
-    .CFG_CONV_SFT    ( cfg_conv_sft   ),
-    .CFG_CONV_ADD    ( cfg_conv_add   ),
     .CFG_CONV_LST    ( cfg_conv_lst   ),
+    
+    .CFG_CONV_MUL    ( act_mul ),
+    .CFG_CONV_SFT    ( act_sft ),
+    .CFG_CONV_ADD    ( act_off ),
     
     .DIN_VLD         ( pe_din_vld     ),
     .ACT_LST         ( pe_act_lst     ),

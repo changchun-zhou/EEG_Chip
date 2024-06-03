@@ -10,7 +10,7 @@
 // Description : CMD
 //========================================================
 module EEG_CMD #(
-    parameter STAT_CMD_DW = 10,
+    parameter STAT_CMD_DW = 11,
     parameter CHIP_CMD_DW = 32,
     parameter BANK_NUM_DW =  4,
     parameter CONV_ICH_DW =  8,//256
@@ -19,7 +19,6 @@ module EEG_CMD #(
     parameter CONV_SUM_DW = 24,
     parameter CONV_MUL_DW = CONV_SUM_DW,
     parameter CONV_SFT_DW =  8,
-    parameter CONV_ADD_DW = CONV_SUM_DW,
     parameter DILA_FAC_DW =  2,//1/2/4/8
     parameter STRD_FAC_DW =  2,//1/2/4/8
     parameter CONV_WEI_DW =  3,//8
@@ -54,6 +53,7 @@ module EEG_CMD #(
     output                       CMD_STAT_ENA,
     output                       CMD_READ_ENA,
     output                       CMD_WTOS_ENA,
+    output                       CMD_ACTF_ENA,
     //ENA
     output                       CFG_RELU_ENA,
     output                       CFG_SPLT_ENA,
@@ -61,6 +61,7 @@ module EEG_CMD #(
     output                       CFG_FLAG_ENA,
     output                       CFG_WSTA_ENA,
     output                       CFG_ZERO_ENA,
+    output                       CFG_ACTF_ENA,
     output                       CFG_MAXP_ENA,
     output                       CFG_AVGP_ENA,
     output                       CFG_RESN_ENA,
@@ -88,12 +89,13 @@ module EEG_CMD #(
     output [CONV_ICH_DW    -1:0] CFG_CONV_ICH,
     output [CONV_OCH_DW    -1:0] CFG_CONV_OCH,
     output [CONV_LEN_DW    -1:0] CFG_CONV_LEN,
-    output [CONV_MUL_DW    -1:0] CFG_CONV_MUL,
-    output [CONV_SFT_DW    -1:0] CFG_CONV_SFT,
+    output [WRAM_ADD_AW    -1:0] CFG_MULT_ADD,
     output [WRAM_ADD_AW    -1:0] CFG_BIAS_ADD,
+    output [WRAM_ADD_AW    -1:0] CFG_ACTF_ADD,
     output [DILA_FAC_DW    -1:0] CFG_DILA_FAC,
     output [STRD_FAC_DW    -1:0] CFG_STRD_FAC,
     output [CONV_WEI_DW    -1:0] CFG_CONV_WEI,
+
     //SPLT
     output [CONV_SPT_DW    -1:0] CFG_SPLT_LEN,
     //POOL
@@ -174,9 +176,9 @@ assign CFG_FOCH_LEN = cfg_foch_len;
 reg [CONV_ICH_DW  -1:0] cfg_conv_ich;
 reg [CONV_OCH_DW  -1:0] cfg_conv_och;
 reg [CONV_LEN_DW  -1:0] cfg_conv_len;
-reg [CONV_MUL_DW  -1:0] cfg_conv_mul;
-reg [CONV_SFT_DW  -1:0] cfg_conv_sft;
+reg [WRAM_ADD_AW  -1:0] cfg_mult_add;
 reg [WRAM_ADD_AW  -1:0] cfg_bias_add;
+reg [WRAM_ADD_AW  -1:0] cfg_actf_add;
 reg [DILA_FAC_DW  -1:0] cfg_dila_fac;
 reg [STRD_FAC_DW  -1:0] cfg_strd_fac;
 reg [CONV_WEI_DW  -1:0] cfg_conv_wei;
@@ -184,9 +186,9 @@ reg [CONV_WEI_DW  -1:0] cfg_conv_wei;
 assign CFG_CONV_ICH = cfg_conv_ich;
 assign CFG_CONV_OCH = cfg_conv_och;
 assign CFG_CONV_LEN = cfg_conv_len;
-assign CFG_CONV_MUL = cfg_conv_mul;
-assign CFG_CONV_SFT = cfg_conv_sft;
+assign CFG_MULT_ADD = cfg_mult_add;
 assign CFG_BIAS_ADD = cfg_bias_add;
+assign CFG_ACTF_ADD = cfg_actf_add;
 assign CFG_DILA_FAC = cfg_dila_fac;
 assign CFG_STRD_FAC = cfg_strd_fac;
 assign CFG_CONV_WEI = cfg_conv_wei;
@@ -209,6 +211,7 @@ wire cfg_comb_ena;
 wire cfg_flag_ena;
 reg  cfg_wsta_ena;
 wire cfg_zero_ena;
+wire cfg_actf_ena;
 wire cfg_maxp_ena;
 wire cfg_avgp_ena;
 wire cfg_resn_ena;
@@ -223,6 +226,7 @@ assign CFG_COMB_ENA = cfg_comb_ena;
 assign CFG_FLAG_ENA = cfg_flag_ena;
 assign CFG_WSTA_ENA = cfg_wsta_ena;
 assign CFG_ZERO_ENA = cfg_zero_ena;
+assign CFG_ACTF_ENA = cfg_actf_ena;
 assign CFG_MAXP_ENA = cfg_maxp_ena;
 assign CFG_AVGP_ENA = cfg_avgp_ena;
 assign CFG_RESN_ENA = cfg_resn_ena;
@@ -241,6 +245,7 @@ wire cmd_pool_ena;
 wire cmd_stat_ena;
 wire cmd_read_ena;
 wire cmd_wtos_ena;
+wire cmd_actf_ena;
 
 assign CMD_ITOA_ENA = cmd_itoa_ena;
 assign CMD_ITOW_ENA = cmd_itow_ena;
@@ -252,7 +257,8 @@ assign CMD_POOL_ENA = cmd_pool_ena;
 assign CMD_STAT_ENA = cmd_stat_ena;
 assign CMD_READ_ENA = cmd_read_ena;
 assign CMD_WTOS_ENA = cmd_wtos_ena;
-assign cfg_info_cmd ={cmd_wtos_ena, cmd_read_ena, cmd_stat_ena, cmd_pool_ena, cmd_conv_ena, 
+assign CMD_ACTF_ENA = cmd_actf_ena;
+assign cfg_info_cmd ={cmd_actf_ena, cmd_wtos_ena, cmd_read_ena, cmd_stat_ena, cmd_pool_ena, cmd_conv_ena, 
                       cmd_wtoa_ena, cmd_atow_ena, cmd_otoa_ena, cmd_itow_ena, cmd_itoa_ena};
 //=====================================================================================================================
 // Variable Definition :
@@ -262,11 +268,13 @@ wire [INFO_CMD_DW -1:0] cfg_info_idx = CFG_ACMD_DAT[MODE_CMD_DW +:INFO_CMD_DW];
 wire cmd_foch_inf = cfg_mode_cmd==INF_INFO && cfg_info_idx=='d0;
 wire cmd_fadd_inf = cfg_mode_cmd==INF_INFO && cfg_info_idx=='d1;
 wire cmd_wbuf_inf = cfg_mode_cmd==INF_INFO && cfg_info_idx=='d2;
+wire cmd_actf_inf = cfg_mode_cmd==INF_INFO && cfg_info_idx=='d3;
 
 wire cfg_splt_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_OTOA;
 wire cfg_comb_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_OTOA;
 wire cfg_flag_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_STAT;
 wire cfg_zero_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_STAT;
+wire cfg_actf_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_STAT;
 wire cfg_maxp_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_POOL;
 wire cfg_avgp_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_POOL;
 wire cfg_resn_ena_ena = cfg_acmd_vld && cfg_mode_cmd==CMD_CONV;
@@ -278,6 +286,7 @@ CPM_REG_E #( 1 ) CFG_SPLT_ENA_REG( clk, rst_n, cfg_splt_ena_ena, cfg_acmd_dat[20
 CPM_REG_E #( 1 ) CFG_COMB_ENA_REG( clk, rst_n, cfg_comb_ena_ena, cfg_acmd_dat[21], cfg_comb_ena );
 CPM_REG_E #( 1 ) CFG_FLAG_ENA_REG( clk, rst_n, cfg_flag_ena_ena, cfg_acmd_dat[ 4], cfg_flag_ena );
 CPM_REG_E #( 1 ) CFG_ZERO_ENA_REG( clk, rst_n, cfg_zero_ena_ena, cfg_acmd_dat[ 6], cfg_zero_ena );
+CPM_REG_E #( 1 ) CFG_ACTF_ENA_REG( clk, rst_n, cfg_actf_ena_ena, cfg_acmd_dat[ 7], cfg_actf_ena );
 CPM_REG_E #( 1 ) CFG_MAXP_ENA_REG( clk, rst_n, cfg_maxp_ena_ena, cfg_acmd_dat[16], cfg_maxp_ena );
 CPM_REG_E #( 1 ) CFG_AVGP_ENA_REG( clk, rst_n, cfg_avgp_ena_ena, cfg_acmd_dat[17], cfg_avgp_ena );
 CPM_REG_E #( 1 ) CFG_RESN_ENA_REG( clk, rst_n, cfg_resn_ena_ena, cfg_acmd_dat[11], cfg_resn_ena );
@@ -295,9 +304,10 @@ wire cmd_atow_ena_tmp = cfg_mode_cmd==CMD_ATOW;
 wire cmd_wtoa_ena_tmp = cfg_mode_cmd==CMD_WTOA;
 wire cmd_conv_ena_tmp = cfg_mode_cmd==CMD_CONV;
 wire cmd_pool_ena_tmp = cfg_mode_cmd==CMD_POOL;
-wire cmd_stat_ena_tmp = cfg_mode_cmd==CMD_STAT;
+wire cmd_stat_ena_tmp = cfg_mode_cmd==CMD_STAT && ~cfg_acmd_dat[7];
 wire cmd_read_ena_tmp = cfg_mode_cmd==CMD_READ;
 wire cmd_wtos_ena_tmp = cmd_wbuf_inf && cfg_acmd_dat[8];
+wire cmd_actf_ena_tmp = cfg_mode_cmd==CMD_STAT && cfg_acmd_dat[7];
 CPM_REG_E #( 1 ) CMD_ITOA_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_itoa_ena_tmp, cmd_itoa_ena );
 CPM_REG_E #( 1 ) CMD_ITOW_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_itow_ena_tmp, cmd_itow_ena );
 CPM_REG_E #( 1 ) CMD_OTOA_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_otoa_ena_tmp, cmd_otoa_ena );
@@ -308,6 +318,7 @@ CPM_REG_E #( 1 ) CMD_POOL_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_pool_ena_tmp, c
 CPM_REG_E #( 1 ) CMD_STAT_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_stat_ena_tmp, cmd_stat_ena );
 CPM_REG_E #( 1 ) CMD_READ_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_read_ena_tmp, cmd_read_ena );
 CPM_REG_E #( 1 ) CMD_WTOS_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_wtos_ena_tmp, cmd_wtos_ena );
+CPM_REG_E #( 1 ) CMD_ACTF_ENA_REG( clk, rst_n, cfg_acmd_vld, cmd_actf_ena_tmp, cmd_actf_ena );
 //=====================================================================================================================
 // Logic Design :
 //=====================================================================================================================
@@ -543,22 +554,11 @@ end
 
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )begin
-        cfg_conv_mul <= 'd0;
+        cfg_mult_add <= 'd0;
     end else if( cfg_acmd_vld )begin
         case( cfg_mode_cmd )
-            INF_MULT: cfg_conv_mul <= cfg_acmd_dat[4 +:24];
-             default: cfg_conv_mul <= cfg_conv_mul;
-        endcase
-    end
-end
-
-always @ ( posedge clk or negedge rst_n )begin
-    if( ~rst_n )begin
-        cfg_conv_sft <= 'd0;
-    end else if( cfg_acmd_vld )begin
-        case( cfg_mode_cmd )
-            INF_BIAS: cfg_conv_sft <= cfg_acmd_dat[24 +:8];
-             default: cfg_conv_sft <= cfg_conv_sft;
+            INF_MULT: cfg_mult_add <= cfg_acmd_dat[4 +:13];
+             default: cfg_mult_add <= cfg_mult_add;
         endcase
     end
 end
@@ -573,6 +573,19 @@ always @ ( posedge clk or negedge rst_n )begin
         endcase
     end
 end
+
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )begin
+        cfg_actf_add <= 'd0;
+    end else if( cfg_acmd_vld && cmd_actf_inf )begin
+        case( cfg_mode_cmd )
+            INF_INFO: cfg_actf_add <= cfg_acmd_dat[8 +:13];
+             default: cfg_actf_add <= cfg_actf_add;
+        endcase
+    end
+end
+
 
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )begin
