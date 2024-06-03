@@ -11,7 +11,7 @@
 //                      Pixel first for ORAM ¡Ì
 //========================================================
 module EEG_ORAM #(
-    parameter ORAM_CMD_DW =  9,
+    parameter ORAM_CMD_DW = 10,
     parameter ORAM_NUM_DW =  4,
     parameter OMUX_NUM_DW =  4,
     parameter ORAM_ADD_AW = 10,
@@ -66,14 +66,15 @@ localparam POOL_WEI_DW = 3;
 localparam POOL_DAT_DW = ORAM_DAT_DW+POOL_WEI_DW;
 
 localparam ORAM_STATE = ORAM_CMD_DW;
-localparam ORAM_IDLE  = 9'b00000001;
-localparam ORAM_ZERO  = 9'b00000010;
-localparam ORAM_CONV  = 9'b00000100;
-localparam ORAM_RESN  = 9'b00001000;
-localparam ORAM_POOL  = 9'b00010000;
-localparam ORAM_OTOA  = 9'b00100000;
-localparam ORAM_STAT  = 9'b01000000;
-localparam ORAM_READ  = 9'b10000000;
+localparam ORAM_IDLE  = 10'b000000001;
+localparam ORAM_ZERO  = 10'b000000010;
+localparam ORAM_CONV  = 10'b000000100;
+localparam ORAM_RESN  = 10'b000001000;
+localparam ORAM_POOL  = 10'b000010000;
+localparam ORAM_OTOA  = 10'b000100000;
+localparam ORAM_STAT  = 10'b001000000;
+localparam ORAM_READ  = 10'b010000000;
+localparam ORAM_ACTF  = 10'b100000000;
 
 reg [ORAM_STATE -1:0] oram_cs;
 reg [ORAM_STATE -1:0] oram_ns;
@@ -86,6 +87,7 @@ wire oram_pool = oram_cs == ORAM_POOL;//RW
 wire oram_otoa = oram_cs == ORAM_OTOA;//R
 wire oram_stat = oram_cs == ORAM_STAT;//R
 wire oram_read = oram_cs == ORAM_READ;//R
+wire oram_actf = oram_cs == ORAM_ACTF;//RW
 wire oram_ptoo = oram_conv || oram_resn;
 assign IS_IDLE = oram_idle;
 reg [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0] zero_lst_done;
@@ -94,6 +96,7 @@ reg [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0] resn_lst_done;
 reg [ORAM_NUM_DW -1:0][OMUX_NUM_DW -1:0] pool_lst_done, pool_add_done;
 reg [ORAM_NUM_DW -1:0]                   otoa_lst_done;
 reg                                      read_lst_done;
+reg [ORAM_NUM_DW -1:0]                   actf_lst_done;
 
 wire oram_zero_done = &zero_lst_done;
 wire oram_conv_done = &conv_lst_done;
@@ -102,6 +105,7 @@ wire oram_pool_done = &pool_lst_done;
 wire oram_otoa_done = &otoa_lst_done;
 wire oram_stat_done = &otoa_lst_done;//same with otoa
 wire oram_read_done =  read_lst_done;
+wire oram_actf_done = &actf_lst_done;
 integer i;
 //=====================================================================================================================
 // IO Signal :
@@ -347,9 +351,22 @@ generate
     for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
         always @ ( posedge clk or negedge rst_n )begin
             if( ~rst_n )
-                otoa_lst_done[gen_i] <= 'd0;
+                actf_lst_done[gen_i] <= 'd1;
             else if( cfg_info_ena )
-                otoa_lst_done[gen_i] <= 'd0;
+                actf_lst_done[gen_i] <= ~(CFG_INFO_CMD==ORAM_ACTF);
+            else if( |(ram_oram_din_ena[gen_i] & etoo_buf_lst[gen_i]) )
+                actf_lst_done[gen_i] <= 'd1;
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < ORAM_NUM_DW; gen_i = gen_i+1 )begin
+        always @ ( posedge clk or negedge rst_n )begin
+            if( ~rst_n )
+                otoa_lst_done[gen_i] <= 'd1;
+            else if( cfg_info_ena )
+                otoa_lst_done[gen_i] <= ~(CFG_INFO_CMD==ORAM_OTOA || CFG_INFO_CMD==ORAM_STAT);
             else if( otoe_dat_ena[gen_i] && otoe_dat_lst[gen_i] )
                 otoa_lst_done[gen_i] <= 'd1;
         end
@@ -358,7 +375,7 @@ endgenerate
 
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
-        read_lst_done <= 'd0;
+        read_lst_done <= 'd1;
     else if( cfg_info_ena )
         read_lst_done <= 'd0;
     else if( |(otoe_dat_ena & otoe_dat_lst) )
@@ -374,6 +391,7 @@ generate
                     ORAM_CONV: etoo_buf_wen[gen_i][gen_j] = etoo_dat_vld[gen_i][gen_j] && etoo_dat_rdy[gen_i][gen_j];
                     ORAM_RESN: etoo_buf_wen[gen_i][gen_j] = etoo_dat_vld[gen_i][gen_j] && etoo_dat_rdy[gen_i][gen_j];
                     ORAM_POOL: etoo_buf_wen[gen_i][gen_j] = ram_oram_dat_ena[gen_i][gen_j] && oram_avg_cnt[gen_i][gen_j]==cfg_pool_wei;
+                    ORAM_ACTF: etoo_buf_wen[gen_i][gen_j] = etoo_dat_vld[gen_i][gen_j] && etoo_dat_rdy[gen_i][gen_j];
                     default  : etoo_buf_wen[gen_i][gen_j] = 'd0;
                 endcase
             end
@@ -383,6 +401,7 @@ generate
                     ORAM_CONV: etoo_buf_din[gen_i][gen_j] = {etoo_dat_lst[gen_i][gen_j], etoo_dat_add[gen_i][gen_j], etoo_dat_dat[gen_i][gen_j]};
                     ORAM_RESN: etoo_buf_din[gen_i][gen_j] = {etoo_dat_lst[gen_i][gen_j], etoo_dat_add[gen_i][gen_j], etoo_dat_dat[gen_i][gen_j]};
                     ORAM_POOL: etoo_buf_din[gen_i][gen_j] = {ram_oram_dat_lst[gen_i][gen_j], oram_din_cnt[gen_i][gen_j], pool_dat_dat[gen_i][gen_j]};
+                    ORAM_ACTF: etoo_buf_din[gen_i][gen_j] = {etoo_dat_lst[gen_i][gen_j], etoo_dat_add[gen_i][gen_j], etoo_dat_dat[gen_i][gen_j]};
                     default  : etoo_buf_din[gen_i][gen_j] = 'd0;
                 endcase
             end
@@ -392,6 +411,7 @@ generate
                     ORAM_CONV: etoo_buf_ren[gen_i][gen_j] = ram_oram_din_vld[gen_i][gen_j] && ram_oram_din_rdy[gen_i][gen_j];
                     ORAM_RESN: etoo_buf_ren[gen_i][gen_j] = ram_oram_dat_vld[gen_i][gen_j] && ram_oram_dat_rdy[gen_i][gen_j];
                     ORAM_POOL: etoo_buf_ren[gen_i][gen_j] = ram_oram_din_vld[gen_i][gen_j] && ram_oram_din_rdy[gen_i][gen_j];
+                    ORAM_ACTF: etoo_buf_ren[gen_i][gen_j] = ram_oram_din_vld[gen_i][gen_j] && ram_oram_din_rdy[gen_i][gen_j];
                     default  : etoo_buf_ren[gen_i][gen_j] = 'd0;
                 endcase
             end
@@ -462,6 +482,7 @@ generate
                     ORAM_CONV: ram_oram_din_vld[gen_i][gen_j] =~etoo_buf_empty[gen_i][gen_j];
                     ORAM_RESN: ram_oram_din_vld[gen_i][gen_j] = oram_res_vld[gen_i][gen_j];
                     ORAM_POOL: ram_oram_din_vld[gen_i][gen_j] =~etoo_buf_empty[gen_i][gen_j];
+                    ORAM_ACTF: ram_oram_din_vld[gen_i][gen_j] =~etoo_buf_empty[gen_i][gen_j];
                     default  : ram_oram_din_vld[gen_i][gen_j] = 'd0;
                 endcase
             end
@@ -472,6 +493,7 @@ generate
                     ORAM_CONV: ram_oram_din_add[gen_i][gen_j] = etoo_buf_add[gen_i][gen_j];
                     ORAM_RESN: ram_oram_din_add[gen_i][gen_j] = oram_res_add[gen_i][gen_j];
                     ORAM_POOL: ram_oram_din_add[gen_i][gen_j] = etoo_buf_add[gen_i][gen_j];
+                    ORAM_ACTF: ram_oram_din_add[gen_i][gen_j] = etoo_buf_add[gen_i][gen_j];
                     default  : ram_oram_din_add[gen_i][gen_j] = 'd0;
                 endcase
             end
@@ -481,6 +503,7 @@ generate
                     ORAM_CONV: ram_oram_din_dat[gen_i][gen_j] = cfg_relu_ena && etoo_buf_dat[gen_i][gen_j][ORAM_DAT_DW -1] ? 'd0 : etoo_buf_dat[gen_i][gen_j];
                     ORAM_RESN: ram_oram_din_dat[gen_i][gen_j] = cfg_relu_ena && oram_res_dat[gen_i][gen_j][ORAM_DAT_DW -1] ? 'd0 : oram_res_dat[gen_i][gen_j];
                     ORAM_POOL: ram_oram_din_dat[gen_i][gen_j] = cfg_relu_ena && etoo_buf_dat[gen_i][gen_j][ORAM_DAT_DW -1] ? 'd0 : etoo_buf_dat[gen_i][gen_j];
+                    ORAM_ACTF: ram_oram_din_dat[gen_i][gen_j] = etoo_buf_dat[gen_i][gen_j];
                     default  : ram_oram_din_dat[gen_i][gen_j] = 'd0;//ORAM_ZERO
                 endcase
             end
@@ -498,6 +521,7 @@ generate
                     ORAM_OTOA: ram_oram_add_vld[gen_i][gen_j] = etoo_add_vld[gen_i][gen_j];
                     ORAM_STAT: ram_oram_add_vld[gen_i][gen_j] = etoo_add_vld[gen_i][gen_j];
                     ORAM_READ: ram_oram_add_vld[gen_i][gen_j] = etoo_add_vld[gen_i][gen_j];
+                    ORAM_ACTF: ram_oram_add_vld[gen_i][gen_j] = etoo_add_vld[gen_i][gen_j];
                     default  : ram_oram_add_vld[gen_i][gen_j] = 'd0;
                 endcase
             end
@@ -509,6 +533,7 @@ generate
                     ORAM_OTOA: ram_oram_add_lst[gen_i][gen_j] = etoo_add_lst[gen_i][gen_j];
                     ORAM_STAT: ram_oram_add_lst[gen_i][gen_j] = etoo_add_lst[gen_i][gen_j];
                     ORAM_READ: ram_oram_add_lst[gen_i][gen_j] = etoo_add_lst[gen_i][gen_j];
+                    ORAM_ACTF: ram_oram_add_lst[gen_i][gen_j] = etoo_add_lst[gen_i][gen_j];
                     default  : ram_oram_add_lst[gen_i][gen_j] = 'd0;
                 endcase
             end
@@ -520,6 +545,7 @@ generate
                     ORAM_OTOA: ram_oram_add_add[gen_i][gen_j] = etoo_add_add[gen_i][gen_j];
                     ORAM_STAT: ram_oram_add_add[gen_i][gen_j] = etoo_add_add[gen_i][gen_j];
                     ORAM_READ: ram_oram_add_add[gen_i][gen_j] = etoo_add_add[gen_i][gen_j];
+                    ORAM_ACTF: ram_oram_add_add[gen_i][gen_j] = etoo_add_add[gen_i][gen_j];
                     default  : ram_oram_add_add[gen_i][gen_j] = 'd0;
                 endcase
             end
@@ -531,6 +557,7 @@ generate
                     ORAM_OTOA: ram_oram_dat_rdy[gen_i][gen_j] = otoe_dat_rdy[gen_i][gen_j];
                     ORAM_STAT: ram_oram_dat_rdy[gen_i][gen_j] = otoe_dat_rdy[gen_i][gen_j];
                     ORAM_READ: ram_oram_dat_rdy[gen_i][gen_j] = otoe_dat_rdy[gen_i][gen_j];
+                    ORAM_ACTF: ram_oram_dat_rdy[gen_i][gen_j] = otoe_dat_rdy[gen_i][gen_j];
                     default  : ram_oram_dat_rdy[gen_i][gen_j] = 'd0;
                 endcase
             end
@@ -703,6 +730,7 @@ always @ ( * )begin
     ORAM_OTOA: oram_ns = oram_otoa_done ? ORAM_IDLE : oram_cs;
     ORAM_STAT: oram_ns = oram_stat_done ? ORAM_IDLE : oram_cs;
     ORAM_READ: oram_ns = oram_read_done ? ORAM_IDLE : oram_cs;
+    ORAM_ACTF: oram_ns = oram_actf_done ? ORAM_IDLE : oram_cs;
     default  : oram_ns = ORAM_IDLE;
   endcase
 end

@@ -222,10 +222,12 @@ always @ ( posedge clk or negedge rst_n )begin
         psum_cal_vld <= 'd1;
 end
 
-wire signed [CONV_CAL_DW -1:0] psum_out_mul = $signed(psum_cal_reg[0])*$signed(cfg_conv_mul) +$signed(cfg_conv_add);
+wire signed [CONV_CAL_DW -1:0] psum_out_mul = $signed(psum_cal_reg[0])*$signed({1'd0,cfg_conv_mul}) +$signed(cfg_conv_add);
+wire                           psum_rnd_bit = |cfg_conv_sft ? psum_out_mul[cfg_conv_sft-1] : 'd0;
 wire signed [CONV_CAL_DW -1:0] psum_out_sft = $signed(psum_out_mul)>>>cfg_conv_sft;
+wire signed [CONV_CAL_DW -1:0] psum_out_rnd = psum_out_sft +{1'd0, psum_rnd_bit};
 wire signed [DATA_OUT_DW -1:0] psum_out_clp;
-CPM_CLP #( CONV_CAL_DW, DATA_OUT_DW ) PSUM_OUT_CLP_U( psum_out_sft, psum_out_clp );
+CPM_CLP #( CONV_CAL_DW, DATA_OUT_DW ) PSUM_OUT_CLP_U( psum_out_rnd, psum_out_clp );
 //wire signed [CONV_CAL_DW -1:0] psum_out_min = {{(CONV_CAL_DW-DATA_OUT_DW+1){1'd1}}, {(DATA_OUT_DW-1){1'd0}}};
 //wire signed [CONV_CAL_DW -1:0] psum_out_max = {{(CONV_CAL_DW-DATA_OUT_DW+1){1'd0}}, {(DATA_OUT_DW-1){1'd1}}};
 //wire signed [DATA_OUT_DW -1:0] psum_out_clp = psum_out_sft<psum_out_min ? {1'd1, {(DATA_OUT_DW-1){1'd0}}} : (psum_out_sft>psum_out_max ? {1'd0, {(DATA_OUT_DW-1){1'd1}}} : psum_out_sft[0 +:DATA_OUT_DW]);

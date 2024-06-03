@@ -42,7 +42,7 @@ module EEG_OBUF #(
 // Constant Definition :
 //=====================================================================================================================
 localparam ODAT_BUF_DW = CHIP_DAT_DW +1+1;
-localparam ODAT_BUF_AW = 2;
+localparam ODAT_BUF_AW = 1;
 localparam OOUT_BUF_DW = CHIP_OUT_DW +1;
 localparam OOUT_BUF_AW = 2;
 
