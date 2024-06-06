@@ -12,6 +12,9 @@
 `ifndef DEFINE
   `define DEFINE
 
+`define CLK_PERIOD_HALF 500
+`define CLK_PERIOD     1000
+
 `define FrameNum       2
   
 `define CHIP_DAT_DW    8

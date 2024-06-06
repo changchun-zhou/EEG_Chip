@@ -47,7 +47,7 @@ module top;
   initial begin
     clk <= 'd1;
   end
-  always #5 clk = ~clk;
+  always #`CLK_PERIOD_HALF clk = ~clk;
   
   EEG_IF eeg_if(clk);
   `ifdef DUMP_EN

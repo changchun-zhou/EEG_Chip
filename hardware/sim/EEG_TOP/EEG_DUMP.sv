@@ -92,6 +92,54 @@ always begin
 end
 
 `ifndef SIM_POST
+//flag_cnt
+`define EEG_ACC_U  top.EEG_TOP_U.EEG_ACC_U
+`define EEG_PEAY_U top.EEG_TOP_U.EEG_ACC_U.EEG_PEAY_U
+`define EEG_WRAM_U top.EEG_TOP_U.EEG_ACC_U.EEG_WRAM_U
+`define EEG_DGEN_U top.EEG_TOP_U.EEG_ACC_U.EEG_PEAY_U.EEG_PEA_DAT_GEN_U
+
+reg [ `BANK_NUM_DW -1:0][32 -1:0] wram_read_cnt;
+generate
+    for( gen_i=0 ; gen_i < `BANK_NUM_DW; gen_i = gen_i+1 ) begin
+        always @ ( posedge clk or negedge rst_n )begin
+            if( `EEG_ACC_U.acc_cs != `EEG_ACC_U.ACC_CONV  )begin
+                wram_read_cnt[gen_i] <= 'd0;
+            end
+            else if( `EEG_WRAM_U.etow_add_ena[gen_i] && `EEG_DGEN_U[gen_i].ff_cs!=`EEG_DGEN_U[gen_i].FF_MULT && `EEG_DGEN_U[gen_i].ff_cs!=`EEG_DGEN_U[gen_i].FF_BIAS )begin
+                wram_read_cnt[gen_i] <= wram_read_cnt[gen_i] +'d1;
+            end
+        end
+    end
+endgenerate
+
+reg [ `BANK_NUM_DW -1:0][32 -1:0] fram_flag_cnt;
+reg [ `BANK_NUM_DW -1:0][32 -1:0] fram_full_cnt;
+reg [32 -1:0] fram_flag_sum;
+reg [32 -1:0] fram_full_sum;
+generate
+    for( gen_i=0 ; gen_i < `BANK_NUM_DW; gen_i = gen_i+1 ) begin
+        always @ ( posedge clk or negedge rst_n )begin
+            if( top.EEG_TOP_U.EEG_ACC_U.acc_cs != top.EEG_TOP_U.EEG_ACC_U.ACC_CONV  )begin
+                fram_flag_cnt[gen_i] <= 'd0;
+                fram_full_cnt[gen_i] <= 'd0;
+            end
+            else if( `EEG_PEAY_U.fram_dat_vld[gen_i] && `EEG_PEAY_U.fram_dat_rdy[gen_i] )begin
+                fram_flag_cnt[gen_i] <= fram_flag_cnt[gen_i] +`EEG_PEAY_U.fram_dat_dat[gen_i][0] +`EEG_PEAY_U.fram_dat_dat[gen_i][1] +`EEG_PEAY_U.fram_dat_dat[gen_i][2] +`EEG_PEAY_U.fram_dat_dat[gen_i][3];
+                fram_full_cnt[gen_i] <= fram_full_cnt[gen_i] +'d4;
+            end
+        end
+    end
+endgenerate
+
+always @ ( * )begin
+    fram_flag_sum = 0;
+    fram_full_sum = 0;
+    for( i = 0; i < `BANK_NUM_DW; i = i + 1 )begin
+        fram_flag_sum += fram_flag_cnt[i];
+        fram_full_sum += fram_full_cnt[i];
+    end
+end
+
 reg [ `ORAM_NUM_DW -1:0][`OMUX_NUM_DW -1:0][`OMUX_RAM_DW -1:0][24 -1:0] omux_data;
 generate
     for( gen_i=0 ; gen_i < `ORAM_NUM_DW; gen_i = gen_i+1 ) begin
@@ -129,17 +177,21 @@ generate
 endgenerate
 
 reg [ `BANK_NUM_DW -1:0][`FRAM_RAM_DW -1:0][4 -1:0] fram_data;
+reg [ `BANK_NUM_DW -1:0] fram_flag;
 generate
     for( gen_i=0 ; gen_i < `BANK_NUM_DW; gen_i = gen_i+1 ) begin
         always @ ( posedge clk or negedge rst_n )begin
             if( ~rst_n )begin
                 fram_data[gen_i] <= 'd0;
+                fram_flag[gen_i] <= 'd0;
             end
             else if( top.DumpEnd )begin
                 fram_data[gen_i] <= 'd0;
+                fram_flag[gen_i] <= 'd0;
             end
             else if( top.EEG_TOP_U.EEG_ACC_U.EEG_FRAM_U.ETOF_DAT_VLD[gen_i] && top.EEG_TOP_U.EEG_ACC_U.EEG_FRAM_U.ETOF_DAT_RDY[gen_i] )begin
                 fram_data[gen_i][top.EEG_TOP_U.EEG_ACC_U.EEG_FRAM_U.ETOF_DAT_ADD[gen_i]] <= top.EEG_TOP_U.EEG_ACC_U.EEG_FRAM_U.ETOF_DAT_DAT[gen_i];
+                fram_flag[gen_i] <= 'd1;
             end
         end
     end
@@ -148,7 +200,7 @@ endgenerate
 generate
     for( gen_i=0 ; gen_i < `BANK_NUM_DW; gen_i = gen_i+1 ) begin
         always @ ( posedge clk or negedge rst_n )begin
-            if( top.DumpEnd )begin
+            if( top.DumpEnd && fram_flag[gen_i] )begin
                 f_data = $psprintf("%s/fram_%1d.txt", dump_path, gen_i);
                 p_data = $fopen(f_data, "ab+");
                 for( i = 0; i < `FRAM_RAM_DW; i = i + 1 )begin
@@ -190,11 +242,102 @@ generate
         end
     end
 endgenerate
+
+reg [11:0] last_state;
+reg [63:0] last_change_time;
+reg [63:0] state_start_time;
+int cal_sum;
+int use_sum;
+int est_sum;
+real fram_rate;
+real effi_rate;
+
+initial begin
+    $timeformat(-9, 0, "", 12);
+end
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        last_state <= top.EEG_TOP_U.EEG_ACC_U.ACC_IDLE;
+        last_change_time <= 0;
+        state_start_time <= 0;
+    end 
+    else if (top.EEG_TOP_U.EEG_ACC_U.acc_cs != last_state) begin
+        last_change_time <= $time;
+        state_start_time <= $time;
+        last_state <= top.EEG_TOP_U.EEG_ACC_U.acc_cs;
+    end
+end
+
+wire [32 -1:0] all_sum = (top.EEG_TOP_U.EEG_ACC_U.cfg_conv_wei+1)*(top.EEG_TOP_U.EEG_ACC_U.cfg_conv_ich+1)*(top.EEG_TOP_U.EEG_ACC_U.cfg_conv_och+1)*(top.EEG_TOP_U.EEG_ACC_U.cfg_conv_len+1)*4;
+always @(posedge clk or negedge rst_n) begin
+    if (top.EEG_TOP_U.EEG_ACC_U.acc_cs != last_state) begin
+        if (last_state == top.EEG_TOP_U.EEG_ACC_U.ACC_CONV ) begin
+            f_data = $psprintf("./dump/Frame%02d/state_time.txt", top.frame_cnt);
+            p_data = $fopen(f_data, "ab+");
+            //$fdisplay(p_data, "Layer %02d, At time %t ns, State %s lasted for %t clk, flag_cnt: %6d, rate: %t/%6.0f", \
+            //        top.layer_cnt, $time, state2string(last_state), ($time - state_start_time)/`CLK_PERIOD, fram_flag_sum, fram_flag_sum*(top.EEG_TOP_U.EEG_ACC_U.cfg_conv_wei+1)/16, ($time - state_start_time)/`CLK_PERIOD);
+            cal_sum = top.EEG_TOP_U.EEG_ACC_U.cfg_conv_ich==0 ? fram_flag_sum*(top.EEG_TOP_U.EEG_ACC_U.cfg_conv_wei+1)/16 : fram_flag_sum*(top.EEG_TOP_U.EEG_ACC_U.cfg_conv_wei+1)/4;
+            use_sum = ($time - state_start_time)/`CLK_PERIOD;
+            est_sum = all_sum*1.0*fram_flag_sum/fram_full_sum/16;
+            fram_rate = fram_flag_sum*1.0/fram_full_sum -0.0001;
+            effi_rate = est_sum*1.0/use_sum;
+            $fdisplay(p_data, "%t Layer %02d, act_rate: %03.2f%%, %6d/%6d, efficiency: %2.2f%%, %6d/%6d, wram: %6d,%6d,%6d,%6d", $time, top.layer_cnt, fram_rate*100, fram_flag_sum, fram_full_sum, effi_rate*100, est_sum, use_sum, wram_read_cnt[0], wram_read_cnt[1], wram_read_cnt[2], wram_read_cnt[3]);
+            $fclose(p_data);
+        end
+    end
+end
+
+function [63:0] state2string(input [14 -1:0] last_state);
+    case (last_state)
+        top.EEG_TOP_U.EEG_ACC_U.ACC_IDLE: state2string = "ACC_IDLE";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_LOAD: state2string = "ACC_LOAD";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_ACMD: state2string = "ACC_ACMD";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_ITOA: state2string = "ACC_ITOA";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_ITOW: state2string = "ACC_ITOW";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_OTOA: state2string = "ACC_OTOA";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_ATOW: state2string = "ACC_ATOW";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_WTOA: state2string = "ACC_WTOA";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_CONV: state2string = "ACC_CONV";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_POOL: state2string = "ACC_POOL";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_STAT: state2string = "ACC_STAT";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_READ: state2string = "ACC_READ";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_WTOS: state2string = "ACC_WTOS";
+        top.EEG_TOP_U.EEG_ACC_U.ACC_ACTF: state2string = "ACC_ACTF";
+        default : state2string = "ACC_DEFT";
+    endcase
+endfunction
 `endif
 
 always @ ( posedge clk or negedge rst_n )begin
-    if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_VLD && top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_RDY )begin
+    if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_VLD && top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_RDY && |top.EEG_TOP_U.EEG_ACC_U.cfg_oram_idx )begin
         f_data = $psprintf("%s/oram_%1d.txt", dump_path, $clog2(top.EEG_TOP_U.EEG_ACC_U.cfg_oram_idx));
+        p_data = $fopen(f_data, "ab+");
+        $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
+        //if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT inside {[{`CHIP_OUT_DW{1'd0}}:{`CHIP_OUT_DW{1'd1}}]}  )
+        //    $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
+        //else
+        //    $fwrite(p_data, "%2h\n", $signed('d0));
+        $fclose(p_data);
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_VLD && top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_RDY && |top.EEG_TOP_U.EEG_ACC_U.cfg_aram_idx )begin
+        f_data = $psprintf("%s/aram_%1d.txt", dump_path, $clog2(top.EEG_TOP_U.EEG_ACC_U.cfg_aram_idx));
+        p_data = $fopen(f_data, "ab+");
+        $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
+        //if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT inside {[{`CHIP_OUT_DW{1'd0}}:{`CHIP_OUT_DW{1'd1}}]}  )
+        //    $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
+        //else
+        //    $fwrite(p_data, "%2h\n", $signed('d0));
+        $fclose(p_data);
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_VLD && top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_RDY && |top.EEG_TOP_U.EEG_ACC_U.cfg_wram_idx )begin
+        f_data = $psprintf("%s/wram_%1d.txt", dump_path, $clog2(top.EEG_TOP_U.EEG_ACC_U.cfg_wram_idx));
         p_data = $fopen(f_data, "ab+");
         $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
         //if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT inside {[{`CHIP_OUT_DW{1'd0}}:{`CHIP_OUT_DW{1'd1}}]}  )

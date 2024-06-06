@@ -1366,10 +1366,10 @@ generate
                 mtof_add_cnt[gen_i] <= 'd0;
             else if( cfg_info_ena )
                 mtof_add_cnt[gen_i] <= cfg_fram_add[FRAM_ADD_AW -1:2] +cfg_foch_idx*(cfg_foch_len+'d1);
-            //else if( mtof_dat_ena[gen_i] && mtof_och_cnt[gen_i]==cfg_conv_och )//fram channel first
-                //mtof_add_cnt[gen_i] <= cfg_oram_add +mtof_pix_cnt[gen_i] +'d1;
+            else if( mtof_dat_ena[gen_i] && mtof_och_cnt[gen_i]==cfg_conv_och )//fram channel first
+                mtof_add_cnt[gen_i] <= mtof_add_cnt[gen_i] +(cfg_foch_num+'d1)*(cfg_foch_len+'d1) -cfg_foch_len;
             else if( mtof_dat_ena[gen_i] )//fram channel first
-                mtof_add_cnt[gen_i] <= mtof_add_cnt[gen_i] +(cfg_foch_num+'d1)*(cfg_foch_len+'d1);
+                mtof_add_cnt[gen_i] <= mtof_add_cnt[gen_i] +'d1;
         end
     end
 endgenerate

@@ -616,6 +616,7 @@ always @ ( posedge clk or negedge rst_n )begin
         case( cfg_mode_cmd )
             CMD_CONV: cfg_conv_wei <= cfg_acmd_dat[8 +:3];
             CMD_OTOA: cfg_conv_wei <= cfg_acmd_dat[4 +:3];
+            INF_INFO: cfg_conv_wei <= cmd_wbuf_inf ? cfg_acmd_dat[16 +:3] : cfg_conv_wei;
              default: cfg_conv_wei <= cfg_conv_wei;
         endcase
     end

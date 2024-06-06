@@ -68,13 +68,13 @@ program automatic TEST(
 
   task layer_start();
 
-    $display("layer_start");
+    $display($time, "layer_start");
     ->top.layer_start;
   endtask: layer_start
 
   task layer_done();
 
-    $display("layer_done");
+    $display($time, "layer_done");
     //repeat(1000+$urandom%20) @ (posedge clk);
     @ (posedge clk);
     top.DumpEnd <= 1'd1;
@@ -117,7 +117,8 @@ program automatic TEST(
             env.read_cfg_cmd(layer_idx_fix);
             fork
                 env.eeg_cfg_cmd();
-                env.eeg_run();
+                if( ( env.is_read==1 ) || (j==(env.layer_num-1)))
+                    env.eeg_run();
             join_none;
             wait fork;
             layer_done();

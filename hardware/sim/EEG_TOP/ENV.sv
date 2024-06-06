@@ -19,8 +19,9 @@ class ENV #(type IF_T = vEEG_IF, type IF_B = vEEG_TB);
     IF_B  eeg_if;
     CFG   cfg;
     int   frame_idx;
-    int   layer_num;
+    int   layer_num = 1;
     int   layer_from = 0;
+    int   is_read = 0;
     
     event run_done;
     
@@ -61,6 +62,7 @@ function void ENV::read_cfg_ram();
     if( file_ptr )begin
         file_cnt = $fscanf(file_ptr,"%d\n", layer_num);
         file_cnt = $fscanf(file_ptr,"%d\n", layer_from);
+        file_cnt = $fscanf(file_ptr,"%d\n", is_read);
         $fclose(file_ptr);
     end
 
@@ -87,6 +89,7 @@ task ENV::eeg_cmd(input bit [31:0] chip_dat_dat, input int chip_dat_len=4, input
         eeg_if.txcb_dat.chip_dat_vld <= 'd0;
         eeg_if.txcb_dat.chip_dat_lst <= 'd0;
         //@eeg_if.txcb_dat;
+        //$display($time, " eeg_cmd ", chip_dat_dat[8*k +:8]);
     end
    
 endtask: eeg_cmd
@@ -108,13 +111,6 @@ endtask: eeg_dat
 
 task ENV::eeg_cfg_ram();
 
-    //act
-    for (int i=0; i<`BANK_NUM_DW; i++) begin
-        eeg_cmd(cfg.cfg_act_cmd[i][0]);
-        for (int j=0; j<cfg.cfg_act_dat[i].size(); j++) begin
-            eeg_dat(cfg.cfg_act_dat[i][j], j==(cfg.cfg_act_dat[i].size()-1));
-        end
-    end
     //wei
     for (int i=0; i<`BANK_NUM_DW; i++) begin
         eeg_cmd(cfg.cfg_wei_cmd[i][0]);
@@ -123,11 +119,20 @@ task ENV::eeg_cfg_ram();
         end
     end
 
+    //act
+    for (int i=0; i<`BANK_NUM_DW; i++) begin
+        eeg_cmd(cfg.cfg_act_cmd[i][0]);
+        for (int j=0; j<cfg.cfg_act_dat[i].size(); j++) begin
+            eeg_dat(cfg.cfg_act_dat[i][j], j==(cfg.cfg_act_dat[i].size()-1));
+        end
+    end
+
 endtask: eeg_cfg_ram
 
 task ENV::eeg_cfg_cmd();
 
     //cmd
+    //$display("cfg_cmd_cnt:", cfg.cfg_cmd.size());
     for (int j=0; j<cfg.cfg_cmd.size(); j++) begin
         eeg_cmd(cfg.cfg_cmd[j], cfg.cfg_len[j], cfg.cfg_lst[j]);
     end
@@ -147,7 +152,7 @@ task ENV::eeg_run();
                         eeg_if.txcb_out.chip_out_rdy <= 1;
                     `endif
                     @eeg_if.txcb_out;
-                end while( ~(eeg_if.txcb_out.chip_out_rdy && eeg_if.txcb_out.chip_out_vld && eeg_if.txcb_out.chip_out_lst) );
+                end while( ~(eeg_if.txcb_out.chip_out_rdy && eeg_if.txcb_out.chip_out_vld && eeg_if.txcb_out.chip_out_lst && |top.EEG_TOP_U.EEG_ACC_U.cfg_oram_idx) );
                 eeg_if.txcb_out.chip_out_rdy <= 0;
             end
         end

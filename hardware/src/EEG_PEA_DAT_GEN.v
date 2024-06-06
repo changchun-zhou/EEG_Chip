@@ -117,11 +117,11 @@ localparam WRAM_ADD_GAP = 1;
 localparam DILA_LEN_DW = CONV_RUN_DW;
 localparam STRD_LEN_DW = CONV_RUN_DW;
 localparam WNCH_BUF_DW = CONV_ICH_DW +CONV_OCH_DW-2 +1;
-localparam WNCH_BUF_NUM = 4;
+localparam WNCH_BUF_NUM = 2;
 localparam WNCH_BUF_AW = $clog2(WNCH_BUF_NUM);
 
 localparam WWEI_BUF_DW = CONV_WEI_DW +CONV_WEI_DW +1;
-localparam WWEI_BUF_NUM = 16;
+localparam WWEI_BUF_NUM = 8;
 localparam WWEI_BUF_AW = $clog2(WWEI_BUF_NUM);
 localparam WWEI_MAXLEN = 1<<CONV_WEI_DW;
 
@@ -355,7 +355,7 @@ reg  ff_rpad_done;
 reg  ff_conv_done;
 
 wire fram_add_c1st = ff_conv_f2st;
-wire fram_add_cend = ff_conv_last;
+wire fram_add_cend = ff_rpad ? ff_rpad_last : ff_tile_last;//only for last flag
 wire fram_add_last = ff_loop_last && ff_conv_last;//last pix & loop
 wire fram_add_lpad = ff_lpad;
 wire fram_add_tile = ff_tile;
