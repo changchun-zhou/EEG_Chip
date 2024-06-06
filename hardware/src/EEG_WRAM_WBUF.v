@@ -386,7 +386,7 @@ generate
         for(gv_ele=0; gv_ele<HIT_ARRAY_LEN; gv_ele=gv_ele + 1) begin
             assign compare_vector[gv_ele] = PtowHitAddr == hit_idx_array[gv_ele];
         end
-        assign addr_match_hit[gv_port]  = work & |compare_vector;
+        assign addr_match_hit[gv_port]  = work & |compare_vector & ptow_add_och_cur[gv_port];
         assign hit                      = work & |compare_vector & hit_data_vld[hit_addr];
         assign hit_last                 = work & PTOW_ADD_ADD[gv_port] == last_idx & last_data_vld;
 
