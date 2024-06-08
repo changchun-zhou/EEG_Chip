@@ -557,6 +557,7 @@ reg  [PE_ROW -1:0] mult_add_cnt_ena;
 reg  [PE_ROW -1:0] mult_dat_cnt_ena;
 reg  [PE_ROW -1:0] mult_add_cnt_last;
 reg  [PE_ROW -1:0] mult_dat_cnt_last;
+reg  [PE_ROW -1:0][WRAM_ADD_AW -1:0] mult_add_add;
 CPM_CNT_C #( MULT_CNT_AW ) MULT_ADD_CNT_U[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, mult_add_cnt_ena, mult_add_cnt );
 CPM_CNT_C #( MULT_CNT_AW ) MULT_DAT_CNT_U[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, mult_dat_cnt_ena, mult_dat_cnt );
 
@@ -572,6 +573,7 @@ reg  [PE_ROW -1:0] bias_add_cnt_ena;
 reg  [PE_ROW -1:0] bias_dat_cnt_ena;
 reg  [PE_ROW -1:0] bias_add_cnt_last;
 reg  [PE_ROW -1:0] bias_dat_cnt_last;
+reg  [PE_ROW -1:0][WRAM_ADD_AW -1:0] bias_add_add;
 CPM_CNT_C #( BIAS_CNT_AW ) BIAS_ADD_CNT_U[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, bias_add_cnt_ena, bias_add_cnt );
 CPM_CNT_C #( BIAS_CNT_AW ) BIAS_DAT_CNT_U[PE_ROW -1:0] ( clk, rst_n, ff_conv_done, bias_dat_cnt_ena, bias_dat_cnt );
 
@@ -654,7 +656,7 @@ generate
     for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
         always @ ( * )begin
             wram_add_vld[gen_i] = ff_mult ? mult_add_vld[gen_i] : ff_bias ? bias_add_vld[gen_i] : ~wadd_fifo_empty[gen_i] && wram_fifo_cnt_empty[gen_i] > WRAM_ADD_GAP;
-            wram_add_add[gen_i] = ff_mult ? mult_add_cnt[gen_i] +ff_oidx*4 +cfg_mult_add : ff_bias ? bias_add_cnt[gen_i] +ff_oidx*4 +cfg_bias_add : wadd_fifo_add[gen_i];
+            wram_add_add[gen_i] = ff_mult ? mult_add_add[gen_i] : ff_bias ? bias_add_add[gen_i] : wadd_fifo_add[gen_i];
             wram_add_och[gen_i] = ff_mult || ff_bias ? 'd0 : wadd_fifo_och[gen_i];
             wram_add_buf[gen_i] = ff_mult || ff_bias ? {STAT_DAT_DW{1'd1}} : wadd_fifo_buf[gen_i];//make sure not in stat_dat
             wram_add_lst[gen_i] = ff_mult || ff_bias ? 'd0 : wadd_fifo_lst[gen_i];
@@ -959,6 +961,21 @@ end
 //MULT
 generate
     for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
+        always @ ( posedge clk or negedge rst_n )begin
+            if( ~rst_n )
+                mult_add_add[gen_i] <= 'd0;
+            else if( cfg_info_ena )
+                mult_add_add[gen_i] <= cfg_mult_add;
+            else if( mult_add_cnt_last[gen_i] )
+                mult_add_add[gen_i] <= ff_last_didx ? cfg_mult_add +ff_oidx*4 +'d4 : cfg_mult_add;
+            else if( mult_add_cnt_ena[gen_i] )
+                mult_add_add[gen_i] <= mult_add_add[gen_i] +'d1;
+        end
+    end
+endgenerate
+
+generate
+    for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
         always @( * )begin
             mult_add_cnt_ena[gen_i] = ff_mult && wram_add_ena[gen_i];
             mult_dat_cnt_ena[gen_i] = ff_mult && wram_dat_ena[gen_i];
@@ -991,6 +1008,21 @@ generate
 endgenerate
 
 //BIAS
+generate
+    for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
+        always @ ( posedge clk or negedge rst_n )begin
+            if( ~rst_n )
+                bias_add_add[gen_i] <= 'd0;
+            else if( cfg_info_ena )
+                bias_add_add[gen_i] <= cfg_bias_add;
+            else if( bias_add_cnt_last[gen_i] )
+                bias_add_add[gen_i] <= ff_last_didx ? cfg_bias_add +ff_oidx*4 +'d4 : cfg_bias_add;
+            else if( bias_add_cnt_ena[gen_i] )
+                bias_add_add[gen_i] <= bias_add_add[gen_i] +'d1;
+        end
+    end
+endgenerate
+
 generate
     for( gen_i=0 ; gen_i < PE_ROW; gen_i = gen_i+1 )begin
         always @( * )begin

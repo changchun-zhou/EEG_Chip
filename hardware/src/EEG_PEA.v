@@ -328,7 +328,7 @@ generate
             always @ ( posedge clk or negedge rst_n )begin
                 if( ~rst_n )
                     pea_run_done[gen_i][gen_j] <= 'd1;
-                else if( pea_idle )
+                else if( cfg_info_ena && cfg_info_cmd==PEA_CONV )
                     pea_run_done[gen_i][gen_j] <= 'd0;
                 else if( oram_dat_vld[gen_i][gen_j] && oram_dat_rdy[gen_i][gen_j] && oram_dat_lst[gen_i][gen_j] )begin
                     pea_run_done[gen_i][gen_j] <= 'd1;

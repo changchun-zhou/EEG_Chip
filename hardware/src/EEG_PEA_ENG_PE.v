@@ -121,7 +121,7 @@ reg [ARAM_ADD_AW   :0] psum_add_reg;
 
 reg [DATA_SUM_NW -1:0][DATA_SUM_DW -1:0] psum_cal_reg;
 reg [DATA_SUM_DW -1:0] psum_cal_tmp;
-reg [DATA_OUT_DW -1:0] psum_out_reg;
+reg [DATA_OUT_DW   :0] psum_out_reg;
 reg [DATA_OUT_DW -1:0] psum_out_dat;
 
 wire is_addr_out_range = act_add>(aram_add_reg+cfg_conv_pad*cfg_conv_run);
@@ -225,14 +225,11 @@ end
 
 wire signed [CONV_CAL_DW -1:0] psum_out_mul = $signed(psum_cal_reg[0])*$signed({1'd0,cfg_conv_mul}) +$signed(cfg_conv_add);
 wire signed [CONV_CAL_DW -1:0] psum_out_sft = $signed(psum_out_mul)>>>cfg_conv_sft;
-wire signed [CONV_CAL_DW -1:0] psum_out_rnd = psum_out_sft;
-wire signed [DATA_OUT_DW -1:0] psum_out_clp;
+wire signed [DATA_OUT_DW   :0] psum_out_sft_clp;
 
-CPM_CLP #( CONV_CAL_DW, DATA_OUT_DW ) PSUM_OUT_CLP_U( psum_out_rnd, psum_out_clp );
+CPM_CLP #( CONV_CAL_DW, DATA_OUT_DW+1 ) PSUM_OUT_SFT_CLP_U( psum_out_sft, psum_out_sft_clp );
 
-wire signed [CONV_CAL_DW -1:0] psum_out_min = {{(CONV_CAL_DW-DATA_OUT_DW+1){1'd1}}, {(DATA_OUT_DW-1){1'd0}}};
-wire signed [CONV_CAL_DW -1:0] psum_out_max = {{(CONV_CAL_DW-DATA_OUT_DW+1){1'd0}}, {(DATA_OUT_DW-1){1'd1}}};
-wire psum_rnd_bit = psum_out_sft<psum_out_min || psum_out_sft>=psum_out_max || cfg_conv_sft=='d0 ? 'd0 : psum_out_mul[cfg_conv_sft-1];
+wire psum_rnd_bit = cfg_conv_sft=='d0 ? 'd0 : psum_out_mul[cfg_conv_sft-1];
 wire psum_rnd_bit_reg;
 CPM_REG #( 1 ) PSUM_OUT_SFT_REG ( clk, rst_n, psum_rnd_bit, psum_rnd_bit_reg);
 
@@ -242,13 +239,17 @@ always @ ( posedge clk or negedge rst_n )begin
     else if( pe_psum_rst )
         psum_out_reg <= 'd0;
     else if( is_addr_out_range && din_vld )
-        psum_out_reg <= psum_out_clp;
+        psum_out_reg <= psum_out_sft_clp;
     else if( pe_psum && (~psum_out_vld || out_rdy) )
-        psum_out_reg <= psum_out_clp;
+        psum_out_reg <= psum_out_sft_clp;
 end
 
+wire signed [DATA_OUT_DW +1:0] psum_out_dat_add = $signed(psum_out_reg) +$signed({1'd0, psum_rnd_bit_reg});
+wire [DATA_OUT_DW -1:0] psum_out_dat_sft;
+CPM_CLP #( DATA_OUT_DW+2, DATA_OUT_DW ) PSUM_OUT_DAT_SFT_U( psum_out_dat_add, psum_out_dat_sft );
+
 always @ ( * )begin
-    psum_out_dat = $signed(psum_out_reg) +{1'd0, psum_rnd_bit_reg};
+    psum_out_dat = psum_out_dat_sft;
 end
 
 always @ ( posedge clk or negedge rst_n )begin
