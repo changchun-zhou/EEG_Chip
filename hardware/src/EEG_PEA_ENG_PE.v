@@ -116,19 +116,23 @@ reg [CONV_WEI_DW -1:0] out_idx_cnt;
 reg psum_out_vld;
 reg psum_cal_vld;
 
+reg [2 -1:0] psum_cal_cnt;
+wire [DATA_OUT_DW -1:0] psum_out_clp;
+
 reg [ARAM_ADD_AW   :0] aram_add_reg;
 reg [ARAM_ADD_AW   :0] psum_add_reg;
 
 reg [DATA_SUM_NW -1:0][DATA_SUM_DW -1:0] psum_cal_reg;
 reg [DATA_SUM_DW -1:0] psum_cal_tmp;
-reg [CONV_CAL_DW -1:0] psum_out_reg;
+reg [DATA_SUM_DW -1:0] psum_out_reg;
 reg [DATA_OUT_DW -1:0] psum_out_dat;
 
 wire is_addr_out_range = act_add>(aram_add_reg+cfg_conv_pad*cfg_conv_run);
 wire is_addr_hit_range_next = act_add<=(aram_add_reg+cfg_conv_pad*cfg_conv_run+cfg_conv_run);
 
 wire pe_data_ena = din_ena;
-wire pe_last_din = din_ena&&act_lst&&wei_lst;
+reg  pe_last_din;
+wire pe_flow_end = pe_last_din && ~psum_cal_vld && ~psum_out_vld;
 wire pe_psum_rst = out_ena&&out_idx_cnt==cfg_conv_pad&&pe_psum;//is_addr_out_range make sure aram_add_reg within (cfg_conv_pad) bit act_add
 
 wire psum_out_lst = psum_add_reg==cfg_conv_lst;
@@ -136,7 +140,7 @@ wire psum_out_lst = psum_add_reg==cfg_conv_lst;
 // IO Logic Design :                                                                                                      
 //=====================================================================================================================   
 always @( * )begin 
-    din_rdy = ~pe_psum && (out_rdy || ~psum_out_vld) && (is_addr_hit_range_next || pe_idle);// || (~is_psum_out_vld && is_addr_out_range);//C2 may be too long; C1 need 4 BANK ORAM
+    din_rdy = ~pe_psum && (~psum_cal_vld || ~is_addr_out_range || (psum_cal_vld && out_ena)) && (is_addr_hit_range_next || pe_idle);// || (~is_psum_out_vld && is_addr_out_range);//C2 may be too long; C1 need 4 BANK ORAM
 end
 
 always @( * )begin    
@@ -171,15 +175,13 @@ generate
                         psum_cal_reg[gen_i] <= psum_cal_tmp;
                 end
             end
-            else if( pe_flow && din_vld && is_addr_out_range && (~psum_out_vld || out_rdy) && ~is_addr_hit_range_next )begin//addr jump
-                if(  is_addr_out_range )begin
-                    if( gen_i==DATA_SUM_NW-1 )
-                        psum_cal_reg[gen_i] <= 'd0;
-                    else
-                        psum_cal_reg[gen_i] <= psum_cal_reg[gen_i+1];
-                end
+            else if( pe_flow && din_vld && is_addr_out_range && (~psum_cal_vld || out_ena) && ~is_addr_hit_range_next )begin//addr jump
+                if( gen_i==DATA_SUM_NW-1 )
+                    psum_cal_reg[gen_i] <= 'd0;
+                else
+                    psum_cal_reg[gen_i] <= psum_cal_reg[gen_i+1];
             end
-            else if( pe_psum && out_rdy )begin
+            else if( pe_psum && (~psum_cal_vld || out_ena) )begin
                 if( gen_i==DATA_SUM_NW-1 )
                     psum_cal_reg[gen_i] <= 'd0;
                 else
@@ -190,19 +192,17 @@ generate
   
 endgenerate
 
-//when is_addr_out_range->wei_idx==0, for wei no zero value
-//always @ ( posedge clk or negedge rst_n )begin
-//    if( ~rst_n )
-//        wei_idx_cnt <= 'd0;
-//    else if( pe_psum_rst )
-//        wei_idx_cnt <= 'd0;
-//    else if( din_ena && WEI_LST )
-//        wei_idx_cnt <= 'd0;
-//    else if( din_ena )
-//        wei_idx_cnt <= wei_idx_cnt +'d1;
-//end
 always @ ( * )begin
     wei_idx_cnt = wei_idx;
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )
+        pe_last_din <= 'd0;
+    else if( pe_psum_rst )
+        pe_last_din <= 'd0;
+    else if( din_ena&&act_lst&&wei_lst )
+        pe_last_din <= 'd1;
 end
 
 always @ ( posedge clk or negedge rst_n )begin
@@ -214,53 +214,66 @@ always @ ( posedge clk or negedge rst_n )begin
         out_idx_cnt <= out_idx_cnt +'d1;
 end
 
+always @ ( * )begin
+    psum_out_dat = psum_out_clp;
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )
+        psum_out_reg <= 'd0;
+    else if( pe_psum_rst )
+        psum_out_reg <= 'd0;
+    else if( is_addr_out_range && din_vld && (~psum_cal_vld || out_ena) )
+        psum_out_reg <= psum_cal_reg[0];
+    else if( pe_psum && (~psum_cal_vld || out_ena) )
+        psum_out_reg <= psum_cal_reg[0];
+end
+
+always @ ( * )begin
+    psum_out_vld = psum_cal_vld && &psum_cal_cnt;
+end
+
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
         psum_cal_vld <= 'd0;
     else if( pe_psum_rst )
         psum_cal_vld <= 'd0;
-    else if( din_ena )
+    else if( ~pe_idle && is_addr_out_range && din_vld )
+        psum_cal_vld <= 'd1;
+    else if( out_ena && ~pe_psum )
+        psum_cal_vld <= 'd0;
+    else if( pe_psum )
         psum_cal_vld <= 'd1;
 end
 
-wire signed [CONV_CAL_DW -1:0] psum_out_mul = $signed(psum_cal_reg[0])*$signed({1'd0,cfg_conv_mul}) +$signed(cfg_conv_add);
-wire signed [CONV_CAL_DW -1:0] psum_out_sft = $signed(psum_out_mul)>>>cfg_conv_sft;
-
-wire psum_rnd_bit = cfg_conv_sft=='d0 ? 'd0 : psum_out_mul[cfg_conv_sft-1];
-wire psum_rnd_bit_reg;
-CPM_REG #( 1 ) PSUM_OUT_SFT_REG ( clk, rst_n, psum_rnd_bit, psum_rnd_bit_reg);
-
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
-        psum_out_reg <= 'd0;
-    else if( pe_psum_rst )
-        psum_out_reg <= 'd0;
-    else if( is_addr_out_range && din_vld )
-        psum_out_reg <= psum_out_sft;
-    else if( pe_psum && (~psum_out_vld || out_rdy) )
-        psum_out_reg <= psum_out_sft;
-end
-
-wire signed [CONV_CAL_DW -1:0] psum_out_dat_add = $signed(psum_out_reg) +$signed({1'd0, psum_rnd_bit_reg});
-wire [DATA_OUT_DW -1:0] psum_out_dat_sft;
-CPM_CLP #( CONV_CAL_DW, DATA_OUT_DW ) PSUM_OUT_DAT_SFT_U( psum_out_dat_add, psum_out_dat_sft );
-
-always @ ( * )begin
-    psum_out_dat = psum_out_dat_sft;
-end
-
-always @ ( posedge clk or negedge rst_n )begin
-    if( ~rst_n )
-        psum_out_vld <= 'd0;
-    else if( pe_psum_rst )
-        psum_out_vld <= 'd0;
-    else if( pe_psum )
-        psum_out_vld <= 'd1;
-    else if( ~pe_idle && is_addr_out_range && din_vld )
-        psum_out_vld <= 'd1;
+        psum_cal_cnt <= 'd0;
     else if( out_ena )
-        psum_out_vld <= 'd0;
+        psum_cal_cnt <= 'd0;
+    else if( psum_cal_vld && psum_cal_cnt!='d3 )
+        psum_cal_cnt <= psum_cal_cnt +'d1;
 end
+
+wire [8 -1:0] cfg_conv_mul_sel = &psum_cal_cnt ? 'd0 : cfg_conv_mul[8*psum_cal_cnt +:8];
+wire signed [DATA_SUM_DW+9 -1:0] psum_cal_mul = $signed(psum_out_reg)*$signed({1'd0, cfg_conv_mul_sel});
+wire signed [CONV_CAL_DW   -1:0] psum_cal_sft = psum_cal_mul<<<(8*psum_cal_cnt);
+reg  signed [CONV_CAL_DW   -1:0] psum_cal_sum;
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )
+        psum_cal_sum <= 'd0;
+    else if( pe_idle || psum_out_vld )
+        psum_cal_sum <= {{(CONV_CAL_DW-CONV_ADD_DW){cfg_conv_add[CONV_ADD_DW-1]}},cfg_conv_add};
+    else if( psum_cal_vld )
+        psum_cal_sum <= psum_cal_sum +psum_cal_sft;
+end
+
+wire signed [CONV_CAL_DW -1:0] psum_out_mul = &psum_cal_cnt ? psum_cal_sum : {CONV_CAL_DW{1'd0}};
+wire signed [CONV_CAL_DW -1:0] psum_out_sft = $signed(psum_out_mul)>>>cfg_conv_sft;
+wire                           psum_rnd_bit = cfg_conv_sft=='d0 ? 'd0 : psum_out_mul[cfg_conv_sft-1];
+wire signed [CONV_CAL_DW -1:0] psum_out_rnd = $signed(psum_out_sft) +$signed({1'd0, psum_rnd_bit});
+CPM_CLP #( CONV_CAL_DW, DATA_OUT_DW ) PSUM_OUT_CLP_U( psum_out_rnd, psum_out_clp);
 
 always @ ( posedge clk or negedge rst_n )begin
     if( ~rst_n )
@@ -269,9 +282,9 @@ always @ ( posedge clk or negedge rst_n )begin
         aram_add_reg <= 'd0;
     else if( pe_idle && din_ena )
         aram_add_reg <= ACT_ADD;
-    else if( pe_flow && din_vld && is_addr_out_range && (~psum_out_vld || out_rdy) )
+    else if( pe_flow && din_vld && is_addr_out_range && (~psum_cal_vld || out_ena) )
         aram_add_reg <= aram_add_reg+cfg_conv_run;
-    else if( pe_psum && out_rdy )
+    else if( pe_psum && (~psum_cal_vld || out_ena) )
         aram_add_reg <= aram_add_reg+cfg_conv_run;
 end
 
@@ -280,9 +293,9 @@ always @ ( posedge clk or negedge rst_n )begin
         psum_add_reg <= 'd0;
     else if( pe_psum_rst )
         psum_add_reg <= 'd0;
-    else if( pe_flow && din_vld && is_addr_out_range && (~psum_out_vld || out_rdy) )
+    else if( pe_flow && din_vld && is_addr_out_range && (~psum_cal_vld || out_ena) )
         psum_add_reg <= aram_add_reg;
-    else if( pe_psum && out_rdy )
+    else if( pe_psum && (~psum_cal_vld || out_ena) )
         psum_add_reg <= aram_add_reg;
 end
 
@@ -301,7 +314,7 @@ end
 always @ ( * )begin
   case( pe_cs )
     PE_IDLE: pe_ns = pe_data_ena ? PE_FLOW : pe_cs;
-    PE_FLOW: pe_ns = pe_last_din ? PE_PSUM : pe_cs;
+    PE_FLOW: pe_ns = pe_flow_end ? PE_PSUM : pe_cs;
     PE_PSUM: pe_ns = pe_psum_rst ? PE_IDLE : pe_cs;
     default: pe_ns = PE_IDLE;
   endcase
@@ -323,9 +336,9 @@ always @ ( posedge clk or negedge rst_n )begin
         ass_psum_out_reg <= 'd0;
     else if( pe_psum_rst )
         ass_psum_out_reg <= 'd0;
-    else if( is_addr_out_range && din_vld )
+    else if( is_addr_out_range && din_vld && (~psum_cal_vld || out_ena) )
         ass_psum_out_reg <= psum_cal_reg[0];
-    else if( pe_psum && (~psum_out_vld || out_rdy) )
+    else if( pe_psum && (~psum_cal_vld || out_ena) )
         ass_psum_out_reg <= psum_cal_reg[0];
 end
 
