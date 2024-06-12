@@ -140,7 +140,7 @@ wire psum_out_lst = psum_add_reg==cfg_conv_lst;
 // IO Logic Design :                                                                                                      
 //=====================================================================================================================   
 always @( * )begin 
-    din_rdy = ~pe_psum && (~psum_cal_vld || ~is_addr_out_range || (psum_cal_vld && out_ena)) && (is_addr_hit_range_next || pe_idle);// || (~is_psum_out_vld && is_addr_out_range);//C2 may be too long; C1 need 4 BANK ORAM
+    din_rdy = ~pe_psum && ~pe_last_din && (~psum_cal_vld || ~is_addr_out_range || (psum_cal_vld && out_ena)) && (is_addr_hit_range_next || pe_idle);// || (~is_psum_out_vld && is_addr_out_range);//C2 may be too long; C1 need 4 BANK ORAM
 end
 
 always @( * )begin    

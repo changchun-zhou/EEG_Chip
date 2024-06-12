@@ -530,8 +530,10 @@ wire [ARAM_BUF_DW -1:0] aram_fifo_out;
 wire [ARAM_BUF_AW   :0] aram_fifo_cnt;
 wire [ARAM_BUF_AW   :0] aram_fifo_cnt_empty;
 
-wire aram_fifo_flow_end = aram_fifo_out[ARAM_BUF_DW -1];
-wire aram_fifo_loop_end = aram_fifo_out[ARAM_BUF_DW -2];
+wire aram_fifo_flow_end;
+wire aram_fifo_loop_end;
+CPM_REG_E #( 1 ) ARAM_FIFO_FLOW_END_REG ( clk, rst_n, aram_fifo_ren, aram_fifo_out[ARAM_BUF_DW -1], aram_fifo_flow_end );
+CPM_REG_E #( 1 ) ARAM_FIFO_LOOP_END_REG ( clk, rst_n, aram_fifo_ren, aram_fifo_out[ARAM_BUF_DW -2], aram_fifo_loop_end );
 
 //WRAM
 reg  [PE_ROW -1:0] wram_fifo_wen;
