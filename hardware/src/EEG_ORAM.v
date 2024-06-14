@@ -442,28 +442,28 @@ generate
             always @ ( posedge clk or negedge rst_n )begin
                 if( ~rst_n )
                     oram_res_dat[gen_i][gen_j] <= 'd0;
-                else if( ram_oram_dat_ena[gen_i][gen_j] )
+                else if( oram_resn && ram_oram_dat_ena[gen_i][gen_j] )
                     oram_res_dat[gen_i][gen_j] <= oram_res_dat_clp[gen_i][gen_j];
             end
 
             always @ ( posedge clk or negedge rst_n )begin
                 if( ~rst_n )
                     oram_res_add[gen_i][gen_j] <= 'd0;
-                else if( ram_oram_dat_ena[gen_i][gen_j] )
+                else if( oram_resn && ram_oram_dat_ena[gen_i][gen_j] )
                     oram_res_add[gen_i][gen_j] <= etoo_buf_add[gen_i][gen_j];
             end
 
             always @ ( posedge clk or negedge rst_n )begin
                 if( ~rst_n )
                     oram_res_lst[gen_i][gen_j] <= 'd0;
-                else if( ram_oram_dat_ena[gen_i][gen_j] )
+                else if( oram_resn && ram_oram_dat_ena[gen_i][gen_j] )
                     oram_res_lst[gen_i][gen_j] <= etoo_buf_lst[gen_i][gen_j];
             end
 
             always @ ( posedge clk or negedge rst_n )begin
                 if( ~rst_n )
                     oram_res_vld[gen_i][gen_j] <= 'd0;
-                else if( ram_oram_dat_ena[gen_i][gen_j] )
+                else if( oram_resn && ram_oram_dat_ena[gen_i][gen_j] )
                     oram_res_vld[gen_i][gen_j] <= 'd1;
                 else if( ram_oram_din_ena[gen_i][gen_j] )
                     oram_res_vld[gen_i][gen_j] <= 'd0;

@@ -88,7 +88,7 @@ reg                     din_rdy;
 wire                    act_lst = ACT_LST;
 wire                    wei_lst = WEI_LST;
 wire [DATA_ACT_DW -1:0] act_dat = ACT_DAT;
-wire [ARAM_ADD_AW -1:0] act_add = ACT_ADD;
+reg  [ARAM_ADD_AW -1:0] act_add;
 wire [DATA_WEI_DW -1:0] wei_dat = WEI_DAT;
 wire [CONV_WEI_DW -1:0] wei_idx = WEI_IDX;
 assign DIN_RDY = din_rdy; 
@@ -110,6 +110,8 @@ wire out_ena = OUT_VLD & OUT_RDY;
 //=====================================================================================================================
 // Variable Definition :
 //=====================================================================================================================
+reg [ARAM_ADD_AW -1:0] act_add_reg;
+
 reg [CONV_WEI_DW -1:0] wei_idx_cnt;
 reg [CONV_WEI_DW -1:0] out_idx_cnt;
 
@@ -194,6 +196,17 @@ endgenerate
 
 always @ ( * )begin
     wei_idx_cnt = wei_idx;
+end
+
+always @ ( * )begin
+    act_add = pe_last_din ? act_add_reg : ACT_ADD;
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )
+        act_add_reg <= 'd0;
+    else if( din_ena )
+        act_add_reg <= act_add;
 end
 
 always @ ( posedge clk or negedge rst_n )begin

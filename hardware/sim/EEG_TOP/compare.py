@@ -12,7 +12,7 @@ def getFiles(path, suffix):
     
 def write_file(file_name, file_txt, w_type="a"):
     file_ptr = open(file_name, w_type)
-    print( file_txt, file = file_ptr)
+    print( file_txt, file=file_ptr)
     file_ptr.close()
 
 def read_file_lines(file_name):
@@ -84,10 +84,11 @@ def check_file(vdump_path, cdump_path, file_name="", is_oram=False):
         if( is_oram ):
             return True
         else:
-            print("%s do not exist." %(oram_name))
+            print("%s do not exist." %(true_name))
             return True
 
     if( len(read_file_lines(true_name))!=len(read_file_lines(oram_name)) ):
+        print("%s Data number mismatch." %(true_name))
         return True
 
     if( read_file_lines(true_name)!=read_file_lines(oram_name)):
@@ -95,7 +96,8 @@ def check_file(vdump_path, cdump_path, file_name="", is_oram=False):
         is_case_pass = False
     return is_case_pass
 
-basic_path = "../../sim/EEG_TOP"
+#basic_path = "../../sim/EEG_TOP"
+basic_path = "."
 
 frame_idx = int(sys.argv[1])
 layer_idx = int(sys.argv[2])
@@ -114,7 +116,7 @@ ram_num = 4
 #check omux
 for r_i in range(ram_num):
     for m_i in range(4):
-        is_case_pass &= check_file(vdump_path, cdump_path, file_name="omux_%s_%s.txt" %(r_i, m_i))
+        is_case_pass &= check_file(vdump_path, cdump_path, file_name="omux_%s_%s.txt" %(r_i, m_i), is_oram=True)
 
 #check file
 for r_i in range(ram_num):

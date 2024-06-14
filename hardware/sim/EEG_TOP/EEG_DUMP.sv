@@ -91,6 +91,86 @@ always begin
     end
 end
 
+reg [2 -1:0] cmd_data_cnt;
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )
+        cmd_data_cnt <= 'd0;
+    else if( top.EEG_TOP_U.CHIP_DAT_VLD_PAD && top.EEG_TOP_U.CHIP_DAT_RDY_PAD && top.EEG_TOP_U.CHIP_DAT_CMD_PAD )
+        cmd_data_cnt <= cmd_data_cnt +'d1;
+end
+
+
+reg [32 -1:0] cmd_data;
+always @ ( posedge clk or negedge rst_n )begin
+    if( ~rst_n )
+        cmd_data <= 'd0;
+    else if( top.EEG_TOP_U.CHIP_DAT_VLD_PAD && top.EEG_TOP_U.CHIP_DAT_RDY_PAD && top.EEG_TOP_U.CHIP_DAT_CMD_PAD && top.EEG_TOP_U.CHIP_DAT_LST_PAD )
+        cmd_data <= 'd0;
+    else if( top.EEG_TOP_U.CHIP_DAT_VLD_PAD && top.EEG_TOP_U.CHIP_DAT_RDY_PAD && top.EEG_TOP_U.CHIP_DAT_CMD_PAD )
+        cmd_data <= cmd_data | {24'd0,top.EEG_TOP_U.CHIP_DAT_DAT_PAD}<<(8*cmd_data_cnt);
+end
+
+wire [4 -1:0] oram_idx_tmp = cmd_data[8 +:4];
+wire [4 -1:0] wram_idx_tmp = cmd_data[12+:4];
+wire [4 -1:0] aram_idx_tmp = cmd_data[16+:4];
+
+//MOVE_BUF
+localparam XIDX_BUF_DW = 12;
+localparam XIDX_BUF_AW = 4;
+wire  xidx_buf_wen = top.EEG_TOP_U.CHIP_DAT_VLD_PAD && top.EEG_TOP_U.CHIP_DAT_RDY_PAD && top.EEG_TOP_U.CHIP_DAT_LST_PAD && top.EEG_TOP_U.CHIP_DAT_CMD_PAD && cmd_data[0 +:4]=='d8;
+wire  xidx_buf_ren = top.EEG_TOP_U.CHIP_OUT_VLD_PAD && top.EEG_TOP_U.CHIP_OUT_RDY_PAD && top.EEG_TOP_U.CHIP_OUT_LST_PAD;
+wire  xidx_buf_empty;
+wire  xidx_buf_full;
+wire [XIDX_BUF_DW -1:0] xidx_buf_din = {aram_idx_tmp, wram_idx_tmp, oram_idx_tmp};
+wire [XIDX_BUF_DW -1:0] xidx_buf_out;
+wire [XIDX_BUF_AW   :0] xidx_buf_cnt;
+
+wire [4 -1:0] oram_idx = xidx_buf_out[0+:4];
+wire [4 -1:0] wram_idx = xidx_buf_out[4+:4];
+wire [4 -1:0] aram_idx = xidx_buf_out[8+:4];
+
+CPM_FIFO #( .DATA_WIDTH( XIDX_BUF_DW ), .ADDR_WIDTH( XIDX_BUF_AW ) ) XIDX_FIFO_U ( clk, rst_n, 1'd0, xidx_buf_wen, xidx_buf_ren, xidx_buf_din, xidx_buf_out, xidx_buf_empty, xidx_buf_full, xidx_buf_cnt);
+
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( top.EEG_TOP_U.CHIP_OUT_VLD_PAD && top.EEG_TOP_U.CHIP_OUT_RDY_PAD && |oram_idx )begin
+        f_data = $psprintf("%s/oram_%1d.txt", dump_path, $clog2(oram_idx));
+        p_data = $fopen(f_data, "ab+");
+        $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.CHIP_OUT_DAT_PAD));
+        //if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT inside {[{`CHIP_OUT_DW{1'd0}}:{`CHIP_OUT_DW{1'd1}}]}  )
+        //    $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
+        //else
+        //    $fwrite(p_data, "%2h\n", $signed('d0));
+        $fclose(p_data);
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( top.EEG_TOP_U.CHIP_OUT_VLD_PAD && top.EEG_TOP_U.CHIP_OUT_RDY_PAD && |aram_idx )begin
+        f_data = $psprintf("%s/aram_%1d.txt", dump_path, $clog2(aram_idx));
+        p_data = $fopen(f_data, "ab+");
+        $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.CHIP_OUT_DAT_PAD));
+        //if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT inside {[{`CHIP_OUT_DW{1'd0}}:{`CHIP_OUT_DW{1'd1}}]}  )
+        //    $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
+        //else
+        //    $fwrite(p_data, "%2h\n", $signed('d0));
+        $fclose(p_data);
+    end
+end
+
+always @ ( posedge clk or negedge rst_n )begin
+    if( top.EEG_TOP_U.CHIP_OUT_VLD_PAD && top.EEG_TOP_U.CHIP_OUT_RDY_PAD && |wram_idx )begin
+        f_data = $psprintf("%s/wram_%1d.txt", dump_path, $clog2(wram_idx));
+        p_data = $fopen(f_data, "ab+");
+        $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.CHIP_OUT_DAT_PAD));
+        //if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT inside {[{`CHIP_OUT_DW{1'd0}}:{`CHIP_OUT_DW{1'd1}}]}  )
+        //    $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
+        //else
+        //    $fwrite(p_data, "%2h\n", $signed('d0));
+        $fclose(p_data);
+    end
+end
+
 `ifndef SIM_POST
 //flag_cnt
 `define EEG_ACC_U  top.EEG_TOP_U.EEG_ACC_U
@@ -307,46 +387,6 @@ function [63:0] state2string(input [14 -1:0] last_state);
         default : state2string = "ACC_DEFT";
     endcase
 endfunction
-`endif
-
-always @ ( posedge clk or negedge rst_n )begin
-    if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_VLD && top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_RDY && |top.EEG_TOP_U.EEG_ACC_U.cfg_oram_idx )begin
-        f_data = $psprintf("%s/oram_%1d.txt", dump_path, $clog2(top.EEG_TOP_U.EEG_ACC_U.cfg_oram_idx));
-        p_data = $fopen(f_data, "ab+");
-        $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
-        //if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT inside {[{`CHIP_OUT_DW{1'd0}}:{`CHIP_OUT_DW{1'd1}}]}  )
-        //    $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
-        //else
-        //    $fwrite(p_data, "%2h\n", $signed('d0));
-        $fclose(p_data);
-    end
-end
-
-always @ ( posedge clk or negedge rst_n )begin
-    if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_VLD && top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_RDY && |top.EEG_TOP_U.EEG_ACC_U.cfg_aram_idx )begin
-        f_data = $psprintf("%s/aram_%1d.txt", dump_path, $clog2(top.EEG_TOP_U.EEG_ACC_U.cfg_aram_idx));
-        p_data = $fopen(f_data, "ab+");
-        $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
-        //if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT inside {[{`CHIP_OUT_DW{1'd0}}:{`CHIP_OUT_DW{1'd1}}]}  )
-        //    $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
-        //else
-        //    $fwrite(p_data, "%2h\n", $signed('d0));
-        $fclose(p_data);
-    end
-end
-
-always @ ( posedge clk or negedge rst_n )begin
-    if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_VLD && top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_RDY && |top.EEG_TOP_U.EEG_ACC_U.cfg_wram_idx )begin
-        f_data = $psprintf("%s/wram_%1d.txt", dump_path, $clog2(top.EEG_TOP_U.EEG_ACC_U.cfg_wram_idx));
-        p_data = $fopen(f_data, "ab+");
-        $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
-        //if( top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT inside {[{`CHIP_OUT_DW{1'd0}}:{`CHIP_OUT_DW{1'd1}}]}  )
-        //    $fwrite(p_data, "%2h\n", $signed(top.EEG_TOP_U.EEG_ACC_U.CHIP_OUT_DAT));
-        //else
-        //    $fwrite(p_data, "%2h\n", $signed('d0));
-        $fclose(p_data);
-    end
-end
 
 `ifdef ASSERT_ON
 reg [ ARAM_NUM_DW -1:0][ARAM_ADD_DW -1:0][ARAM_DAT_DW -1:0] aram_data_reg;
@@ -429,6 +469,8 @@ generate
         end
     end
 endgenerate
+
+`endif
 
 `endif
 
