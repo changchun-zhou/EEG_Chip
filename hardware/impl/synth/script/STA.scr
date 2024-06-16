@@ -163,13 +163,14 @@ set_delay_cal_mode -engine signalStorm -SIAware false
 ##                                  Read SPEF Extracted with QRC                           ## 
 #############################################################################################
 
-# read_spef -rc_corner rctypical ./qrc/data_out/qrcSignoffrc.spef.gz
-# report_annotated_parasitics  -list_not_annotated > ${reportDir}/ReportAnnotatedParasitics.rpt
+read_spef -rc_corner rc_corner_cbest  $SPEF_FAST
+read_spef -rc_corner rc_corner_cworst $SPEF_SLOW
+report_annotated_parasitics  -list_not_annotated > ${reportDir}/ReportAnnotatedParasitics.rpt
 
-# set_propagated_clock [all_clocks]
+set_propagated_clock [all_clocks]
 
 # Set OCV parameters
-# set_timing_derate -early 0.95 -late 1.0 -delay_corner [ get_analysis_view AV_slowHV_slowHV_rcworst_setup -delay_corner ]
+set_timing_derate -early 0.95 -late 1.0 -delay_corner [ get_analysis_view AV_slowHV_slowHV_rcworst_setup -delay_corner ]
 
 #############################################################################################
 ##                                  Write Reports                                          ## 
@@ -192,7 +193,8 @@ foreach_in_collection group [ get_path_groups -quiet ] {
 
 
 set_analysis_mode -cppr both -analysisType onChipVariation -checkType setup
-report_timing -late -net -path_type full_clock -nworst 5 -max_points 250 > ${reportDir}/report_timing_setup_250.rpt
+report_timing -late -net -path_type full_clock -nworst 5 -max_points 1200 > ${reportDir}/report_timing_setup_1200.rpt
+report_timing -check_type hold -net -path_type full_clock -nworst 5 -max_points 1200 > ${reportDir}/report_timing_hold_1200.rpt
 
 report_critical_instance -max_slack 0.0 -cost_type worst_slack -max_insts 600 > ${reportDir}/criticalInstance.rpt
 
