@@ -45,7 +45,7 @@ module top;
 
   `ifdef SIM_POST
   initial begin 
-    $sdf_annotate ("/Desktop/git/EEG_Chip/hardware/work/synth/EEG_TOP/Date240609_2356_Periodclk10_group_MaxLeakPwr0_MaxDynPwr1.5_OptWgt0.949_Note_3PD_HVRHVT/EEG_TOP.sdf", EEG_TOP_U, , "TOP_sdf.log", "MAXIMUM", "1.0:1.0:1.0", "FROM_MAXIMUM");
+    $sdf_annotate ("../../post/EEG_TOP.sdf", EEG_TOP_U, , "EEG_TOP_sdf.log", "MAXIMUM", "1.0:1.0:1.0", "FROM_MAXIMUM");
   end 
   `endif  
 

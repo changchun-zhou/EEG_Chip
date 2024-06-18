@@ -83,10 +83,10 @@ program automatic TEST(
     top.layer_cnt <= top.layer_cnt +1'd1;    
   endtask: layer_done
 
-  task done_compare(int frame_idx, int layer_idx);
+  task done_compare(int frame_idx, int layer_raw, int layer_idx);
 
     //$system("echo 'run python compare.py'");
-    cmd = $psprintf("python ../../python/compare.py %0d %0d", frame_idx, layer_idx);
+    cmd = $psprintf("python ../../python/compare.py %0d %0d %0d", frame_idx, layer_raw, layer_idx);
     $display(cmd);
     $system(cmd);
   endtask: done_compare
@@ -122,7 +122,7 @@ program automatic TEST(
             join_none;
             wait fork;
             layer_done();
-            done_compare(i, layer_idx_fix);
+            done_compare(i, j, layer_idx_fix);
         end
         frame_done();
     end
